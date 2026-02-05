@@ -106,3 +106,83 @@ export function getOptimalBatchSize(defaultSize: number = 12): number {
   }
   return defaultSize;
 }
+
+/**
+ * Detect iOS version from user agent
+ * Returns the major iOS version number (e.g., 18, 17, 16) or null if not iOS
+ */
+export function getIOSVersion(): number | null {
+  if (typeof navigator === 'undefined') return null;
+  
+  const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
+  const match = ua.match(/OS (\d+)[_\d]*/);
+  
+  if (match && match[1]) {
+    return parseInt(match[1], 10);
+  }
+  
+  return null;
+}
+
+/**
+ * Check if device is running older iOS (iOS 18 or below)
+ * iOS 18 and below may have performance issues with heavy animations/videos
+ */
+export function isOldIOS(): boolean {
+  const iosVersion = getIOSVersion();
+  if (iosVersion === null) return false;
+  
+  // iOS 18 and below are considered "old" for performance optimization purposes
+  return iosVersion <= 18;
+}
+
+/**
+ * Detect Android from user agent
+ */
+export function isAndroid(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
+  return /Android/i.test(ua);
+}
+
+/**
+ * Get Android version from user agent (e.g., 12, 13, 14)
+ * Returns major version or null if not Android
+ */
+export function getAndroidVersion(): number | null {
+  if (typeof navigator === 'undefined') return null;
+  const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
+  const match = ua.match(/Android (\d+)(?:\.(\d+))?/);
+  if (match && match[1]) {
+    return parseInt(match[1], 10);
+  }
+  return null;
+}
+
+/**
+ * Check if Android device should get performance optimizations
+ * Applies to all Android (Chrome/WebView can be heavy with videos/animations)
+ */
+export function needsAndroidOptimizations(): boolean {
+  if (!isAndroid()) return false;
+  const version = getAndroidVersion();
+  // Android 12 and below: older WebView/Chrome, more lag
+  if (version !== null && version <= 12) return true;
+  // All Android gets lighter optimizations (video rate, intersection margin)
+  return true;
+}
+
+/**
+ * Check if device needs performance optimizations
+ * Combines low-end device, old iOS, and Android checks
+ */
+export function needsPerformanceOptimizations(): boolean {
+  return isLowEndDevice() || isOldIOS() || needsAndroidOptimizations();
+}
+
+/**
+ * True when mobile-focused optimizations should apply (iOS 18-, or any Android)
+ */
+export function needsMobilePerformanceOptimizations(): boolean {
+  return isOldIOS() || needsAndroidOptimizations();
+}

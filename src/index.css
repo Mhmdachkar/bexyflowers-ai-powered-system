@@ -664,6 +664,25 @@ All colors MUST be HSL. No rounded corners - sharp and architectural.
     }
   }
 
+  /* Android-only: extra scroll and paint optimizations */
+  [data-android="true"] {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  [data-android="true"] body {
+    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+  }
+
+  /* Android: reduce animation complexity for smoother experience */
+  @media (max-width: 768px) {
+    [data-android="true"] [data-animate],
+    [data-android="true"] .animate-element {
+      animation-duration: 0.4s !important;
+      transition-duration: 0.2s !important;
+    }
+  }
+
   /* Optimize backdrop blur on desktop - reduce intensity */
   @media (min-width: 769px) {
     .backdrop-blur-xl {

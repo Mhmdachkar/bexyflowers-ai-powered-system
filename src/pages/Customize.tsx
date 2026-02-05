@@ -5,6 +5,7 @@ import UltraNavigation from "@/components/UltraNavigation";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useIOSPerformance } from "@/hooks/use-ios-performance";
 import heroBouquetMain from "@/assets/bouquet-1.jpg";
 import { flowerFamilies, EnhancedFlower, Season } from "@/data/flowers";
 import { useFlowersForCustomize } from "@/hooks/useFlowers";
@@ -198,6 +199,7 @@ const ProgressStepper = ({ currentStep, steps }: { currentStep: number, steps: A
 
 const Customize: React.FC = () => {
   const isMobile = useIsMobile();
+  const { needsMobileOptimizations } = useIOSPerformance();
   const { addToCart } = useCart();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
@@ -287,6 +289,7 @@ const Customize: React.FC = () => {
   }, [generatedImage]);
 
   // Intersection Observer for lazy loading video only when visible (mobile only)
+  // iOS 18 OPTIMIZATION: More aggressive optimizations for older iOS
   useEffect(() => {
     if (!isMobile) return;
 
@@ -303,7 +306,8 @@ const Customize: React.FC = () => {
       },
       {
         root: null,
-        rootMargin: '100px',
+        // iOS/Android OPTIMIZATION: Smaller rootMargin on mobile
+        rootMargin: needsMobileOptimizations ? '50px' : '100px',
         threshold: 0.01,
       }
     );
@@ -313,13 +317,20 @@ const Customize: React.FC = () => {
     return () => {
       observer.disconnect();
     };
-  }, [isMobile, shouldLoadVideo]);
+  }, [isMobile, shouldLoadVideo, needsMobileOptimizations]);
 
   // Load and play video when it becomes visible
+  // iOS 18 OPTIMIZATION: Optimize video settings for older iOS devices
   useEffect(() => {
     if (!isMobile || !videoRef.current || !shouldLoadVideo) return;
 
     const videoElement = videoRef.current;
+    
+    // iOS/Android OPTIMIZATION: Reduce playback rate and optimize settings
+    if (needsMobileOptimizations) {
+      videoElement.playbackRate = 0.85; // Slightly slower playback reduces CPU usage
+      videoElement.volume = 0.9; // Slightly lower volume
+    }
     
     const forceFullWidth = () => {
       if (videoElement) {
@@ -349,7 +360,7 @@ const Customize: React.FC = () => {
       videoElement.removeEventListener('loadedmetadata', forceFullWidth);
       videoElement.removeEventListener('loadeddata', forceFullWidth);
     };
-  }, [isMobile, shouldLoadVideo]);
+  }, [isMobile, shouldLoadVideo, needsMobileOptimizations]);
 
   // Handle window resize to ensure video stays full width
   useEffect(() => {

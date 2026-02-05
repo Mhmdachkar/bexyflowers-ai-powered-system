@@ -1,6 +1,7 @@
 import { useRef, memo, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useIOSPerformance } from "@/hooks/use-ios-performance";
 // Video for mobile hero background
 import video4Url from '@/assets/video/video4.webm?url';
 
@@ -8,9 +9,11 @@ const CollectionHeroComponent = () => {
   const heroRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const isMobile = useIsMobile();
+  const { needsMobileOptimizations } = useIOSPerformance();
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
 
   // Intersection Observer for lazy loading video only when visible (mobile only)
+  // iOS 18 OPTIMIZATION: More aggressive optimizations for older iOS
   useEffect(() => {
     if (!isMobile || shouldLoadVideo) return; // Early return if already loading
 
@@ -29,7 +32,8 @@ const CollectionHeroComponent = () => {
       },
       {
         root: null,
-        rootMargin: '100px',
+        // iOS/Android OPTIMIZATION: Smaller rootMargin on mobile
+        rootMargin: needsMobileOptimizations ? '50px' : '100px',
         threshold: 0.01,
       }
     );
@@ -39,13 +43,20 @@ const CollectionHeroComponent = () => {
     return () => {
       observer.disconnect();
     };
-  }, [isMobile, shouldLoadVideo]);
+  }, [isMobile, shouldLoadVideo, needsMobileOptimizations]);
 
   // Load and play video when it becomes visible
+  // iOS 18 OPTIMIZATION: Optimize video settings for older iOS devices
   useEffect(() => {
     if (!isMobile || !videoRef.current || !shouldLoadVideo) return;
 
     const videoElement = videoRef.current;
+    
+    // iOS/Android OPTIMIZATION: Reduce playback rate and optimize settings
+    if (needsMobileOptimizations) {
+      videoElement.playbackRate = 0.85; // Slightly slower playback reduces CPU usage
+      videoElement.volume = 0.9; // Slightly lower volume
+    }
     
     // Load the video
     videoElement.load();
@@ -57,7 +68,7 @@ const CollectionHeroComponent = () => {
         // Auto-play was prevented, video will play when user interacts
       });
     }
-  }, [isMobile, shouldLoadVideo]);
+  }, [isMobile, shouldLoadVideo, needsMobileOptimizations]);
 
   return (
     <section 

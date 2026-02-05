@@ -18,6 +18,7 @@ import { useNavigationPredictor } from "@/hooks/useNavigationPredictor";
 import { useComponentPrefetch } from "@/hooks/useComponentPrefetch";
 import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
 import { register as registerServiceWorker } from "@/lib/serviceWorkerRegistration";
+import { isAndroid } from "@/utils/performance";
 import { gsap } from "gsap";
 
 // Configure GSAP globally to suppress null target warnings
@@ -167,6 +168,13 @@ const App = () => {
     if (import.meta.env.PROD) {
       registerServiceWorker();
       console.log('[App] Service Worker registration initiated');
+    }
+  }, []);
+
+  // Android: set data attribute for Android-specific CSS optimizations
+  useEffect(() => {
+    if (isAndroid()) {
+      document.documentElement.setAttribute('data-android', 'true');
     }
   }, []);
 

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import Lenis from '@studio-freight/lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { isAndroid } from '@/utils/performance';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -33,22 +34,28 @@ export const useSmoothScroll = () => {
       ignoreMobileResize: true,
     });
 
-    // Initialize Lenis with optimized settings - Apple-like smooth scrolling
+    // Android: shorter duration and simpler easing for better scroll performance
+    const duration = isAndroid() ? 0.9 : 1.2;
+    const easing = isAndroid()
+      ? (t: number) => t // Linear on Android for less jank
+      : (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t));
+
+    // Initialize Lenis with optimized settings - Apple-like on iOS, lighter on Android
     const lenis = new Lenis({
-      duration: 1.2, // Smooth duration for that premium feel
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Apple-like easing
+      duration,
+      easing,
     });
 
     lenisRef.current = lenis;
     globalLenis = lenis; // Set global for scrollTo function
     isActiveRef.current = true; // Reset active flag
 
-    // ⚡ PERFORMANCE: Throttle ScrollTrigger updates to balance smoothness and performance
+    // ⚡ PERFORMANCE: Throttle ScrollTrigger updates - more aggressive on Android
     let lastUpdate = 0;
+    const throttleMs = isAndroid() ? 20 : 16; // ~50fps on Android to reduce jank
     const updateScrollTrigger = () => {
       const now = performance.now();
-      // Throttle to ~60fps for smooth experience
-      if (now - lastUpdate >= 16) {
+      if (now - lastUpdate >= throttleMs) {
         ScrollTrigger.update();
         lastUpdate = now;
       }
