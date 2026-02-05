@@ -642,8 +642,25 @@ All colors MUST be HSL. No rounded corners - sharp and architectural.
 
   /* Reduce repaints on mobile */
   @media (max-width: 768px) {
+    /* ⚡ CRITICAL: Ensure native scrolling works on mobile when Lenis is disabled */
+    html, body {
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      height: auto !important;
+      min-height: 100% !important;
+      -webkit-overflow-scrolling: touch !important;
+      touch-action: pan-y !important;
+      overscroll-behavior-y: auto !important;
+    }
+    
+    /* Ensure #root allows scrolling */
+    #root {
+      overflow: visible !important;
+      height: auto !important;
+      min-height: 100vh !important;
+    }
+    
     body {
-      -webkit-overflow-scrolling: touch;
       /* Reduce composite layers for better scroll performance */
       /* transform: translateZ(0); - Removed as it breaks position: fixed */
     }
