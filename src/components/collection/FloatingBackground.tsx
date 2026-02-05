@@ -1,7 +1,13 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Points, PointMaterial } from "@react-three/drei";
 import * as THREE from "three";
+
+// ⚡ PERFORMANCE: Check if device is mobile - skip 3D rendering on mobile
+const isMobileDevice = () => {
+  if (typeof window === 'undefined') return true; // SSR safety - assume mobile
+  return window.innerWidth < 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+};
 
 const FloatingParticles = () => {
   const ref = useRef<THREE.Points>(null);
@@ -121,6 +127,20 @@ const FloatingPetals = () => {
 };
 
 export const FloatingBackground = () => {
+  // ⚡ PERFORMANCE: Skip Three.js rendering on mobile devices
+  // Three.js is very heavy on GPU/CPU and causes lag on mobile
+  const [isMobile, setIsMobile] = useState(() => isMobileDevice());
+  
+  useEffect(() => {
+    // Re-check on mount (for SSR hydration)
+    setIsMobile(isMobileDevice());
+  }, []);
+  
+  // Return null on mobile - no 3D background
+  if (isMobile) {
+    return null;
+  }
+  
   return (
     <div className="fixed inset-0 pointer-events-none z-0">
       <Canvas
