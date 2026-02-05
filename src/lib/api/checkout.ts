@@ -30,6 +30,18 @@ export interface CheckoutOrderRecord {
   created_at: string;
 }
 
+export interface CheckoutOrderImportInput {
+  fullName: string;
+  phone: string;
+  email: string;
+  location: string;
+  orderItems: CartItem[];
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  createdAt?: string;
+}
+
 /**
  * Submit checkout order – saves customer info and order to database.
  */
@@ -65,4 +77,32 @@ export async function getCheckoutOrders(): Promise<CheckoutOrderRecord[]> {
     select: 'id, full_name, phone, email, location, order_items, subtotal, delivery_fee, total, created_at',
   });
   return Array.isArray(data) ? data : [];
+}
+
+/**
+ * Bulk import checkout orders (admin) – inserts multiple rows.
+ */
+export async function importCheckoutOrders(
+  rows: CheckoutOrderImportInput[]
+): Promise<CheckoutOrderRecord[]> {
+  if (!Array.isArray(rows) || rows.length === 0) return [];
+
+  const payload = rows.map((row) => ({
+    full_name: row.fullName.trim(),
+    phone: row.phone.trim(),
+    email: row.email.trim().toLowerCase(),
+    location: row.location.trim(),
+    order_items: Array.isArray(row.orderItems) ? row.orderItems : [],
+    subtotal: Number(Number(row.subtotal || 0).toFixed(2)),
+    delivery_fee: Number(Number(row.deliveryFee || 0).toFixed(2)),
+    total: Number(Number(row.total || 0).toFixed(2)),
+    ...(row.createdAt ? { created_at: row.createdAt } : {}),
+  }));
+
+  const result = await db.insert<CheckoutOrderRecord[]>('checkout_orders', payload, {
+    select: 'id, full_name, phone, email, location, order_items, subtotal, delivery_fee, total, created_at',
+  });
+
+  const inserted = Array.isArray(result) ? result : [result];
+  return inserted.filter(Boolean) as CheckoutOrderRecord[];
 }
