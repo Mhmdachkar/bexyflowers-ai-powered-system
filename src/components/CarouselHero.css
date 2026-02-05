@@ -126,8 +126,7 @@
     height: 100vh;
     max-height: 100vh;
     overflow-x: hidden;
-    /* ⚡ FIX: Removed overflow-y: hidden - was blocking page scroll on Tecno/Android */
-    overflow-y: visible;
+    overflow-y: hidden;
     box-sizing: border-box;
     position: relative;
     /* Ensure video stays within this container */
