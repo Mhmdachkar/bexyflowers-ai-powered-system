@@ -72,6 +72,7 @@ const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminProducts = lazy(() => import("./pages/admin/AdminProducts"));
 const AdminSignatureCollection = lazy(() => import("./pages/admin/AdminSignatureCollection"));
+const AdminEternalFlowers = lazy(() => import("./pages/admin/AdminEternalFlowers"));
 const AdminAccessories = lazy(() => import("./pages/admin/AdminAccessories"));
 const AdminFlowers = lazy(() => import("./pages/admin/AdminFlowers"));
 const AdminLuxuryBoxes = lazy(() => import("./pages/admin/AdminLuxuryBoxes"));
@@ -137,6 +138,7 @@ const AppRouter = () => {
           <Route path="/admin/products/:id" element={<ProtectedRoute><AdminProducts /></ProtectedRoute>} />
           <Route path="/admin/products/new" element={<ProtectedRoute><AdminProducts /></ProtectedRoute>} />
           <Route path="/admin/signature-collection" element={<ProtectedRoute><AdminSignatureCollection /></ProtectedRoute>} />
+          <Route path="/admin/eternal-flowers" element={<ProtectedRoute><AdminEternalFlowers /></ProtectedRoute>} />
           <Route path="/admin/accessories" element={<ProtectedRoute><AdminAccessories /></ProtectedRoute>} />
           <Route path="/admin/flowers" element={<ProtectedRoute><AdminFlowers /></ProtectedRoute>} />
           <Route path="/admin/boxes" element={<ProtectedRoute><AdminLuxuryBoxes /></ProtectedRoute>} />

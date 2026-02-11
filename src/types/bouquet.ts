@@ -9,6 +9,8 @@ export interface Bouquet {
   featured?: boolean;
   is_out_of_stock?: boolean;
   discount_percentage?: number | null;
+  flower_type?: 'eternal' | 'real' | 'mixed';
+  collection_year?: number;
 }
 export interface Flower {
   id: string;

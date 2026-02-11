@@ -77,6 +77,8 @@ export type Database = {
           is_active: boolean;
           is_out_of_stock: boolean;
           discount_percentage: number | null;
+          flower_type: 'eternal' | 'real' | 'mixed';
+          collection_year: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -93,6 +95,8 @@ export type Database = {
           is_active?: boolean;
           is_out_of_stock?: boolean;
           discount_percentage?: number | null;
+          flower_type?: 'eternal' | 'real' | 'mixed';
+          collection_year?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -109,6 +113,8 @@ export type Database = {
           is_active?: boolean;
           is_out_of_stock?: boolean;
           discount_percentage?: number | null;
+          flower_type?: 'eternal' | 'real' | 'mixed';
+          collection_year?: number | null;
           created_at?: string;
           updated_at?: string;
         };

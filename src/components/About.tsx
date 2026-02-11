@@ -386,16 +386,12 @@ const About = () => {
               />
             </div>
 
-            {/* SUGGESTION: More personal and compelling story */}
             <div className="flex flex-col gap-4 md:gap-6 text-sm sm:text-base md:text-lg leading-relaxed px-2 md:px-0" style={{ fontFamily: "'EB Garamond', serif", lineHeight: 1.8, color: '#2c2d2a' }}>
               <motion.p variants={paragraphReveal}>
-                Born in 2024 from a <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>family legacy</span> of over <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>25 years</span> in floral design, Bexy Flowers introduced a dream to Lebanon: the country's first <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>glitter flower boutique</span>. We blend time-honored techniques with a spark of <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>modern magic</span>.
+                Founded in <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>2024</span>, our flower boutique has quickly become a <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>pioneer</span> in Lebanon's floral industry. We proudly established the country's first <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>glitter flower shop</span>, introducing a unique and creative concept that combines <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>beauty</span>, <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>artistry</span>, and <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>personalization</span>.
               </motion.p>
               <motion.p variants={paragraphReveal}>
-                Our <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>artisans</span> hand-select each bloom, from velvety <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>David Austin roses</span> sourced from English gardens to <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>exotic orchids</span> from the tropics, ensuring every arrangement is a <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>masterpiece</span> of freshness and rarity.
-              </motion.p>
-              <motion.p variants={paragraphReveal}>
-                We believe flowers are more than gifts; they are <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>stories</span>, <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>emotions</span>, and <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>memories</span> captured in nature's beauty.
+                Whether for <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>weddings</span>, <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>events</span>, or <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>personal gifting</span>, we are committed to redefining the art of floral design in Lebanon, offering products that blend <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>tradition</span> with <span className="font-medium" style={{ color: 'rgb(201, 161, 78)' }}>modern creativity</span>.
               </motion.p>
             </div>
 

@@ -32,10 +32,11 @@ const navigationItems: NavItem[] = [
   { id: 'products', label: 'Products', icon: Package, path: '/admin/products' },
   { id: 'clients', label: 'Clients', icon: Users, path: '/admin/clients' },
   { id: 'signature', label: 'Signature', icon: Star, path: '/admin/signature-collection' },
+  { id: 'eternal', label: 'Eternal Flowers', icon: Sparkles, path: '/admin/eternal-flowers' },
   { id: 'wedding', label: 'Wedding', icon: ImageIcon, path: '/admin/wedding-creations' },
   { id: 'flowers', label: 'Flowers', icon: Flower2, path: '/admin/flowers' },
   { id: 'boxes', label: 'Luxury Boxes', icon: Box, path: '/admin/boxes' },
-  { id: 'accessories', label: 'Accessories', icon: Sparkles, path: '/admin/accessories' },
+  { id: 'accessories', label: 'Accessories', icon: Grid3x3, path: '/admin/accessories' },
   { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' },
 ];
 

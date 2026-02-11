@@ -79,6 +79,7 @@ const AdminProducts = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [flowerTypeFilter, setFlowerTypeFilter] = useState<string>("all");
   const [showProductForm, setShowProductForm] = useState(isEditing || isCreating);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; product: any | null }>({
@@ -99,6 +100,8 @@ const AdminProducts = () => {
     is_active: true,
     is_out_of_stock: false,
     discount_percentage: null,
+    flower_type: "real", // Default to real flowers
+    collection_year: new Date().getFullYear(), // Default to current year
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
@@ -126,6 +129,8 @@ const AdminProducts = () => {
         is_active: selectedProductData.is_active !== false,
         is_out_of_stock: selectedProductData.is_out_of_stock || false,
         discount_percentage: selectedProductData.discount_percentage || null,
+        flower_type: selectedProductData.flower_type || "real",
+        collection_year: selectedProductData.collection_year || new Date().getFullYear(),
       });
       setSelectedProduct(selectedProductData);
       setShowProductForm(true);
@@ -142,6 +147,8 @@ const AdminProducts = () => {
         is_active: true,
         is_out_of_stock: false,
         discount_percentage: null,
+        flower_type: "real",
+        collection_year: new Date().getFullYear(),
       });
       setShowProductForm(true);
     }
@@ -166,9 +173,13 @@ const AdminProducts = () => {
         statusFilter === "all" ||
         (statusFilter === "active" && product.is_active) ||
         (statusFilter === "inactive" && !product.is_active);
-      return matchesSearch && matchesCategory && matchesStatus;
+      const matchesFlowerType = 
+        flowerTypeFilter === "all" || 
+        product.flower_type === flowerTypeFilter ||
+        (!product.flower_type && flowerTypeFilter === "real"); // Default to real if not set
+      return matchesSearch && matchesCategory && matchesStatus && matchesFlowerType;
     });
-  }, [collectionProducts, searchQuery, categoryFilter, statusFilter]);
+  }, [collectionProducts, searchQuery, categoryFilter, statusFilter, flowerTypeFilter]);
   const recentProducts = useMemo(
     () =>
       [...collectionProducts]
@@ -494,6 +505,17 @@ const AdminProducts = () => {
                       <SelectItem value="inactive">Inactive</SelectItem>
                     </SelectContent>
                   </Select>
+                  <Select value={flowerTypeFilter} onValueChange={setFlowerTypeFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Flower Types" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Flower Types</SelectItem>
+                      <SelectItem value="real">🌸 Real Flowers</SelectItem>
+                      <SelectItem value="eternal">✨ Eternal Flowers</SelectItem>
+                      <SelectItem value="mixed">🌺 Mixed Flowers</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
             </Card>
@@ -796,6 +818,22 @@ const AdminProducts = () => {
                           
                           {/* Badges */}
                           <div className="absolute top-2 left-2 flex flex-col gap-1">
+                            {/* Flower Type Badge */}
+                            {product.flower_type === 'eternal' && (
+                              <Badge className="bg-purple-500 text-white text-xs font-semibold">
+                                ✨ Eternal
+                              </Badge>
+                            )}
+                            {product.flower_type === 'real' && (
+                              <Badge className="bg-emerald-500 text-white text-xs font-semibold">
+                                🌸 Real
+                              </Badge>
+                            )}
+                            {product.flower_type === 'mixed' && (
+                              <Badge className="bg-blue-500 text-white text-xs font-semibold">
+                                🌺 Mixed
+                              </Badge>
+                            )}
                             {product.is_out_of_stock && (
                               <Badge variant="destructive" className="text-xs font-semibold">
                                 <XCircle className="w-3 h-3 mr-1" />
@@ -1031,6 +1069,47 @@ const AdminProducts = () => {
                           </span>
                         </div>
                       )}
+                    </div>
+                  </div>
+
+                  {/* Flower Type & Collection Year */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="flower_type" className="text-sm">Flower Type</Label>
+                      <Select
+                        value={formData.flower_type}
+                        onValueChange={(value) => setFormData({ ...formData, flower_type: value })}
+                      >
+                        <SelectTrigger className="text-sm sm:text-base">
+                          <SelectValue placeholder="Select flower type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="real">🌸 Real (Fresh Flowers)</SelectItem>
+                          <SelectItem value="eternal">✨ Eternal (Preserved Flowers)</SelectItem>
+                          <SelectItem value="mixed">🌺 Mixed (Both Types)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-gray-500">Choose between real, eternal, or mixed flowers</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="collection_year" className="text-sm">Collection Year</Label>
+                      <Input
+                        id="collection_year"
+                        type="number"
+                        min="2020"
+                        max="2030"
+                        value={formData.collection_year || ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            collection_year: e.target.value ? parseInt(e.target.value) : null,
+                          })
+                        }
+                        className="text-sm sm:text-base"
+                        placeholder="e.g., 2025"
+                      />
+                      <p className="text-xs text-gray-500">Year this collection was created</p>
                     </div>
                   </div>
                 </div>

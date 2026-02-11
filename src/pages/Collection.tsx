@@ -16,6 +16,7 @@ import type { Bouquet } from "@/types/bouquet";
 import { generatedCategories } from "@/data/generatedBouquets";
 import { encodeImageUrl } from "@/lib/imageUtils";
 import { useCollectionProducts } from "@/hooks/useCollectionProducts";
+import { FlowerTypeToggle } from "@/components/collection/FlowerTypeToggle";
 // ⚡ PERFORMANCE FIX: Disabled navigation hooks - they cause DOM node accumulation on Collection page
 // import { useNavigationPredictor } from "@/hooks/useNavigationPredictor";
 // import { useEnhancedRoutePrefetch } from "@/hooks/useEnhancedRoutePrefetch";
@@ -43,6 +44,7 @@ const DEFAULT_CATEGORY_ID: string = getDefaultCategoryId();
 const Collection = () => {
   const [selectedCategory, setSelectedCategory] = useState(DEFAULT_CATEGORY_ID);
   const [selectedBouquet, setSelectedBouquet] = useState<Bouquet | null>(null);
+  const [selectedFlowerType, setSelectedFlowerType] = useState<'all' | 'eternal' | 'real'>('all');
   const containerRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -55,7 +57,7 @@ const Collection = () => {
   // Fetch products using React Query - optimized with caching and pre-loading
   const { data: products, isLoading: loading, error } = useCollectionProducts({ isActive: true });
         
-  // Transform products to match Bouquet interface
+  // Transform products to match Bouquet interface, including flower_type
   const bouquets: Bouquet[] = useMemo(() => {
     if (!products) return [];
 
@@ -70,6 +72,8 @@ const Collection = () => {
           featured: product.featured || false,
           is_out_of_stock: product.is_out_of_stock || false,
           discount_percentage: product.discount_percentage || null,
+          flower_type: product.flower_type || 'real', // Include flower type
+          collection_year: product.collection_year,
         }));
   }, [products]);
 
@@ -104,15 +108,36 @@ const Collection = () => {
     }
   }, [location.search]);
 
-  // ⚡ PERFORMANCE: Use useMemo instead of useEffect for filtering
+  // ⚡ PERFORMANCE: Use useMemo for filtering by category and flower type
   // This prevents unnecessary re-renders and state updates
   const filteredBouquets = useMemo(() => {
-    if (selectedCategory === "all") {
-      return bouquets;
+    let filtered = bouquets;
+    
+    // Filter by category
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter((b) => b.category === selectedCategory);
     }
-    return bouquets.filter((b) => b.category === selectedCategory);
-  }, [selectedCategory, bouquets]);
+    
+    // Filter by flower type
+    if (selectedFlowerType !== "all") {
+      filtered = filtered.filter((b) => b.flower_type === selectedFlowerType);
+    }
+    
+    return filtered;
+  }, [selectedCategory, selectedFlowerType, bouquets]);
 
+  // Calculate counts for the toggle
+  const flowerTypeCounts = useMemo(() => {
+    const categoryFiltered = selectedCategory === "all" 
+      ? bouquets 
+      : bouquets.filter((b) => b.category === selectedCategory);
+    
+    return {
+      total: categoryFiltered.length,
+      eternal: categoryFiltered.filter((b) => b.flower_type === 'eternal').length,
+      real: categoryFiltered.filter((b) => b.flower_type === 'real' || !b.flower_type).length,
+    };
+  }, [selectedCategory, bouquets]);
 
   // Memoize featured bouquets calculation
   const featuredBouquets = useMemo(
@@ -135,6 +160,7 @@ const Collection = () => {
   // Use callback for handlers with smooth scroll
   const handleCategoryChange = useCallback((category: string) => {
     setSelectedCategory(category);
+    setSelectedFlowerType('all'); // Reset flower type when category changes
     
     // ⚡ PERFORMANCE: Smooth scroll to grid when category changes
     // Note: setTimeout in event handler is fine - doesn't need cleanup as it fires immediately
@@ -146,6 +172,10 @@ const Collection = () => {
         window.scrollTo({ top: y, behavior: 'smooth' });
       }
     }, 100);
+  }, []);
+
+  const handleFlowerTypeChange = useCallback((type: 'all' | 'eternal' | 'real') => {
+    setSelectedFlowerType(type);
   }, []);
   
   const handleBouquetClick = useCallback((bouquet: Bouquet) => {
@@ -179,7 +209,7 @@ const Collection = () => {
           onCategoryChange={handleCategoryChange}
         />
         
-        {/* Main Bouquet Grid - With Smooth Category Transitions */}
+        {/* Main Content */}
         <section 
           id="main-collection-grid" 
           className="relative py-6 sm:py-8 md:py-12 lg:py-16 px-3 sm:px-4 md:px-6 lg:px-8 w-full" 
@@ -192,7 +222,15 @@ const Collection = () => {
           }}
         >
           <div className="max-w-7xl mx-auto w-full">
-            {/* Category count - Always visible for LCP optimization */}
+            {/* Flower Type Toggle */}
+            <FlowerTypeToggle 
+              selectedType={selectedFlowerType}
+              onTypeChange={handleFlowerTypeChange}
+              eternalCount={flowerTypeCounts.eternal}
+              realCount={flowerTypeCounts.real}
+              totalCount={flowerTypeCounts.total}
+            />
+            
             <div className="mb-4 sm:mb-6 md:mb-8 text-center">
               <p className="text-xs sm:text-sm text-[#6B5D52] font-medium">
                 Showing <span className="font-normal" style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>
