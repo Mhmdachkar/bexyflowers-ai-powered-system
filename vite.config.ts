@@ -28,6 +28,13 @@ export default defineConfig({
           'vendor-swiper': ['swiper'],
           // Supabase in separate chunk - only loaded when needed (admin pages, data fetching)
           'supabase': ['@supabase/supabase-js'],
+          // ⚡ PERFORMANCE: Isolate Three.js in its own chunk - only loaded when 3D components are used
+          // This prevents Three.js from being included in the main bundle (~500KB savings)
+          'vendor-three': ['three', '@react-three/fiber', '@react-three/drei'],
+          // ⚡ PERFORMANCE: Isolate GSAP/Lenis - only needed for animations
+          'vendor-animation': ['gsap', '@studio-freight/lenis'],
+          // ⚡ PERFORMANCE: Isolate recharts - only needed for admin dashboard
+          'vendor-charts': ['recharts'],
         },
         // Use content hash for long-term caching
         chunkFileNames: 'assets/[name]-[hash].js',

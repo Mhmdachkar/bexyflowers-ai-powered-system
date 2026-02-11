@@ -9,12 +9,25 @@ gsap.registerPlugin(ScrollTrigger);
 // Module-level instance for scrollTo function (only used if hook is mounted)
 let globalLenis: Lenis | null = null;
 
+// ⚡ PERFORMANCE: Check if device is mobile - disable smooth scroll on mobile
+const isMobileDevice = () => {
+  if (typeof window === 'undefined') return false;
+  return window.innerWidth < 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+};
+
 export const useSmoothScroll = () => {
   const rafIdRef = useRef<number | null>(null);
   const lenisRef = useRef<Lenis | null>(null);
   const isActiveRef = useRef<boolean>(true);
 
   useEffect(() => {
+    // ⚡ PERFORMANCE: Skip Lenis on mobile devices - native scroll is more performant
+    // Lenis runs a constant RAF loop that drains CPU/battery on mobile
+    if (isMobileDevice()) {
+      console.log('[SmoothScroll] Disabled on mobile for performance');
+      return;
+    }
+
     // ⚡ PERFORMANCE: Configure ScrollTrigger for better performance
     ScrollTrigger.config({
       autoRefreshEvents: "visibilitychange,DOMContentLoaded,load",

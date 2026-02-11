@@ -1,19 +1,40 @@
 import { useState, useEffect, useCallback } from 'react';
 
+// ⚡ PERFORMANCE: Check if device is mobile - disable WebGL/Three.js on mobile
+const isMobileDevice = () => {
+  if (typeof window === 'undefined') return true; // SSR safety - assume mobile
+  return window.innerWidth < 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+};
+
 interface WebGLStatus {
   supported: boolean;
   contextLost: boolean;
   error: Error | null;
+  isMobile: boolean;
 }
 
 export function useWebGL() {
   const [status, setStatus] = useState<WebGLStatus>({
     supported: true,
     contextLost: false,
-    error: null
+    error: null,
+    isMobile: true // Default to true (safe) until we check
   });
 
   const checkWebGLSupport = useCallback(() => {
+    // ⚡ PERFORMANCE: Skip WebGL on mobile devices entirely
+    // Three.js is extremely heavy on mobile (CPU, GPU, memory, battery)
+    if (isMobileDevice()) {
+      console.log('[WebGL] Disabled on mobile for performance');
+      setStatus(prev => ({ 
+        ...prev, 
+        supported: false, 
+        isMobile: true,
+        error: new Error('WebGL disabled on mobile for performance') 
+      }));
+      return false;
+    }
+    
     try {
       const canvas = document.createElement('canvas');
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
@@ -70,6 +91,7 @@ export function useWebGL() {
     ...status,
     checkWebGLSupport,
     setupContextLossHandling,
-    isReady: status.supported && !status.contextLost
+    // ⚡ PERFORMANCE: isReady is false on mobile devices (status.supported = false)
+    isReady: status.supported && !status.contextLost && !status.isMobile
   };
 }

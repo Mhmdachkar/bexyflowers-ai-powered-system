@@ -103,14 +103,22 @@ const queryClient = new QueryClient({
   },
 });
 
+// ⚡ PERFORMANCE: Check if device is mobile
+const isMobileDevice = () => {
+  if (typeof window === 'undefined') return true;
+  return window.innerWidth < 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+};
+
 // Component that contains router-dependent logic
 const AppRouter = () => {
-  // CRITICAL FIX: Disable heavy performance hooks in development to prevent freezing
-  // These hooks do prefetching, pattern learning, and monitoring which can overload the system
+  // CRITICAL FIX: Disable heavy performance hooks on mobile AND in development
+  // These hooks do prefetching, pattern learning, and monitoring which can overload mobile devices
   const isProduction = import.meta.env.PROD;
+  const isMobile = isMobileDevice();
   
-  // Only enable these in production or if explicitly enabled
-  if (isProduction || import.meta.env.VITE_ENABLE_PERFORMANCE_HOOKS === 'true') {
+  // ⚡ PERFORMANCE: Only enable these hooks on desktop in production
+  // Mobile devices struggle with the constant localStorage reads, prefetching, and monitoring
+  if (isProduction && !isMobile) {
     useNavigationPredictor();
     useComponentPrefetch();
     usePerformanceMonitor();
