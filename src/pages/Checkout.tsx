@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import SEO from '@/components/SEO';
 import { motion } from 'framer-motion';
 import {
   ShoppingCart,
@@ -219,6 +220,7 @@ Please confirm my order and let me know about delivery timing. Thank you! 🌸`;
   if (cartItems.length === 0 && !submitSuccess) {
     return (
       <>
+        <SEO title="Checkout" noIndex />
         <div className="min-h-screen bg-gradient-to-br from-stone-50 via-white to-amber-50/20 flex items-center justify-center">
           <motion.div
             className="text-center space-y-6 px-4"
@@ -253,6 +255,7 @@ Please confirm my order and let me know about delivery timing. Thank you! 🌸`;
   if (submitSuccess) {
     return (
       <>
+        <SEO title="Checkout" noIndex />
         <div className="min-h-screen bg-gradient-to-br from-stone-50 via-white to-amber-50/20 flex items-center justify-center">
           <motion.div
             className="text-center space-y-6 px-4 max-w-md"
@@ -326,6 +329,7 @@ Please confirm my order and let me know about delivery timing. Thank you! 🌸`;
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
+      <SEO title="Checkout" noIndex />
       <div className="max-w-3xl mx-auto px-4 py-8 md:py-12">
         <motion.button
           type="button"

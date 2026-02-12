@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
+import SEO from "@/components/SEO";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import UltraNavigation from "@/components/UltraNavigation";
@@ -42,6 +43,19 @@ const getDefaultCategoryId = (): string => {
 const DEFAULT_CATEGORY_ID: string = getDefaultCategoryId();
 
 const Collection = () => {
+  return (
+    <>
+      <SEO
+        title="Flower Collection"
+        description="Browse our luxury flower collection: red roses, eternal flowers, seasonal bouquets, and couture arrangements. Premium floristry in Lebanon."
+        canonical="/collection"
+      />
+      <CollectionContent />
+    </>
+  );
+};
+
+const CollectionContent = () => {
   const [selectedCategory, setSelectedCategory] = useState(DEFAULT_CATEGORY_ID);
   const [selectedBouquet, setSelectedBouquet] = useState<Bouquet | null>(null);
   const [selectedFlowerType, setSelectedFlowerType] = useState<'all' | 'eternal' | 'real'>('all');

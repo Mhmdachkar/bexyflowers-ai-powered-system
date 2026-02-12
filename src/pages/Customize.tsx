@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import SEO from "@/components/SEO";
 import { motion, AnimatePresence } from "framer-motion";
 import { Box, Gift, Check, CheckCircle2, Wand2, Plus, Minus, X, Info, ChevronRight, Palette, ShoppingCart, Circle, Square, Heart, Download, MessageCircle, Sparkles, ArrowRight, Star, Crown, GraduationCap, Heart as HeartIcon, Candy, Eye, EyeOff, History, BookmarkPlus, Bookmark, RefreshCw, Loader2, Edit3 } from "lucide-react";
 import UltraNavigation from "@/components/UltraNavigation";
@@ -1170,6 +1171,11 @@ const Customize: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white font-body" ref={containerRef}>
+      <SEO
+        title="Design Your Bouquet"
+        description="Create your perfect custom bouquet with AI-powered flower customization. Choose from premium flowers, colors, and styles. Design unique floral arrangements for any occasion."
+        canonical="/customize"
+      />
       <UltraNavigation />
 
       {/* Hero Section - Matching Home & Collection Page Style */}

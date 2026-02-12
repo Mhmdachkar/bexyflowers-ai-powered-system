@@ -1,4 +1,5 @@
 import React from 'react';
+import SEO from '@/components/SEO';
 import { motion } from 'framer-motion';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,7 @@ const CartPage: React.FC = () => {
   if (isEmpty) {
     return (
       <>
+        <SEO title="Cart" noIndex />
         <UltraNavigation />
         <div className="min-h-screen bg-gradient-to-b from-background to-muted/10 flex items-center justify-center px-4 pt-20">
           <motion.div
@@ -82,6 +84,7 @@ const CartPage: React.FC = () => {
 
   return (
     <>
+      <SEO title="Cart" noIndex />
       <UltraNavigation />
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/10 py-8 px-4 sm:px-6 lg:px-8 pt-32">
       <div className="max-w-6xl mx-auto">

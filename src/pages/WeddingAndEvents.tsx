@@ -1,4 +1,5 @@
 import React, { Suspense, useEffect, useRef, useState, useMemo } from "react";
+import SEO from "@/components/SEO";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -2184,6 +2185,11 @@ const WeddingAndEvents = () => {
 
   return (
     <div className="min-h-screen overflow-x-hidden relative bg-white">
+      <SEO
+        title="Wedding & Events Flowers"
+        description="Wedding flowers and event floral arrangements in Lebanon. Bridal bouquets, ceremony decorations, centerpieces, and custom designs for your special day."
+        canonical="/wedding-and-events"
+      />
       <UltraNavigation />
       <div className="relative z-10">
         <LazySection rootMargin="400px 0px">

@@ -1,3 +1,14 @@
+# Bexy Flowers - robots.txt
+# Block admin and cart/checkout from indexing
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /cart
+Disallow: /cart-test
+Disallow: /checkout
+Disallow: /favorites
+
+# Allow social crawlers full access for rich previews
 User-agent: Googlebot
 Allow: /
 
@@ -10,5 +21,5 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
-User-agent: *
-Allow: /
+# Sitemap - replace domain if different
+Sitemap: https://bexyflowers.shop/sitemap.xml

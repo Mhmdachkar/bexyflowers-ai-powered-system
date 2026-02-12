@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, memo, useCallback, Suspense } from 'react';
+import SEO from '@/components/SEO';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -39,6 +40,7 @@ const Favorites = memo(() => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-[#faf9f7] to-white relative overflow-hidden">
+      <SEO title="Favorites" noIndex />
       <UltraNavigation />
       
       {/* Optimized Floating Background Elements - Reduced for performance */}

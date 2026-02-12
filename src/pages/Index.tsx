@@ -1,5 +1,7 @@
 import React, { Suspense, useRef } from "react";
 import { motion, useInView } from "framer-motion";
+import SEO from "@/components/SEO";
+import { orgSchema, webSiteSchema } from "@/lib/seo";
 import {
   Sparkles,
   Wand2,
@@ -368,6 +370,12 @@ const Index = () => {
 
   return (
     <div className="min-h-screen overflow-x-hidden relative">
+      <SEO
+        title="Lebanon's Premier Luxury Florist"
+        description="Lebanon's most luxurious floral portfolio. Premium custom bouquets, wedding flowers, eternal flowers &amp; couture arrangements. AI-powered flower customization. Order online."
+        canonical="/"
+        jsonLd={[orgSchema(), webSiteSchema()]}
+      />
       <UltraNavigation />
       <div className="relative z-10">
         <Suspense fallback={<HeroSkeleton />}>

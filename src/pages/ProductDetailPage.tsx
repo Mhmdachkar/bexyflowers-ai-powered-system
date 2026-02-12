@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
+import SEO from '@/components/SEO';
+import { productSchema, SITE_URL } from '@/lib/seo';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -412,6 +414,9 @@ const ProductDetailPage = () => {
   };
 
 
+  const productUrl = `${SITE_URL}/product/${productData.id}`;
+  const ogImage = productData.images?.[0] || productData.imageUrl;
+
   return (
     <motion.div 
       className="min-h-screen bg-white"
@@ -420,6 +425,22 @@ const ProductDetailPage = () => {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
     >
+      <SEO
+        title={productData.title}
+        description={productData.description || `${productData.title} - Premium floral arrangement from Bexy Flowers. Luxury bouquets in Lebanon.`}
+        canonical={`/product/${productData.id}`}
+        ogImage={ogImage}
+        ogType="product"
+        jsonLd={productSchema({
+          name: productData.title,
+          description: productData.description || '',
+          image: ogImage,
+          price: currentPrice,
+          currency: 'USD',
+          url: productUrl,
+          inStock: productData.inStock,
+        })}
+      />
       {/* Navigation Bar */}
       <UltraNavigation />
 
