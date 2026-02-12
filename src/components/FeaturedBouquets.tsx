@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useCartWithToast } from "@/hooks/useCartWithToast";
 import { Card, CardContent } from "@/components/ui/card";
+import { getProductImageAlt } from "@/lib/imageAltUtils";
 import bouquet1 from "@/assets/bouquet-1.jpg";
 import bouquet2 from "@/assets/bouquet-2.jpg";
 import bouquet3 from "@/assets/bouquet-3.jpg";
@@ -90,7 +91,7 @@ const FeaturedBouquets = () => {
                 <div className="relative overflow-hidden">
                   <img
                     src={bouquet.image}
-                    alt={bouquet.name}
+                    alt={getProductImageAlt(bouquet)}
                     className="w-full h-64 object-cover transition-luxury group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-luxury" />

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, Heart, Sparkles, ChevronRight, Eye, ShoppingCart } from 'lucide-react';
 import { PreDesignedBouquetsProps } from '@/types/bouquet';
+import { getProductImageAlt } from '@/lib/imageAltUtils';
 
 const PreDesignedBouquets: React.FC<PreDesignedBouquetsProps> = ({
   bouquets,
@@ -76,7 +77,7 @@ const PreDesignedBouquets: React.FC<PreDesignedBouquetsProps> = ({
                   <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
                     <img
                       src={bouquet.imageUrl}
-                      alt={bouquet.name}
+                      alt={getProductImageAlt(bouquet)}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import SEO from '@/components/SEO';
 import { productSchema, SITE_URL } from '@/lib/seo';
+import { getProductImageAlt } from '@/lib/imageAltUtils';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -136,19 +137,21 @@ const ImageGallery = ({
   images,
   currentImageIndex,
   onImageChange,
-  discountPercentage
+  discountPercentage,
+  productName
 }: {
   images: string[];
   currentImageIndex: number;
   onImageChange: (index: number) => void;
   discountPercentage?: number | null;
+  productName?: string;
 }) => (
   <div className="space-y-4">
     {/* Main Image */}
     <div className="relative overflow-hidden rounded-lg bg-[#F5F5F5] aspect-[3/4]">
       <img
         src={encodeImageUrl(images[currentImageIndex])}
-        alt="Product detail"
+        alt={productName ? `${productName} - premium floral bouquet from Bexy Flowers Lebanon` : 'Product detail'}
         className="w-full h-full object-cover"
       />
       
@@ -192,7 +195,7 @@ const ImageGallery = ({
           >
             <img
               src={encodeImageUrl(image)}
-              alt={`View ${index + 1}`}
+              alt={productName ? `${productName} - view ${index + 1}` : `View ${index + 1}`}
               className="w-full h-full object-cover"
             />
           </button>
@@ -477,6 +480,7 @@ const ProductDetailPage = () => {
               currentImageIndex={currentImageIndex}
               onImageChange={setCurrentImageIndex}
               discountPercentage={discountPercentage}
+              productName={productData.title}
             />
           </motion.div>
 
@@ -604,7 +608,7 @@ const ProductDetailPage = () => {
                     <div className="relative overflow-hidden aspect-[3/4] bg-[#F5F5F5]">
                       <img
                         src={bouquet.image}
-                        alt={bouquet.name}
+                        alt={getProductImageAlt(bouquet)}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         loading="lazy"
                       />

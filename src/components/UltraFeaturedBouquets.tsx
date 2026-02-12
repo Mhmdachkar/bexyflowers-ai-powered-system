@@ -12,6 +12,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import SignatureQuickView from './SignatureQuickView';
 import { useSignatureCollection } from '@/hooks/useSignatureCollection';
 import { encodeImageUrl } from '@/lib/imageUtils';
+import { getProductImageAlt } from '@/lib/imageAltUtils';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -393,7 +394,7 @@ const UltraFeaturedBouquets = () => {
                      >
                   <motion.img
                     src={bouquet.image}
-                    alt={bouquet.name}
+                    alt={getProductImageAlt(bouquet)}
                     width="400"
                     height="500"
                          style={{
