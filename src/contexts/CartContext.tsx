@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useRef, useMemo } from 'react';
 import { CartItem, CartContextType, Product } from '@/types/cart';
 import { getVisitorCart, upsertVisitorCartItem, removeVisitorCartItem, updateVisitorCartItemQuantity, clearVisitorCart, syncCartToDatabase } from '@/lib/api/visitor-cart';
 

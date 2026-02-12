@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useRef, useMemo } from 'react';
 import { FavoriteProduct, FavoritesContextType } from '@/types/favorites';
 import { getVisitorFavorites, addVisitorFavorite, removeVisitorFavorite, clearVisitorFavorites, syncFavoritesToDatabase } from '@/lib/api/visitor-favorites';
 
