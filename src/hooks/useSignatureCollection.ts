@@ -27,10 +27,12 @@ export const useSignatureCollection = (filters?: {
   return useQuery({
     queryKey: signatureQueryKeys.list(filters),
     queryFn: () => getSignatureCollections(),
-    staleTime: 0, // CRITICAL: Set to 0 to always refetch fresh data (fixes discount not updating)
-    gcTime: 5 * 60 * 1000, // Reduced from 10 min to prevent memory leaks
-    refetchOnWindowFocus: true, // CRITICAL: Refetch when window regains focus to get latest admin changes
-    refetchOnMount: true, // CRITICAL: Always refetch when component mounts to ensure fresh data
+    // PERFORMANCE: Balance between fresh data and mobile performance
+    // 2 min staleTime reduces unnecessary refetches on mobile while keeping data reasonably fresh
+    staleTime: 2 * 60 * 1000, // 2 minutes - prevents excessive refetches on mobile
+    gcTime: 5 * 60 * 1000, // 5 minutes - cache cleanup
+    refetchOnWindowFocus: false, // PERFORMANCE: Disabled for mobile - prevents refetch on tab switches
+    refetchOnMount: true, // Refetch on mount only (not on every focus change)
   });
 };
 

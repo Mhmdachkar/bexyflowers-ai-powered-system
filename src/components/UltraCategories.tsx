@@ -278,9 +278,14 @@ const UltraCategories = () => {
     const container = containerRef.current;
     if (!container) return;
 
-    // Only enable auto-scroll on desktop
+    // PERFORMANCE: Only enable auto-scroll on desktop
     const isMobile = window.innerWidth < 1024;
     if (isMobile) return;
+    
+    // PERFORMANCE: Disable on low-end devices to prevent jank
+    // Check if device has reduced motion preference
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
 
     // Calculate the width of one set of categories
     const cardWidth = 352;
@@ -368,106 +373,9 @@ const UltraCategories = () => {
     const isMobile = window.innerWidth < 1024;
     if (!isMobile) return;
 
-    // Calculate widths for seamless scrolling
-    const cardWidth = 196; // w-[196px]
-    const gap = 12; // gap-3 = 12px
-    const row1Count = 5; // First 5 categories
-    const row2Count = 4; // Last 4 categories
-    const row1Width = row1Count * (cardWidth + gap);
-    const row2Width = row2Count * (cardWidth + gap);
-
-    gsap.set(row1, { x: 0 });
-    gsap.set(row2, { x: 0 });
-
-    let isActive = true;
-    let animation1: gsap.core.Tween | null = null;
-    let animation2: gsap.core.Tween | null = null;
-    let isPaused1 = false;
-    let isPaused2 = false;
-
-    // Intersection Observer for row 1 (scrolls left/negative direction)
-    const observer1 = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && isActive && !isPaused1) {
-            if (!animation1) {
-              animation1 = gsap.to(row1, {
-                x: -row1Width,
-                duration: 25, // Slower for mobile
-                ease: "none",
-                repeat: -1,
-                modifiers: {
-                  x: (x) => {
-                    const num = parseFloat(x);
-                    return `${num % row1Width}px`;
-                  }
-                }
-              });
-            } else {
-              animation1.resume();
-            }
-          } else {
-            if (animation1) animation1.pause();
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    // Intersection Observer for row 2 (scrolls right/opposite direction)
-    // For opposite direction, we animate in positive direction
-    const observer2 = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && isActive && !isPaused2) {
-            if (!animation2) {
-              // Start from negative position for seamless loop
-              gsap.set(row2, { x: -row2Width });
-              animation2 = gsap.to(row2, {
-                x: 0,
-                duration: 25,
-                ease: "none",
-                repeat: -1,
-                modifiers: {
-                  x: (x) => {
-                    const num = parseFloat(x);
-                    // Loop: when reaching 0, reset to -row2Width
-                    if (num >= 0) {
-                      return `${num - row2Width}px`;
-                    }
-                    return `${num}px`;
-                  }
-                }
-              });
-            } else {
-              animation2.resume();
-            }
-          } else {
-            if (animation2) animation2.pause();
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    observer1.observe(section);
-    observer2.observe(section);
-
-    return () => {
-      isActive = false;
-      observer1.disconnect();
-      observer2.disconnect();
-      if (animation1) {
-        animation1.kill();
-        animation1 = null;
-      }
-      if (animation2) {
-        animation2.kill();
-        animation2 = null;
-      }
-      gsap.killTweensOf(row1);
-      gsap.killTweensOf(row2);
-    };
+    // PERFORMANCE: Disable infinite animations on mobile to save battery and prevent jank
+    // These continuous GSAP transforms can cause frame drops on mobile devices
+    // Users can still scroll horizontally to see all categories
   }, []);
 
   const scrollLeft = () => {
