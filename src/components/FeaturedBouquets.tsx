@@ -93,6 +93,7 @@ const FeaturedBouquets = () => {
                     src={bouquet.image}
                     alt={getProductImageAlt(bouquet)}
                     className="w-full h-64 object-cover transition-luxury group-hover:scale-110"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-luxury" />
                   

@@ -1840,6 +1840,7 @@ const Customize: React.FC = () => {
                                       ? "opacity-50 grayscale-[30%]" 
                                       : ""
                                   }`}
+                                  loading="lazy"
                                 />
                                 {/* Out of Stock Overlay */}
                                 {isOutOfStock && (
@@ -1965,7 +1966,7 @@ const Customize: React.FC = () => {
                             {Object.entries(selectedFlowers).map(([flowerId, { flower, quantity }]) => (
                               <div key={flowerId} className="flex items-center gap-3 bg-white rounded-lg p-3 border border-gray-200">
                                 <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
-                                  <img src={flower.imageUrl} alt={flower.name} className="w-full h-full object-cover" />
+                                  <img src={flower.imageUrl} alt={flower.name} className="w-full h-full object-cover" loading="lazy" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="text-xs font-normal truncate" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>{quantity}x {flower.name}</div>

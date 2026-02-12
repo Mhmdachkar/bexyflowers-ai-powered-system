@@ -79,6 +79,7 @@ const PreDesignedBouquets: React.FC<PreDesignedBouquetsProps> = ({
                       src={bouquet.imageUrl}
                       alt={getProductImageAlt(bouquet)}
                       className="w-full h-full object-cover"
+                      loading="lazy"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';

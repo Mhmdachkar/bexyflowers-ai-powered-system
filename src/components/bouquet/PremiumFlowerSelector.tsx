@@ -184,6 +184,7 @@ const PremiumFlowerSelector: React.FC<FlowerSelectorProps> = ({
                       src={flower.imageUrl}
                       alt={flower.name}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                      loading="lazy"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';

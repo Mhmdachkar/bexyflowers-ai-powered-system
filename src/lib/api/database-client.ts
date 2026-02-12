@@ -21,6 +21,7 @@ interface DatabaseRequest {
   select?: string;
   orderBy?: { column: string; ascending?: boolean };
   limit?: number;
+  offset?: number;
   functionName?: string;
   functionParams?: Record<string, any>;
 }
@@ -130,6 +131,7 @@ export const db = {
       select?: string;
       orderBy?: { column: string; ascending?: boolean };
       limit?: number;
+      offset?: number;
     }
   ): Promise<T[]> {
     return databaseRequest<T[]>({

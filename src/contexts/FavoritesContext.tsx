@@ -18,51 +18,51 @@ export const FavoritesProvider: React.FC<FavoritesProviderProps> = ({ children }
   const isInitialLoad = useRef(true);
   const syncTimeoutRef = useRef<number | null>(null);
 
-  // Load favorites from database on mount - NON-BLOCKING
+  // Load favorites - DEFERRED DB: Skip database calls for new visitors (empty favorites) to reduce load during traffic spikes
   useEffect(() => {
-    const loadFavoritesFromDatabase = async () => {
+    const loadFavorites = async () => {
       try {
-        // CRITICAL FIX: Load from localStorage FIRST (instant, non-blocking)
-        // This prevents the page from freezing while waiting for database
+        let localFavorites: FavoriteProduct[] = [];
         try {
           const savedFavorites = localStorage.getItem(FAVORITES_STORAGE_KEY);
           if (savedFavorites) {
-            const localFavorites = JSON.parse(savedFavorites);
+            localFavorites = JSON.parse(savedFavorites);
             setFavorites(localFavorites);
-            setIsLoading(false); // Immediately show cached data
-            isInitialLoad.current = false;
           }
         } catch (error) {
           console.error('Error loading favorites from localStorage:', error);
         }
-        
-        // Then try to sync with database in the background (non-blocking)
-        // Only if we're in production or Netlify Dev is running
+        setIsLoading(false);
+        isInitialLoad.current = false;
+
+        // TRAFFIC OPTIMIZATION: Only call database when we have local favorites (returning visitor)
+        // New visitors with empty favorites skip DB entirely - saves ~3 function calls per passive visitor
+        if (localFavorites.length === 0) {
+          return; // No DB call for new/empty visitors
+        }
+
         if (import.meta.env.PROD || import.meta.env.VITE_USE_NETLIFY_FUNCTIONS === 'true') {
-          const dbFavorites = await getVisitorFavorites();
-          
-          if (dbFavorites.length > 0) {
-            // Database has favorites, use them
-            setFavorites(dbFavorites);
-            // Update localStorage as cache
-            localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(dbFavorites));
-          } else if (favorites.length > 0) {
-            // Sync local favorites to database if database is empty
-            await syncFavoritesToDatabase(favorites);
+          try {
+            const dbFavorites = await getVisitorFavorites();
+            if (dbFavorites.length > 0) {
+              setFavorites(dbFavorites);
+              localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(dbFavorites));
+            } else {
+              await syncFavoritesToDatabase(localFavorites);
+            }
+          } catch (error) {
+            if (!(error instanceof Error && error.message === 'NETLIFY_FUNCTIONS_UNAVAILABLE')) {
+              console.warn('Background favorites sync failed:', error);
+            }
           }
         }
       } catch (error) {
-        // Silently fail - we already have localStorage data
-        if (!(error instanceof Error && error.message === 'NETLIFY_FUNCTIONS_UNAVAILABLE')) {
-          console.warn('Background favorites sync failed:', error);
-        }
-      } finally {
         setIsLoading(false);
         isInitialLoad.current = false;
       }
     };
 
-    loadFavoritesFromDatabase();
+    loadFavorites();
   }, []);
 
   // Sync favorites to database whenever favorites changes (debounced)
@@ -181,7 +181,8 @@ export const FavoritesProvider: React.FC<FavoritesProviderProps> = ({ children }
     });
   };
 
-  const value: FavoritesContextType = {
+  // PERFORMANCE: Memoize context value to prevent unnecessary re-renders
+  const value: FavoritesContextType = useMemo(() => ({
     favorites,
     addToFavorites,
     removeFromFavorites,
@@ -189,7 +190,7 @@ export const FavoritesProvider: React.FC<FavoritesProviderProps> = ({ children }
     toggleFavorite,
     getTotalFavorites,
     clearFavorites,
-  };
+  }), [favorites, addToFavorites, removeFromFavorites, isFavorite, toggleFavorite, getTotalFavorites, clearFavorites]);
 
   return (
     <FavoritesContext.Provider value={value}>

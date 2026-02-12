@@ -260,7 +260,7 @@ async function executeOperation(request: DatabaseRequest): Promise<any> {
     throw new Error('Database not configured');
   }
 
-  const { operation, table, filters, data, select, orderBy, limit, functionName, functionParams } = request;
+  const { operation, table, filters, data, select, orderBy, limit, offset, functionName, functionParams } = request;
 
   // Note: Table name validation is done before calling this function
   // This function assumes valid input
@@ -318,8 +318,11 @@ async function executeOperation(request: DatabaseRequest): Promise<any> {
           query = query.order(orderBy.column, { ascending: orderBy.ascending !== false });
         }
 
-        // Apply limit
-        if (limit) {
+        // Apply offset (for pagination)
+        if (offset !== undefined && offset > 0) {
+          query = query.range(offset, offset + (limit || 10) - 1);
+        } else if (limit) {
+          // Apply limit only (no offset)
           query = query.limit(limit);
         }
 
