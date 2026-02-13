@@ -1,4 +1,4 @@
-import React, { useCallback, memo, startTransition } from "react";
+import React, { useCallback, memo, startTransition, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,7 +50,15 @@ const AdminLayoutComponent: React.FC<AdminLayoutProps> = ({ children }) => {
   const { toast } = useToast();
   
   // Enable route prefetching for faster navigation
-  useAdminPrefetch();
+  const { prefetchRoute } = useAdminPrefetch();
+
+  // Expose prefetch function globally for navigation items
+  useEffect(() => {
+    (window as any).__adminPrefetch = prefetchRoute;
+    return () => {
+      delete (window as any).__adminPrefetch;
+    };
+  }, [prefetchRoute]);
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem("adminAuthenticated");
@@ -111,6 +119,16 @@ const AdminLayoutComponent: React.FC<AdminLayoutProps> = ({ children }) => {
                     : 'hover:bg-gray-100 active:bg-gray-200'
                 }`}
                 onClick={(e) => handleNavigation(item.path, e)}
+                onMouseEnter={() => {
+                  // Prefetch route data on hover
+                  const prefetchFn = (window as any).__adminPrefetch;
+                  if (prefetchFn) prefetchFn(item.path);
+                }}
+                onFocus={() => {
+                  // Prefetch route data on focus (keyboard navigation)
+                  const prefetchFn = (window as any).__adminPrefetch;
+                  if (prefetchFn) prefetchFn(item.path);
+                }}
               >
                 <Icon
                   className={`w-5 h-5 ${

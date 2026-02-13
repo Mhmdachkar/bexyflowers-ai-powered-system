@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback, startTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -6,6 +6,7 @@ import { gsap } from 'gsap';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRoutePrefetch } from '@/hooks/useRoutePrefetch';
 import { useRouteState } from '@/contexts/RouteStateContext';
+import { useNavigationPrefetch } from '@/hooks/useNavigationPrefetch';
 import {
   ShoppingBag,
   Menu,
@@ -140,6 +141,9 @@ const UltraNavigation = () => {
   const { getTotalFavorites } = useFavorites();
   const cartItems = getTotalItems();
   const favoritesCount = getTotalFavorites();
+  
+  // React Query-based navigation prefetching
+  const { handleLinkHover, handleLinkFocus } = useNavigationPrefetch();
   const isMobile = useIsMobile();
   const shouldReduceMotion = useReducedMotion();
 
@@ -215,16 +219,20 @@ const UltraNavigation = () => {
   const { handlePrefetch, cancelPrefetch } = useRoutePrefetch();
   const { navigateWithState } = useRouteState();
 
-  const handleNavigation = (path: string, state?: any) => {
+  const handleNavigation = useCallback((path: string, state?: any) => {
     cancelPrefetch();
 
-    // Force scroll reset around navigation to ensure new page starts at top
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    // Use startTransition for smoother navigation
+    startTransition(() => {
+      // Force scroll reset around navigation to ensure new page starts at top
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
 
-    // Use optimized navigation with state caching
-    navigateWithState(path, state);
+      // Use optimized navigation with state caching
+      navigateWithState(path, state);
 
-    setIsMenuOpen(false);
+      setIsMenuOpen(false);
+    });
+  }, [cancelPrefetch, navigateWithState]);
 
     // Restore body scroll on mobile
     if (isMobile) {
@@ -336,8 +344,12 @@ const UltraNavigation = () => {
                             : 'text-foreground hover:text-foreground'
                             }`}
                           onClick={() => handleNavigation(item.path)}
-                          onMouseEnter={() => handlePrefetch(item.path, 100)}
+                          onMouseEnter={() => {
+                            handlePrefetch(item.path, 100);
+                            handleLinkHover(item.path);
+                          }}
                           onMouseLeave={cancelPrefetch}
+                          onFocus={() => handleLinkFocus(item.path)}
                         >
                           <motion.span
                             className="relative z-10 whitespace-nowrap"
@@ -715,8 +727,19 @@ const UltraNavigation = () => {
                                 : 'text-foreground hover:text-foreground'
                                 }`}
                               onClick={() => handleNavigation(item.path)}
-                              onMouseEnter={() => !isMobile && handlePrefetch(item.path, 100)}
-                              onTouchStart={() => isMobile && handlePrefetch(item.path, 50)}
+                              onMouseEnter={() => {
+                                if (!isMobile) {
+                                  handlePrefetch(item.path, 100);
+                                  handleLinkHover(item.path);
+                                }
+                              }}
+                              onTouchStart={() => {
+                                if (isMobile) {
+                                  handlePrefetch(item.path, 50);
+                                  handleLinkHover(item.path);
+                                }
+                              }}
+                              onFocus={() => handleLinkFocus(item.path)}
                               style={{
                                 WebkitTapHighlightColor: 'transparent',
                                 touchAction: 'manipulation',
