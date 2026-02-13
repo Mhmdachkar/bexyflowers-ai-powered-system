@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import SEO from '@/components/SEO';
+import { getProductImageAlt } from '@/lib/imageAltUtils';
 import { motion } from 'framer-motion';
 import {
   ShoppingCart,
@@ -472,7 +473,7 @@ Please confirm my order and let me know about delivery timing. Thank you! 🌸`;
                   >
                     <img
                       src={item.image}
-                      alt={item.title}
+                      alt={getProductImageAlt({ name: item.title })}
                       className="w-14 h-14 object-cover rounded-lg flex-shrink-0"
                     />
                     <div className="flex-1 min-w-0">

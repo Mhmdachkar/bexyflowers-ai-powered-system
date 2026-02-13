@@ -12,6 +12,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import SignatureQuickView from './SignatureQuickView';
 import { useSignatureCollection } from '@/hooks/useSignatureCollection';
 import { encodeImageUrl } from '@/lib/imageUtils';
+import { getProductImageAlt } from '@/lib/imageAltUtils';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -28,15 +29,9 @@ const UltraFeaturedBouquets = () => {
   const [isAutoScroll, setIsAutoScroll] = useState(true);
 
   // Use React Query hook for optimized data fetching
-  // Force refetch on mount to ensure we always have the latest data
-  const { data: signatureCollections, isLoading: loading, refetch } = useSignatureCollection();
-  
-  // Refetch on mount only. No interval - useSignatureCollection has refetchOnWindowFocus;
-  // periodic refetch was contributing to excessive requests and potential freezes.
-  useEffect(() => {
-    refetch();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run only on mount
-  }, []);
+  // PERFORMANCE: Removed redundant refetch() - useSignatureCollection already has refetchOnMount: true
+  // This was causing duplicate API calls on every component mount
+  const { data: signatureCollections, isLoading: loading } = useSignatureCollection();
 
   // Transform signature collections to bouquets format
   // IMPORTANT: Use custom fields from signature_collections if available, otherwise use product defaults
@@ -228,9 +223,6 @@ const UltraFeaturedBouquets = () => {
 
   return (
     <>
-      {/* Google Fonts Import */}
-      <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet" />
-      
     <section 
       ref={sectionRef}
         className="py-12 sm:py-16 md:py-20 lg:py-24 px-3 sm:px-4 md:px-6 relative overflow-hidden"
@@ -393,7 +385,7 @@ const UltraFeaturedBouquets = () => {
                      >
                   <motion.img
                     src={bouquet.image}
-                    alt={bouquet.name}
+                    alt={getProductImageAlt(bouquet)}
                     width="400"
                     height="500"
                          style={{
@@ -410,9 +402,6 @@ const UltraFeaturedBouquets = () => {
                          onError={(e) => {
                            console.error('Failed to load signature collection image:', bouquet.image, bouquet.name, e);
                            (e.target as HTMLImageElement).style.display = 'none';
-                         }}
-                         onLoad={() => {
-                           console.log('Successfully loaded signature collection image:', bouquet.image, bouquet.name);
                          }}
                        />
 

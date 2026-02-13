@@ -65,7 +65,7 @@ const Footer = () => {
             <ul className="space-y-2 font-body">
               <li><a href="/collection" className="text-background/80 hover:text-primary transition-colors">Shop All</a></li>
               <li><a href="/customize" className="text-background/80 hover:text-primary transition-colors">Custom Bouquets</a></li>
-              <li><a href="/collection" className="text-background/80 hover:text-primary transition-colors">Occasions</a></li>
+              <li><a href="/guides" className="text-background/80 hover:text-primary transition-colors">Occasions</a></li>
               <li><a href="/about" className="text-background/80 hover:text-primary transition-colors">About Us</a></li>
               <li><a href="#contact" className="text-background/80 hover:text-primary transition-colors">Contact</a></li>
             </ul>
@@ -82,7 +82,7 @@ const Footer = () => {
             <h4 className="font-luxury text-xl font-normal text-primary" style={{ letterSpacing: '-0.02em' }}>Customer Service</h4>
             <ul className="space-y-2 font-body">
               <li><a href="#" className="text-background/80 hover:text-primary transition-colors">Delivery Info</a></li>
-              <li><a href="#" className="text-background/80 hover:text-primary transition-colors">Care Guide</a></li>
+              <li><a href="/guides" className="text-background/80 hover:text-primary transition-colors">Care Guide</a></li>
               <li><a href="#" className="text-background/80 hover:text-primary transition-colors">Returns</a></li>
               <li><a href="#" className="text-background/80 hover:text-primary transition-colors">FAQ</a></li>
               <li><a href="#" className="text-background/80 hover:text-primary transition-colors">Support</a></li>

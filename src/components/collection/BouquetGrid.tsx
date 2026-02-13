@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { collectionQueryKeys } from "@/hooks/useCollectionProducts";
 import { OptimizedImage } from "@/components/OptimizedImage";
 import { PriceDisplay } from "@/components/PriceDisplay";
+import { getProductImageAlt } from "@/lib/imageAltUtils";
 import type { Bouquet } from "@/types/bouquet";
 
 interface BouquetGridProps {
@@ -157,7 +158,7 @@ const BouquetCard = memo(({
       <div className="relative aspect-[3/4] overflow-hidden bg-[#F5F5F5]">
         <OptimizedImage
           src={bouquet.image}
-          alt={bouquet.name}
+          alt={getProductImageAlt(bouquet)}
           className={`w-full h-full object-cover object-center transition-transform duration-500 ease-out group-hover:scale-110 ${bouquet.is_out_of_stock ? 'grayscale' : ''}`}
           loading="lazy"
           decoding="async"

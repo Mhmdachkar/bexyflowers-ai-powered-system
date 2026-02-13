@@ -284,9 +284,12 @@ function validateSignature(
 
 /**
  * Check for replay attacks (nonce validation)
+ * PERFORMANCE: Optimized cleanup to run periodically instead of on every request
  */
 const nonceStore = new Map<string, number>();
 const NONCE_CLEANUP_INTERVAL = 10 * 60 * 1000; // 10 minutes
+const NONCE_MAX_SIZE = 10000;
+let lastCleanupTime = Date.now();
 
 function checkReplay(nonce: string, timestamp: number): { valid: boolean; error?: string } {
   // Check if nonce already used
@@ -304,13 +307,20 @@ function checkReplay(nonce: string, timestamp: number): { valid: boolean; error?
   // Store nonce
   nonceStore.set(nonce, timestamp);
   
-  // Cleanup old nonces
-  if (nonceStore.size > 10000) {
-    for (const [storedNonce, storedTimestamp] of nonceStore.entries()) {
+  // PERFORMANCE: Only cleanup periodically or when size exceeds threshold
+  // This prevents O(n) iteration on every request
+  const timeSinceLastCleanup = now - lastCleanupTime;
+  if (nonceStore.size > NONCE_MAX_SIZE || timeSinceLastCleanup > NONCE_CLEANUP_INTERVAL) {
+    lastCleanupTime = now;
+    // Use array iteration for better performance than entries()
+    const expiredNonces: string[] = [];
+    nonceStore.forEach((storedTimestamp, storedNonce) => {
       if (now - storedTimestamp > timestampTolerance) {
-        nonceStore.delete(storedNonce);
+        expiredNonces.push(storedNonce);
       }
-    }
+    });
+    // Delete in separate pass to avoid iterator invalidation
+    expiredNonces.forEach(n => nonceStore.delete(n));
   }
   
   return { valid: true };

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useRef, useMemo } from 'react';
 import { CartItem, CartContextType, Product } from '@/types/cart';
 import { getVisitorCart, upsertVisitorCartItem, removeVisitorCartItem, updateVisitorCartItemQuantity, clearVisitorCart, syncCartToDatabase } from '@/lib/api/visitor-cart';
 
@@ -19,51 +19,51 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const isInitialLoad = useRef(true);
   const syncTimeoutRef = useRef<number | null>(null);
 
-  // Load cart from database on mount - NON-BLOCKING
+  // Load cart - DEFERRED DB: Skip database calls for new visitors (empty cart) to reduce load during traffic spikes
   useEffect(() => {
-    const loadCartFromDatabase = async () => {
+    const loadCart = async () => {
       try {
-        // CRITICAL FIX: Load from localStorage FIRST (instant, non-blocking)
-        // This prevents the page from freezing while waiting for database
+        let localCart: CartItem[] = [];
         try {
           const savedCart = localStorage.getItem(CART_STORAGE_KEY);
           if (savedCart) {
-            const localCart = JSON.parse(savedCart);
+            localCart = JSON.parse(savedCart);
             setCartItems(localCart);
-            setIsLoading(false); // Immediately show cached data
-            isInitialLoad.current = false;
           }
         } catch (error) {
           console.error('Error loading cart from localStorage:', error);
         }
-        
-        // Then try to sync with database in the background (non-blocking)
-        // Only if we're in production or Netlify Dev is running
-        if (import.meta.env.PROD || import.meta.env.VITE_USE_NETLIFY_FUNCTIONS === 'true') {
-          const dbCart = await getVisitorCart();
+        setIsLoading(false);
+        isInitialLoad.current = false;
 
-          if (dbCart.length > 0) {
-            // Database has cart items, use them
-            setCartItems(dbCart);
-            // Update localStorage as cache
-            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(dbCart));
-          } else if (cartItems.length > 0) {
-            // Sync local cart to database if database is empty
-            await syncCartToDatabase(cartItems);
+        // TRAFFIC OPTIMIZATION: Only call database when we have local cart data (returning visitor)
+        // New visitors with empty cart skip DB entirely - saves ~3 function calls per passive visitor
+        if (localCart.length === 0) {
+          return; // No DB call for new/empty visitors
+        }
+
+        if (import.meta.env.PROD || import.meta.env.VITE_USE_NETLIFY_FUNCTIONS === 'true') {
+          try {
+            const dbCart = await getVisitorCart();
+            if (dbCart.length > 0) {
+              setCartItems(dbCart);
+              localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(dbCart));
+            } else {
+              await syncCartToDatabase(localCart);
+            }
+          } catch (error) {
+            if (!(error instanceof Error && error.message === 'NETLIFY_FUNCTIONS_UNAVAILABLE')) {
+              console.warn('Background cart sync failed:', error);
+            }
           }
         }
       } catch (error) {
-        // Silently fail - we already have localStorage data
-        if (!(error instanceof Error && error.message === 'NETLIFY_FUNCTIONS_UNAVAILABLE')) {
-          console.warn('Background cart sync failed:', error);
-        }
-      } finally {
         setIsLoading(false);
         isInitialLoad.current = false;
       }
     };
 
-    loadCartFromDatabase();
+    loadCart();
   }, []);
 
   // Sync cart to database whenever cartItems changes (debounced)
@@ -215,7 +215,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     });
   };
 
-  const value: CartContextType = {
+  // PERFORMANCE: Memoize context value to prevent unnecessary re-renders
+  const value: CartContextType = useMemo(() => ({
     cartItems,
     addToCart,
     removeFromCart,
@@ -225,7 +226,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     clearCart,
     isCartOpen,
     setIsCartOpen,
-  };
+  }), [cartItems, isCartOpen, addToCart, removeFromCart, updateQuantity, getTotalItems, getTotalPrice, clearCart]);
 
   return (
     <CartContext.Provider value={value}>

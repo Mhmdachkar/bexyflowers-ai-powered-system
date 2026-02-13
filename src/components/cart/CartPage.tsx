@@ -1,5 +1,6 @@
 import React from 'react';
 import SEO from '@/components/SEO';
+import { getProductImageAlt } from '@/lib/imageAltUtils';
 import { motion } from 'framer-motion';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
@@ -147,7 +148,7 @@ const CartPage: React.FC = () => {
                     <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
                       <img
                         src={item.image}
-                        alt={item.title}
+                        alt={getProductImageAlt({ name: item.title })}
                         className="w-full h-full object-cover"
                       />
                     </div>

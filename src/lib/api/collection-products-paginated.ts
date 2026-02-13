@@ -55,12 +55,12 @@ export async function getCollectionProductsPaginated(
 
   const total = Array.isArray(countResult) ? countResult.length : 0;
 
-  // Get paginated data
+  // Get paginated data with offset
   const data = await db.select('collection_products', {
     filters: whereFilters,
     orderBy: { column: 'created_at', ascending: false },
     limit: pageSize,
-    // Note: offset needs to be handled in the database proxy
+    offset: offset,
   });
 
   const totalPages = Math.ceil(total / pageSize);

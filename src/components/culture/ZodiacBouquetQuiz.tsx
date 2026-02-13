@@ -20,6 +20,7 @@ import {
   ZodiacSign, 
   ZodiacBouquet 
 } from '@/data/zodiac';
+import { getProductImageAlt } from '@/lib/imageAltUtils';
 
 // Luxury Gold Accent Component
 const GoldAccent = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
@@ -588,7 +589,7 @@ const BouquetSelectionStep = ({
               <div className="w-32 h-32 bg-white rounded-2xl overflow-hidden flex-shrink-0 border-2 border-[#E8D4A8] shadow-lg">
                 <img
                   src={bouquet.image}
-                  alt={bouquet.name}
+                  alt={getProductImageAlt(bouquet)}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -716,7 +717,7 @@ const ZodiacResult = ({
             >
               <img
                 src={bouquet.image}
-                alt={bouquet.name}
+                alt={getProductImageAlt(bouquet)}
                 className="w-full h-96 object-cover rounded-3xl shadow-2xl border-2 border-[#E8D4A8]"
               />
             </motion.div>

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { OptimizedImage } from "@/components/OptimizedImage";
 import { PriceDisplay } from "@/components/PriceDisplay";
+import { getProductImageAlt } from "@/lib/imageAltUtils";
 import { useImagePreloader } from "@/hooks/useImagePreloader";
 import type { Bouquet } from "@/types/bouquet";
 
@@ -105,7 +106,7 @@ export const FeaturedCarousel = ({ bouquets, onBouquetClick }: FeaturedCarouselP
                     <div className="relative h-2/3 overflow-hidden bg-[#F5F5F5]">
                       <OptimizedImage
                         src={bouquet.image}
-                        alt={bouquet.name}
+                        alt={getProductImageAlt(bouquet)}
                         width={450}
                         height={550}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"

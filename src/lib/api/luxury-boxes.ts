@@ -65,11 +65,16 @@ export async function getLuxuryBox(id: string): Promise<LuxuryBox | null> {
 
 /**
  * Get luxury box with colors and sizes
+ * PERFORMANCE: Use single query with joins to avoid N+1
  */
 export async function getLuxuryBoxWithDetails(id: string): Promise<LuxuryBoxWithDetails | null> {
   const { data: box, error: boxError } = await supabase
     .from('luxury_boxes')
-    .select('*')
+    .select(`
+      *,
+      box_colors(*),
+      box_sizes(*)
+    `)
     .eq('id', id)
     .single();
 
@@ -80,30 +85,22 @@ export async function getLuxuryBoxWithDetails(id: string): Promise<LuxuryBoxWith
     throw new Error(`Failed to fetch luxury box: ${boxError.message}`);
   }
 
-  const { data: colors, error: colorsError } = await supabase
-    .from('box_colors')
-    .select('*')
-    .eq('box_id', id)
-    .order('created_at', { ascending: true });
+  // Supabase returns nested objects, transform to match expected type
+  const colors = (box.box_colors || []).sort((a: any, b: any) => 
+    new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  );
+  
+  const sizes = (box.box_sizes || []).sort((a: any, b: any) => 
+    a.capacity - b.capacity
+  );
 
-  if (colorsError) {
-    throw new Error(`Failed to fetch box colors: ${colorsError.message}`);
-  }
-
-  const { data: sizes, error: sizesError } = await supabase
-    .from('box_sizes')
-    .select('*')
-    .eq('box_id', id)
-    .order('capacity', { ascending: true });
-
-  if (sizesError) {
-    throw new Error(`Failed to fetch box sizes: ${sizesError.message}`);
-  }
+  // Remove nested objects from box and add as top-level arrays
+  const { box_colors, box_sizes, ...boxData } = box as any;
 
   return {
-    ...box,
-    colors: colors || [],
-    sizes: sizes || [],
+    ...boxData,
+    colors,
+    sizes,
   };
 }
 

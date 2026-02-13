@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, memo, useCallback, Suspense } from 'react';
 import SEO from '@/components/SEO';
+import { getProductImageAlt } from '@/lib/imageAltUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -311,7 +312,7 @@ const Favorites = memo(() => {
                         <div className="relative h-48 sm:h-72 lg:h-80 overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100">
                           <motion.img
                             src={favorite.image || favorite.imageUrl}
-                            alt={favorite.title || favorite.name || 'Favorite'}
+                            alt={getProductImageAlt({ name: favorite.title || favorite.name || 'Favorite' })}
                             className="w-full h-full object-cover"
                             loading="lazy"
                             decoding="async"
