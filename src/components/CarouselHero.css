@@ -151,6 +151,10 @@
     padding-right: 0 !important;
     /* Video extends behind header - visible through transparent nav */
     z-index: 0 !important;
+    /* FIX: Allow scroll on iOS - video captures touch and blocks scroll until tap.
+       pointer-events: none lets touches pass through to the page for scrolling.
+       Video is decorative (autoplay, muted) so no interaction is needed. */
+    pointer-events: none !important;
   }
   
   .carousel-hero-wrapper {
