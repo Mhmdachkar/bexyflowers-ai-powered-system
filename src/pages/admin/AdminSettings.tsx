@@ -21,6 +21,10 @@ import {
   EyeOff,
   CheckCircle,
   AlertCircle,
+  MapPin,
+  Phone,
+  MessageCircle,
+  Building,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
@@ -57,6 +61,14 @@ const AdminSettings = () => {
     reviewAlerts: false,
   });
 
+  // Business Information Settings
+  const [businessInfo, setBusinessInfo] = useState({
+    whatsappUrl: "",
+    googleMapsUrl: "",
+    phoneNumber: "",
+    address: "",
+  });
+
   useEffect(() => {
     // Check authentication
     const isAuthenticated = localStorage.getItem("adminAuthenticated");
@@ -74,6 +86,16 @@ const AdminSettings = () => {
       email: adminEmail,
       currentEmail: adminEmail,
     });
+
+    // Load business information
+    const savedBusinessInfo = localStorage.getItem("businessInfo");
+    if (savedBusinessInfo) {
+      try {
+        setBusinessInfo(JSON.parse(savedBusinessInfo));
+      } catch (e) {
+        console.error("Failed to load business info", e);
+      }
+    }
   }, [navigate]);
 
   const handleProfileUpdate = async () => {
@@ -198,6 +220,69 @@ const AdminSettings = () => {
       toast({
         title: "Error",
         description: "Failed to save notification settings.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const validateWhatsAppUrl = (url: string): boolean => {
+    if (!url) return true; // Empty is valid
+    // WhatsApp click to chat URL format: https://wa.me/PHONENUMBER
+    const whatsappPattern = /^https:\/\/wa\.me\/\d+(\?text=.*)?$/;
+    return whatsappPattern.test(url);
+  };
+
+  const validateGoogleMapsUrl = (url: string): boolean => {
+    if (!url) return true; // Empty is valid
+    // Google Maps URL patterns
+    const patternsArray = [
+      /^https:\/\/(www\.)?google\.com\/maps/, // Google Maps link
+      /^https:\/\/maps\.app\.goo\.gl/, // Short Google Maps link
+      /^https:\/\/goo\.gl\/maps/, // Legacy short link
+    ];
+    return patternsArray.some(pattern => pattern.test(url));
+  };
+
+  const handleBusinessInfoUpdate = async () => {
+    // Validate WhatsApp URL
+    if (businessInfo.whatsappUrl && !validateWhatsAppUrl(businessInfo.whatsappUrl)) {
+      toast({
+        title: "Invalid WhatsApp URL",
+        description: "WhatsApp URL should be in format: https://wa.me/PHONENUMBER",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate Google Maps URL
+    if (businessInfo.googleMapsUrl && !validateGoogleMapsUrl(businessInfo.googleMapsUrl)) {
+      toast({
+        title: "Invalid Google Maps URL",
+        description: "Please provide a valid Google Maps link",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Save to localStorage
+      localStorage.setItem("businessInfo", JSON.stringify(businessInfo));
+      
+      toast({
+        title: "Business Information Saved",
+        description: "Your business details have been updated successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save business information.",
         variant: "destructive",
       });
     } finally {
@@ -421,11 +506,121 @@ const AdminSettings = () => {
             </Card>
           </motion.div>
 
-          {/* Notification Settings */}
+          {/* Business Information */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
+          >
+            <Card className="border-0 shadow-lg">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Building className="w-5 h-5 text-primary" />
+                  <CardTitle className="text-xl">Business Information</CardTitle>
+                </div>
+                <CardDescription>Configure your business contact details and location</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="whatsappUrl">WhatsApp Click to Chat URL</Label>
+                  <div className="relative">
+                    <MessageCircle className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="whatsappUrl"
+                      type="url"
+                      value={businessInfo.whatsappUrl}
+                      onChange={(e) => setBusinessInfo({ ...businessInfo, whatsappUrl: e.target.value })}
+                      placeholder="https://wa.me/1234567890"
+                      className="pl-10"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Format: https://wa.me/PHONENUMBER (e.g., https://wa.me/9613123456)
+                  </p>
+                  {businessInfo.whatsappUrl && !validateWhatsAppUrl(businessInfo.whatsappUrl) && (
+                    <p className="text-xs text-red-600 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      Invalid WhatsApp click to chat link
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="googleMapsUrl">Google Maps Location URL</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="googleMapsUrl"
+                      type="url"
+                      value={businessInfo.googleMapsUrl}
+                      onChange={(e) => setBusinessInfo({ ...businessInfo, googleMapsUrl: e.target.value })}
+                      placeholder="https://maps.app.goo.gl/..."
+                      className="pl-10"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Get this from Google Maps: Search your business → Click "Share" → Copy link
+                  </p>
+                  {businessInfo.googleMapsUrl && !validateGoogleMapsUrl(businessInfo.googleMapsUrl) && (
+                    <p className="text-xs text-red-600 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      Invalid Google Maps link
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phoneNumber">Business Phone Number</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="phoneNumber"
+                      type="tel"
+                      value={businessInfo.phoneNumber}
+                      onChange={(e) => setBusinessInfo({ ...businessInfo, phoneNumber: e.target.value })}
+                      placeholder="+961 3 123 456"
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="address">Business Address</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="address"
+                      value={businessInfo.address}
+                      onChange={(e) => setBusinessInfo({ ...businessInfo, address: e.target.value })}
+                      placeholder="123 Main Street, Beirut, Lebanon"
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-4">
+                  <Button
+                    onClick={handleBusinessInfoUpdate}
+                    disabled={loading}
+                    className="gap-2"
+                    style={{
+                      background: `linear-gradient(135deg, ${GOLD_COLOR} 0%, rgba(199, 158, 72, 0.9) 100%)`,
+                      color: "white",
+                    }}
+                  >
+                    <Save className="w-4 h-4" />
+                    Save Business Info
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Notification Settings */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
           >
             <Card className="border-0 shadow-lg">
               <CardHeader>
@@ -514,7 +709,7 @@ const AdminSettings = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.5 }}
           >
             <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50">
               <CardContent className="pt-6">

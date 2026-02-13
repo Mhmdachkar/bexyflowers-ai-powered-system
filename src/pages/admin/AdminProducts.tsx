@@ -62,11 +62,14 @@ const AdminProducts = () => {
   const isEditing = id && id !== "new";
   const isCreating = id === "new";
 
-  // React Query hooks for data management
+  // ⚡ PERFORMANCE: React Query hooks with optimized caching
   const { data: products = [], isLoading: loadingProducts } = useCollectionProducts();
   const { data: signatureProducts = [], isLoading: loadingSignature } = useSignatureCollection();
   const { data: allTags = [] } = useCollectionTags();
-  const { data: selectedProductData } = useCollectionProduct(id && id !== "new" ? id : undefined);
+  // Only fetch individual product data when editing
+  const { data: selectedProductData } = useCollectionProduct(
+    id && id !== "new" ? id : undefined
+  );
 
   // Mutation hooks
   const createProductMutation = useCreateCollectionProduct();

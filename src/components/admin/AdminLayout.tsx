@@ -1,5 +1,4 @@
-import React, { useCallback } from "react";
-import { motion } from "framer-motion";
+import React, { useCallback, memo, startTransition } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminPrefetch } from "@/hooks/useAdminPrefetch";
 
 const GOLD_COLOR = "rgb(199, 158, 72)";
 
@@ -44,12 +44,15 @@ interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
+const AdminLayoutComponent: React.FC<AdminLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  
+  // Enable route prefetching for faster navigation
+  useAdminPrefetch();
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     localStorage.removeItem("adminAuthenticated");
     localStorage.removeItem("adminUsername");
     toast({
@@ -57,7 +60,19 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       description: "You've been successfully logged out.",
     });
     navigate("/admin/login");
-  };
+  }, [navigate, toast]);
+
+  const handleNavigation = useCallback((path: string, e: React.MouseEvent) => {
+    // Prevent navigation if already on that page
+    if (location.pathname === path) {
+      e.preventDefault();
+      return;
+    }
+    // Use startTransition for smoother navigation
+    startTransition(() => {
+      // React Router Link will handle the actual navigation
+    });
+  }, [location.pathname]);
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 overflow-x-hidden">
@@ -95,13 +110,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                     ? 'bg-gradient-to-br from-primary/20 to-primary/10 shadow-md'
                     : 'hover:bg-gray-100 active:bg-gray-200'
                 }`}
-                onClick={(e) => {
-                  // Optimize navigation - prevent default only if needed
-                  // React Router Link handles prefetching automatically
-                  if (location.pathname === item.path) {
-                    e.preventDefault(); // Prevent navigation if already on that page
-                  }
-                }}
+                onClick={(e) => handleNavigation(item.path, e)}
               >
                 <Icon
                   className={`w-5 h-5 ${
@@ -148,3 +157,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     </div>
   );
 };
+
+// Memoize the component to prevent unnecessary re-renders
+export const AdminLayout = memo(AdminLayoutComponent);

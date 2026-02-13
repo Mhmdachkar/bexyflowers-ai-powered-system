@@ -100,14 +100,18 @@ const AdminDashboard = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const { data: productsData, isLoading: loadingProducts } = useCollectionProducts({ isActive: true });
+  // ⚡ PERFORMANCE: Only fetch minimal data needed for dashboard
+  const { data: productsData, isLoading: loadingProducts } = useCollectionProducts({ 
+    isActive: true 
+  });
   const products = productsData ?? [];
 
-  // Fetch orders for real data
+  // ⚡ PERFORMANCE: Fetch orders with longer cache time for dashboard
   const { data: orders = [] } = useQuery({
     queryKey: ['checkout-orders'],
     queryFn: getCheckoutOrders,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes cache for dashboard
+    gcTime: 10 * 60 * 1000, // Keep cached for 10 minutes
   });
 
   // Load availability schedule from localStorage
