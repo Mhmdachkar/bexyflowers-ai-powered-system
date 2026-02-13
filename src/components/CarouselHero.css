@@ -12,15 +12,8 @@
   --italic-font: "EB Garamond", serif;
 }
 
-/* Ensure video covers full viewport on mobile */
-@media screen and (max-width: 768px) {
-  html,
-  body {
-    overflow-x: hidden;
-    width: 100%;
-    max-width: 100vw;
-  }
-}
+/* NOTE: Do NOT set html/body overflow in this file - index.css handles scroll enablement
+   for mobile (overflow-y: auto, touch-action: pan-y) when Lenis is disabled. */
 
 .carousel-hero-container {
   width: 100%;
@@ -167,6 +160,8 @@
     border-radius: 0;
     box-sizing: border-box;
     overflow-x: hidden;
+    /* FIX: Allow page scroll - do not trap scroll with overflow-y: hidden */
+    overflow-y: visible;
   }
   
   /* Remove overlay - text blends directly with video */
