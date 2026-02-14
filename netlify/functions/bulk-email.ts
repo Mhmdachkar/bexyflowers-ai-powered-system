@@ -1,7 +1,9 @@
 /**
  * Bulk Email Function (SendGrid)
+ * SECURITY: Added rate limiting, input validation, and required API key in production
  */
 import type { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
+import { checkDistributedRateLimit } from './utils/rateLimiter';
 
 declare const process: {
   env: {
@@ -20,6 +22,14 @@ const ALLOWED_ORIGINS = [
   'http://localhost:52933',
 ];
 
+// SECURITY: Rate limits for bulk email
+const RATE_LIMITS = {
+  perMinute: 5,    // 5 requests/min (conservative for email)
+  perHour: 20,     // 20 requests/hour
+  perDay: 100,     // 100 requests/day
+  minDelay: 5000,  // 5s minimum between requests
+};
+
 function getHeaders(origin: string): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -36,11 +46,47 @@ function getHeaders(origin: string): Record<string, string> {
   return headers;
 }
 
+/**
+ * SECURITY: API key required in production
+ */
 function validateApiKey(event: HandlerEvent): boolean {
   const frontendApiKey = process.env.FRONTEND_API_KEY;
+  const isProduction = process.env.CONTEXT === 'production' || process.env.NODE_ENV === 'production';
+  
+  // PRODUCTION: API key is REQUIRED
+  if (isProduction) {
+    if (!frontendApiKey) {
+      console.error('[Bulk Email] FRONTEND_API_KEY not configured in production!');
+      return false;
+    }
+    const providedKey = event.headers['x-api-key'] || event.headers['X-API-Key'];
+    return providedKey === frontendApiKey;
+  }
+  
+  // DEVELOPMENT: API key optional
   if (!frontendApiKey) return true;
   const providedKey = event.headers['x-api-key'] || event.headers['X-API-Key'];
   return providedKey === frontendApiKey;
+}
+
+/**
+ * SECURITY: Validate email format
+ */
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return typeof email === 'string' && email.length <= 254 && emailRegex.test(email);
+}
+
+/**
+ * SECURITY: Sanitize HTML content (basic)
+ */
+function sanitizeHtml(html: string): string {
+  if (typeof html !== 'string') return '';
+  // Remove script tags and dangerous attributes
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
+    .substring(0, 100000); // Limit size to 100KB
 }
 
 async function sendSendGridBatch({

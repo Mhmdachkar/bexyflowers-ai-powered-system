@@ -1,4 +1,4 @@
-import { supabase } from '../supabase';
+import { db } from './database-client';
 import { uploadImage, uploadMultipleImages, deleteImage, extractPathFromUrl } from '../supabase-storage';
 import type { Database } from '../supabase';
 
@@ -8,60 +8,49 @@ type CollectionProductUpdate = Database['public']['Tables']['collection_products
 
 /**
  * Get all collection products
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function getCollectionProducts(filters?: {
   category?: string;
   featured?: boolean;
   isActive?: boolean;
 }): Promise<CollectionProduct[]> {
-  let query = supabase
-    .from('collection_products')
-    .select('*')
-    .order('created_at', { ascending: false });
-
+  const dbFilters: Record<string, any> = {};
+  
   if (filters?.category) {
-    query = query.eq('category', filters.category);
+    dbFilters.category = filters.category;
   }
-
   if (filters?.featured !== undefined) {
-    query = query.eq('featured', filters.featured);
+    dbFilters.featured = filters.featured;
   }
-
   if (filters?.isActive !== undefined) {
-    query = query.eq('is_active', filters.isActive);
+    dbFilters.is_active = filters.isActive;
   }
 
-  const { data, error } = await query;
-
-  if (error) {
-    throw new Error(`Failed to fetch collection products: ${error.message}`);
-  }
+  const data = await db.select<CollectionProduct>('collection_products', {
+    filters: Object.keys(dbFilters).length > 0 ? dbFilters : undefined,
+    orderBy: { column: 'created_at', ascending: false },
+  });
 
   return data;
 }
 
 /**
  * Get a single collection product by ID
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function getCollectionProduct(id: string): Promise<CollectionProduct | null> {
-  const { data, error } = await supabase
-    .from('collection_products')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const data = await db.select<CollectionProduct>('collection_products', {
+    filters: { id },
+    limit: 1,
+  });
 
-  if (error) {
-    if (error.code === 'PGRST116') {
-      return null; // Not found
-    }
-    throw new Error(`Failed to fetch collection product: ${error.message}`);
-  }
-
-  return data;
+  return data && data.length > 0 ? data[0] : null;
 }
 
 /**
  * Create a new collection product
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function createCollectionProduct(
   product: Omit<CollectionProductInsert, 'id' | 'created_at' | 'updated_at'>,
@@ -78,17 +67,13 @@ export async function createCollectionProduct(
     }
   }
 
-  const { data, error } = await supabase
-    .from('collection_products')
-    .insert({
-      ...product,
-      image_urls: imageUrls.length > 0 ? imageUrls : product.image_urls || [],
-    })
-    .select()
-    .single();
+  const data = await db.insert<CollectionProduct>('collection_products', {
+    ...product,
+    image_urls: imageUrls.length > 0 ? imageUrls : product.image_urls || [],
+  });
 
-  if (error) {
-    throw new Error(`Failed to create collection product: ${error.message}`);
+  if (!data) {
+    throw new Error('Failed to create collection product');
   }
 
   return data;
@@ -96,6 +81,7 @@ export async function createCollectionProduct(
 
 /**
  * Update a collection product
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function updateCollectionProduct(
   id: string,
@@ -132,25 +118,21 @@ export async function updateCollectionProduct(
   const remainingUrls = currentImageUrls.filter((url) => !imagesToDelete?.includes(url));
   const finalImageUrls = [...remainingUrls, ...newImageUrls];
 
-  const { data, error } = await supabase
-    .from('collection_products')
-    .update({
-      ...updates,
-      image_urls: finalImageUrls.length > 0 ? finalImageUrls : updates.image_urls,
-    })
-    .eq('id', id)
-    .select()
-    .single();
+  const data = await db.update<CollectionProduct>('collection_products', { id }, {
+    ...updates,
+    image_urls: finalImageUrls.length > 0 ? finalImageUrls : updates.image_urls,
+  });
 
-  if (error) {
-    throw new Error(`Failed to update collection product: ${error.message}`);
+  if (!data || data.length === 0) {
+    throw new Error('Failed to update collection product');
   }
 
-  return data;
+  return data[0];
 }
 
 /**
  * Delete a collection product
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function deleteCollectionProduct(id: string): Promise<void> {
   // Get product to delete images
@@ -169,14 +151,7 @@ export async function deleteCollectionProduct(id: string): Promise<void> {
     await Promise.all(deletePromises);
   }
 
-  const { error } = await supabase
-    .from('collection_products')
-    .delete()
-    .eq('id', id);
-
-  if (error) {
-    throw new Error(`Failed to delete collection product: ${error.message}`);
-  }
+  await db.delete('collection_products', { id });
 }
 
 /**
@@ -211,15 +186,12 @@ export async function removeTagsFromProduct(id: string, tagsToRemove: string[]):
 
 /**
  * Get all unique tags from all products
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function getAllTags(): Promise<string[]> {
-  const { data, error } = await supabase
-    .from('collection_products')
-    .select('tags');
-
-  if (error) {
-    throw new Error(`Failed to fetch tags: ${error.message}`);
-  }
+  const data = await db.select<CollectionProduct>('collection_products', {
+    select: 'tags',
+  });
 
   const allTags = new Set<string>();
   data.forEach((product) => {

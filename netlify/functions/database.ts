@@ -117,13 +117,27 @@ function generateFingerprint(event: HandlerEvent, ip: string): string {
 
 /**
  * Validate API key
+ * SECURITY: API key is REQUIRED in production, optional in development
  */
 function validateAPIKey(event: HandlerEvent): boolean {
   const frontendApiKey = process.env.FRONTEND_API_KEY;
-  if (!frontendApiKey) {
-    return true; // Allow if not configured (backward compatibility)
+  const isProduction = process.env.CONTEXT === 'production' || process.env.NODE_ENV === 'production';
+  
+  // PRODUCTION: API key is REQUIRED
+  if (isProduction) {
+    if (!frontendApiKey) {
+      console.error('[Database API] FRONTEND_API_KEY not configured in production!');
+      return false;
+    }
+    const providedKey = event.headers['x-api-key'] || event.headers['X-API-Key'];
+    return providedKey === frontendApiKey;
   }
-
+  
+  // DEVELOPMENT: API key is optional for backward compatibility
+  if (!frontendApiKey) {
+    return true; // Allow if not configured in dev
+  }
+  
   const providedKey = event.headers['x-api-key'] || event.headers['X-API-Key'];
   return providedKey === frontendApiKey;
 }
@@ -161,6 +175,101 @@ function isValidTableName(table: string | undefined): boolean {
   }
   // Only allow alphanumeric, underscore, and hyphen
   return /^[a-zA-Z0-9_-]+$/.test(table) && table.length < 100;
+}
+
+/**
+ * Validate column name (prevent SQL injection in filters and orderBy)
+ */
+function isValidColumnName(column: string | undefined): boolean {
+  if (!column || typeof column !== 'string') {
+    return false;
+  }
+  // Allow alphanumeric, underscore, dot (for joins), and arrow (for JSON)
+  return /^[a-zA-Z0-9_.-]+(\->>?[a-zA-Z0-9_'"]+)?$/.test(column) && column.length < 200;
+}
+
+/**
+ * Sanitize LIKE/ILIKE patterns (prevent pattern injection)
+ */
+function sanitizeLikePattern(pattern: string): string {
+  if (typeof pattern !== 'string') {
+    return '';
+  }
+  // Escape special characters but allow user's % and _
+  // Remove any attempt at SQL injection
+  return pattern
+    .replace(/'/g, "''") // Escape single quotes
+    .replace(/\\/g, '\\\\') // Escape backslashes
+    .substring(0, 500); // Limit length
+}
+
+/**
+ * Validate filter value (prevent injection)
+ */
+function isValidFilterValue(value: any): boolean {
+  // Null is allowed
+  if (value === null) return true;
+  
+  // Primitives are allowed
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    // String length check
+    if (typeof value === 'string' && value.length > 10000) {
+      return false;
+    }
+    return true;
+  }
+  
+  // Arrays are allowed (for 'in' operator)
+  if (Array.isArray(value)) {
+    // Limit array size
+    if (value.length > 1000) return false;
+    // Validate each element
+    return value.every(v => typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean');
+  }
+  
+  // Objects with operator are allowed
+  if (typeof value === 'object' && value.operator) {
+    const validOperators = ['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'like', 'ilike'];
+    if (!validOperators.includes(value.operator)) {
+      return false;
+    }
+    // Validate the actual value
+    return isValidFilterValue(value.value);
+  }
+  
+  return false;
+}
+
+/**
+ * Validate request data (prevent malicious payloads)
+ */
+function validateRequestData(data: any): { valid: boolean; error?: string } {
+  if (!data || typeof data !== 'object') {
+    return { valid: false, error: 'Invalid data format' };
+  }
+  
+  // Check data size (prevent memory exhaustion)
+  const dataString = JSON.stringify(data);
+  if (dataString.length > 1000000) { // 1MB limit
+    return { valid: false, error: 'Request data too large (max 1MB)' };
+  }
+  
+  // Validate no nested depth attacks
+  function checkDepth(obj: any, depth: number = 0): boolean {
+    if (depth > 10) return false; // Max 10 levels deep
+    if (typeof obj !== 'object' || obj === null) return true;
+    
+    for (const key in obj) {
+      if (!checkDepth(obj[key], depth + 1)) return false;
+    }
+    return true;
+  }
+  
+  if (!checkDepth(data)) {
+    return { valid: false, error: 'Request data too deeply nested' };
+  }
+  
+  return { valid: true };
 }
 
 /**
@@ -273,6 +382,16 @@ async function executeOperation(request: DatabaseRequest): Promise<any> {
         // Apply filters
         if (filters) {
           for (const [key, value] of Object.entries(filters)) {
+            // SECURITY: Validate column names
+            if (!isValidColumnName(key)) {
+              throw new Error(`Invalid column name: ${key}`);
+            }
+            
+            // SECURITY: Validate filter values
+            if (!isValidFilterValue(value)) {
+              throw new Error(`Invalid filter value for column: ${key}`);
+            }
+            
             if (value === null) {
               query = query.is(key, null);
             } else if (Array.isArray(value)) {
@@ -299,10 +418,12 @@ async function executeOperation(request: DatabaseRequest): Promise<any> {
                   query = query.lte(key, value.value);
                   break;
                 case 'like':
-                  query = query.like(key, value.value);
+                  // SECURITY: Sanitize LIKE patterns
+                  query = query.like(key, sanitizeLikePattern(value.value));
                   break;
                 case 'ilike':
-                  query = query.ilike(key, value.value);
+                  // SECURITY: Sanitize ILIKE patterns
+                  query = query.ilike(key, sanitizeLikePattern(value.value));
                   break;
                 default:
                   query = query.eq(key, value.value);
@@ -315,6 +436,10 @@ async function executeOperation(request: DatabaseRequest): Promise<any> {
 
         // Apply ordering
         if (orderBy) {
+          // SECURITY: Validate column name in orderBy
+          if (!isValidColumnName(orderBy.column)) {
+            throw new Error(`Invalid orderBy column: ${orderBy.column}`);
+          }
           query = query.order(orderBy.column, { ascending: orderBy.ascending !== false });
         }
 
@@ -335,6 +460,13 @@ async function executeOperation(request: DatabaseRequest): Promise<any> {
         if (!data) {
           throw new Error('Insert operation requires data');
         }
+        
+        // SECURITY: Validate data
+        const dataValidation = validateRequestData(data);
+        if (!dataValidation.valid) {
+          throw new Error(`Invalid insert data: ${dataValidation.error}`);
+        }
+        
         const { data: result, error } = await supabase
           .from(table)
           .insert(data)
@@ -351,15 +483,24 @@ async function executeOperation(request: DatabaseRequest): Promise<any> {
           throw new Error('Update operation requires at least one filter (safety measure)');
         }
 
-        // Additional validation: prevent updating all records
-        if (Object.keys(filters).length === 0) {
-          throw new Error('Update operation requires filters to prevent accidental mass updates');
+        // SECURITY: Validate data
+        const dataValidation = validateRequestData(data);
+        if (!dataValidation.valid) {
+          throw new Error(`Invalid update data: ${dataValidation.error}`);
         }
 
         let query = supabase.from(table).update(data);
 
-        // Apply filters
+        // Apply filters with validation
         for (const [key, value] of Object.entries(filters)) {
+          // SECURITY: Validate column names
+          if (!isValidColumnName(key)) {
+            throw new Error(`Invalid column name in filter: ${key}`);
+          }
+          // SECURITY: Validate filter values
+          if (!isValidFilterValue(value)) {
+            throw new Error(`Invalid filter value for column: ${key}`);
+          }
           query = query.eq(key, value);
         }
 
@@ -373,15 +514,18 @@ async function executeOperation(request: DatabaseRequest): Promise<any> {
           throw new Error('Delete operation requires at least one filter (safety measure)');
         }
 
-        // Additional validation: prevent deleting all records
-        if (Object.keys(filters).length === 0) {
-          throw new Error('Delete operation requires filters to prevent accidental mass deletes');
-        }
-
         let query = supabase.from(table).delete();
 
-        // Apply filters
+        // Apply filters with validation
         for (const [key, value] of Object.entries(filters)) {
+          // SECURITY: Validate column names
+          if (!isValidColumnName(key)) {
+            throw new Error(`Invalid column name in filter: ${key}`);
+          }
+          // SECURITY: Validate filter values
+          if (!isValidFilterValue(value)) {
+            throw new Error(`Invalid filter value for column: ${key}`);
+          }
           query = query.eq(key, value);
         }
 
@@ -398,6 +542,14 @@ async function executeOperation(request: DatabaseRequest): Promise<any> {
         // Validate function name
         if (!isValidTableName(functionName)) {
           throw new Error('Invalid function name');
+        }
+        
+        // SECURITY: Validate function parameters
+        if (functionParams) {
+          const paramsValidation = validateRequestData(functionParams);
+          if (!paramsValidation.valid) {
+            throw new Error(`Invalid RPC parameters: ${paramsValidation.error}`);
+          }
         }
 
         const { data: result, error } = await supabase.rpc(

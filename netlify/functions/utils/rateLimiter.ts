@@ -89,16 +89,18 @@ async function checkRateLimitRedis(
       pipeline.push(['EXPIRE', keys.global, '86400']);
     }
     
-    // Execute pipeline via Upstash REST API
+    // Execute via Upstash REST API
+    // Format: POST to base URL with body ["COMMAND", "arg1", "arg2", ...]
+    // See: https://upstash.com/docs/redis/features/restapi
     const responses = await Promise.all(
-      pipeline.map(([command, ...args]) => 
-        fetch(`${redisUrl}/${command}`, {
+      pipeline.map(([command, ...args]) =>
+        fetch(redisUrl.replace(/\/$/, ''), {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${redisToken}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(args),
+          body: JSON.stringify([command, ...args]),
         }).then(r => r.json())
       )
     );

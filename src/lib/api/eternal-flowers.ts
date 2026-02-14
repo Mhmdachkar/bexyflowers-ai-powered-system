@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { db } from './database-client';
 
 export type FlowerType = 'eternal' | 'real' | 'mixed';
 
@@ -29,28 +29,27 @@ export interface CollectionYearStats {
   max_price: number;
 }
 
+/**
+ * SECURITY: Uses backend proxy instead of direct Supabase
+ */
 export async function getProductsByFlowerType(
   flowerType: FlowerType,
   collectionYear?: number
 ): Promise<EternalFlowerProduct[]> {
   try {
-    let query = supabase
-      .from('products')
-      .select('*')
-      .eq('is_active', true)
-      .eq('flower_type', flowerType)
-      .order('created_at', { ascending: false });
+    const filters: Record<string, any> = {
+      is_active: true,
+      flower_type: flowerType,
+    };
 
     if (collectionYear) {
-      query = query.eq('collection_year', collectionYear);
+      filters.collection_year = collectionYear;
     }
 
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Error fetching products by flower type:', error);
-      throw error;
-    }
+    const data = await db.select<EternalFlowerProduct>('products', {
+      filters,
+      orderBy: { column: 'created_at', ascending: false },
+    });
 
     return data || [];
   } catch (error) {
@@ -67,26 +66,31 @@ export async function getRealFlowers(collectionYear?: number): Promise<EternalFl
   return getProductsByFlowerType('real', collectionYear);
 }
 
+/**
+ * SECURITY: Uses backend proxy instead of direct Supabase
+ * NOTE: Filter collection_year != null in app - SQL "col != NULL" returns no rows
+ */
 export async function getAvailableCollectionYears(flowerType?: FlowerType): Promise<number[]> {
   try {
-    let query = supabase
-      .from('products')
-      .select('collection_year')
-      .eq('is_active', true)
-      .not('collection_year', 'is', null);
+    const filters: Record<string, any> = {
+      is_active: true,
+    };
 
     if (flowerType) {
-      query = query.eq('flower_type', flowerType);
+      filters.flower_type = flowerType;
     }
 
-    const { data, error } = await query;
+    const data = await db.select<EternalFlowerProduct>('products', {
+      filters,
+      select: 'collection_year',
+    });
 
-    if (error) {
-      console.error('Error fetching collection years:', error);
-      throw error;
-    }
-
-    const years = [...new Set(data?.map(item => item.collection_year) || [])];
+    // Filter out null in app (SQL neq/null doesn't work as expected)
+    const years = [...new Set(
+      (data || [])
+        .map(item => item.collection_year)
+        .filter((y): y is number => y != null)
+    )];
     return years.sort((a, b) => b - a);
   } catch (error) {
     console.error('Error in getAvailableCollectionYears:', error);
@@ -94,19 +98,16 @@ export async function getAvailableCollectionYears(flowerType?: FlowerType): Prom
   }
 }
 
+/**
+ * SECURITY: Uses backend proxy instead of direct Supabase
+ */
 export async function getCollectionYearStats(flowerType: FlowerType): Promise<CollectionYearStats[]> {
   try {
     const viewName = flowerType === 'eternal' ? 'eternal_flowers_by_year' : 'real_flowers_by_year';
     
-    const { data, error } = await supabase
-      .from(viewName)
-      .select('*')
-      .order('collection_year', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching collection year stats:', error);
-      throw error;
-    }
+    const data = await db.select<CollectionYearStats>(viewName, {
+      orderBy: { column: 'collection_year', ascending: false },
+    });
 
     return data || [];
   } catch (error) {
@@ -115,23 +116,21 @@ export async function getCollectionYearStats(flowerType: FlowerType): Promise<Co
   }
 }
 
+/**
+ * SECURITY: Uses backend proxy instead of direct Supabase
+ */
 export async function createEternalFlowerProduct(
   productData: Omit<EternalFlowerProduct, 'id' | 'created_at' | 'updated_at'>
 ): Promise<EternalFlowerProduct> {
   try {
-    const { data, error } = await supabase
-      .from('products')
-      .insert([{
-        ...productData,
-        flower_type: 'eternal',
-        is_active: true,
-      }])
-      .select()
-      .single();
+    const data = await db.insert<EternalFlowerProduct>('products', {
+      ...productData,
+      flower_type: 'eternal',
+      is_active: true,
+    });
 
-    if (error) {
-      console.error('Error creating eternal flower product:', error);
-      throw error;
+    if (!data) {
+      throw new Error('Failed to create eternal flower product');
     }
 
     return data;
@@ -141,65 +140,52 @@ export async function createEternalFlowerProduct(
   }
 }
 
+/**
+ * SECURITY: Uses backend proxy instead of direct Supabase
+ */
 export async function updateEternalFlowerProduct(
   id: string,
   updates: Partial<EternalFlowerProduct>
 ): Promise<EternalFlowerProduct> {
   try {
-    const { data, error } = await supabase
-      .from('products')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
+    const data = await db.update<EternalFlowerProduct>('products', { id }, updates);
 
-    if (error) {
-      console.error('Error updating eternal flower product:', error);
-      throw error;
+    if (!data || data.length === 0) {
+      throw new Error('Failed to update eternal flower product');
     }
 
-    return data;
+    return data[0];
   } catch (error) {
     console.error('Error in updateEternalFlowerProduct:', error);
     throw error;
   }
 }
 
+/**
+ * SECURITY: Uses backend proxy instead of direct Supabase (soft delete)
+ */
 export async function deleteEternalFlowerProduct(id: string): Promise<void> {
   try {
-    const { error } = await supabase
-      .from('products')
-      .update({ is_active: false })
-      .eq('id', id);
-
-    if (error) {
-      console.error('Error deleting eternal flower product:', error);
-      throw error;
-    }
+    await db.update('products', { id }, { is_active: false });
   } catch (error) {
     console.error('Error in deleteEternalFlowerProduct:', error);
     throw error;
   }
 }
 
+/**
+ * SECURITY: Uses backend proxy instead of direct Supabase
+ */
 export async function updateProductFlowerType(
   id: string,
   flowerType: FlowerType,
   collectionYear: number
 ): Promise<void> {
   try {
-    const { error } = await supabase
-      .from('products')
-      .update({ 
-        flower_type: flowerType,
-        collection_year: collectionYear 
-      })
-      .eq('id', id);
-
-    if (error) {
-      console.error('Error updating product flower type:', error);
-      throw error;
-    }
+    await db.update('products', { id }, { 
+      flower_type: flowerType,
+      collection_year: collectionYear 
+    });
   } catch (error) {
     console.error('Error in updateProductFlowerType:', error);
     throw error;

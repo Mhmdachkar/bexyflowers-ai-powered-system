@@ -1,5 +1,4 @@
 import { db } from './database-client';
-import { supabase } from '../supabase';
 import { uploadImage, deleteImage, extractPathFromUrl } from '../supabase-storage';
 import type { Database } from '../supabase';
 
@@ -9,49 +8,40 @@ type AccessoryUpdate = Database['public']['Tables']['accessories']['Update'];
 
 /**
  * Get all accessories
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function getAccessories(filters?: { category?: string; featured?: boolean; isActive?: boolean }): Promise<Accessory[]> {
-  let query = supabase
-    .from('accessories')
-    .select('*')
-    .order('name', { ascending: true });
+  const dbFilters: Record<string, any> = {};
 
   // Apply filters if provided
   if (filters?.isActive !== undefined) {
-    query = query.eq('is_active', filters.isActive);
+    dbFilters.is_active = filters.isActive;
   }
 
-  const { data, error } = await query;
-
-  if (error) {
-    throw new Error(`Failed to fetch accessories: ${error.message}`);
-  }
+  const data = await db.select<Accessory>('accessories', {
+    filters: Object.keys(dbFilters).length > 0 ? dbFilters : undefined,
+    orderBy: { column: 'name', ascending: true },
+  });
 
   return data || [];
 }
 
 /**
  * Get a single accessory by ID
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function getAccessory(id: string): Promise<Accessory | null> {
-  const { data, error } = await supabase
-    .from('accessories')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const data = await db.select<Accessory>('accessories', {
+    filters: { id },
+    limit: 1,
+  });
 
-  if (error) {
-    if (error.code === 'PGRST116') {
-      return null; // Not found
-    }
-    throw new Error(`Failed to fetch accessory: ${error.message}`);
-  }
-
-  return data;
+  return data && data.length > 0 ? data[0] : null;
 }
 
 /**
  * Create a new accessory
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function createAccessory(
   accessory: Omit<AccessoryInsert, 'id' | 'created_at' | 'updated_at' | 'image_url'>,
@@ -69,17 +59,13 @@ export async function createAccessory(
     }
   }
 
-  const { data, error } = await supabase
-    .from('accessories')
-    .insert({
-      ...accessory,
-      image_url: imageUrl,
-    })
-    .select()
-    .single();
+  const data = await db.insert<Accessory>('accessories', {
+    ...accessory,
+    image_url: imageUrl,
+  });
 
-  if (error) {
-    throw new Error(`Failed to create accessory: ${error.message}`);
+  if (!data) {
+    throw new Error('Failed to create accessory');
   }
 
   return data;
@@ -87,6 +73,7 @@ export async function createAccessory(
 
 /**
  * Update an accessory
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function updateAccessory(
   id: string,
@@ -118,21 +105,16 @@ export async function updateAccessory(
     }
   }
 
-  const { data, error } = await supabase
-    .from('accessories')
-    .update({
-      ...updates,
-      image_url: imageUrl,
-    })
-    .eq('id', id)
-    .select()
-    .single();
+  const data = await db.update<Accessory>('accessories', { id }, {
+    ...updates,
+    image_url: imageUrl,
+  });
 
-  if (error) {
-    throw new Error(`Failed to update accessory: ${error.message}`);
+  if (!data || data.length === 0) {
+    throw new Error('Failed to update accessory');
   }
 
-  return data;
+  return data[0];
 }
 
 /**

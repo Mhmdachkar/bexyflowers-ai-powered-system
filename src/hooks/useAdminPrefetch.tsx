@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react';
-import { useQueryClient } from '@tantml:parameter>
-<invoke name="collectionQueryKeys } from '@/hooks/useCollectionProducts';
+import { useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
+import { collectionQueryKeys } from '@/hooks/useCollectionProducts';
 import { getCheckoutOrders } from '@/lib/api/checkout';
 import { getCollectionProducts } from '@/lib/api/collection-products';
 

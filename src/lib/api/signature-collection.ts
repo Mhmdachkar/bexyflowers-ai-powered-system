@@ -1,4 +1,4 @@
-import { supabase } from '../supabase';
+import { db } from './database-client';
 import { uploadMultipleImages } from '../supabase-storage';
 import { createCollectionProduct } from './collection-products';
 import type { Database } from '../supabase';
@@ -13,45 +13,40 @@ export interface SignatureCollectionWithProduct extends SignatureCollection {
 
 /**
  * Get all signature collection items with product details
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function getSignatureCollections(): Promise<SignatureCollectionWithProduct[]> {
-  const { data, error } = await supabase
-    .from('signature_collections')
-    .select(`
+  const data = await db.select<SignatureCollectionWithProduct>('signature_collections', {
+    select: `
       *,
       product:collection_products(*)
-    `)
-    .order('display_order', { ascending: true });
+    `,
+    orderBy: { column: 'display_order', ascending: true },
+  });
 
-  if (error) {
-    throw new Error(`Failed to fetch signature collections: ${error.message}`);
-  }
-
-  return data as SignatureCollectionWithProduct[];
+  return data;
 }
 
 /**
  * Get active signature collection items for frontend
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function getActiveSignatureCollections(): Promise<SignatureCollectionWithProduct[]> {
-  const { data, error } = await supabase
-    .from('signature_collections')
-    .select(`
+  const data = await db.select<SignatureCollectionWithProduct>('signature_collections', {
+    select: `
       *,
       product:collection_products(*)
-    `)
-    .eq('is_active', true)
-    .order('display_order', { ascending: true });
+    `,
+    filters: { is_active: true },
+    orderBy: { column: 'display_order', ascending: true },
+  });
 
-  if (error) {
-    throw new Error(`Failed to fetch active signature collections: ${error.message}`);
-  }
-
-  return data as SignatureCollectionWithProduct[];
+  return data;
 }
 
 /**
  * Add a product to signature collection
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function addToSignatureCollection(
   productId: string,
@@ -60,28 +55,23 @@ export async function addToSignatureCollection(
   // Get max display order if not provided
   let order = displayOrder;
   if (order === undefined) {
-    const { data: maxOrder } = await supabase
-      .from('signature_collections')
-      .select('display_order')
-      .order('display_order', { ascending: false })
-      .limit(1)
-      .single();
+    const maxOrderData = await db.select<SignatureCollection>('signature_collections', {
+      select: 'display_order',
+      orderBy: { column: 'display_order', ascending: false },
+      limit: 1,
+    });
 
-    order = maxOrder ? maxOrder.display_order + 1 : 0;
+    order = maxOrderData && maxOrderData.length > 0 ? maxOrderData[0].display_order + 1 : 0;
   }
 
-  const { data, error } = await supabase
-    .from('signature_collections')
-    .insert({
-      product_id: productId,
-      display_order: order,
-      is_active: true,
-    })
-    .select()
-    .single();
+  const data = await db.insert<SignatureCollection>('signature_collections', {
+    product_id: productId,
+    display_order: order,
+    is_active: true,
+  });
 
-  if (error) {
-    throw new Error(`Failed to add to signature collection: ${error.message}`);
+  if (!data) {
+    throw new Error('Failed to add to signature collection');
   }
 
   return data;
@@ -89,6 +79,7 @@ export async function addToSignatureCollection(
 
 /**
  * Create a custom product and add it to signature collection
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function createCustomSignatureProduct(
   productData: {
@@ -105,14 +96,13 @@ export async function createCustomSignatureProduct(
   // Get max display order if not provided
   let order = displayOrder;
   if (order === undefined) {
-    const { data: maxOrder } = await supabase
-      .from('signature_collections')
-      .select('display_order')
-      .order('display_order', { ascending: false })
-      .limit(1)
-      .single();
+    const maxOrderData = await db.select<SignatureCollection>('signature_collections', {
+      select: 'display_order',
+      orderBy: { column: 'display_order', ascending: false },
+      limit: 1,
+    });
 
-    order = maxOrder ? maxOrder.display_order + 1 : 0;
+    order = maxOrderData && maxOrderData.length > 0 ? maxOrderData[0].display_order + 1 : 0;
   }
 
   // Step 1: Create product in collection_products
@@ -133,76 +123,64 @@ export async function createCustomSignatureProduct(
   // Step 2: Add to signature_collections
   const signatureItem = await addToSignatureCollection(newProduct.id, order);
 
-  // Step 3: Return with product data
-  const { data, error } = await supabase
-    .from('signature_collections')
-    .select(`
+  // Step 3: Fetch and return with product data
+  const result = await db.select<SignatureCollectionWithProduct>('signature_collections', {
+    select: `
       *,
       product:collection_products(*)
-    `)
-    .eq('id', signatureItem.id)
-    .single();
+    `,
+    filters: { id: signatureItem.id },
+    limit: 1,
+  });
 
-  if (error) {
-    throw new Error(`Failed to fetch created signature collection: ${error.message}`);
+  if (!result || result.length === 0) {
+    throw new Error('Failed to fetch created signature collection');
   }
 
-  return data as SignatureCollectionWithProduct;
+  return result[0];
 }
 
 /**
  * Remove a product from signature collection
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function removeFromSignatureCollection(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('signature_collections')
-    .delete()
-    .eq('id', id);
-
-  if (error) {
-    throw new Error(`Failed to remove from signature collection: ${error.message}`);
-  }
+  await db.delete('signature_collections', { id });
 }
 
 /**
  * Update signature collection item
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function updateSignatureCollection(
   id: string,
   updates: SignatureCollectionUpdate
 ): Promise<SignatureCollection> {
-  const { data, error } = await supabase
-    .from('signature_collections')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
+  const data = await db.update<SignatureCollection>('signature_collections', { id }, updates);
 
-  if (error) {
-    throw new Error(`Failed to update signature collection: ${error.message}`);
+  if (!data || data.length === 0) {
+    throw new Error('Failed to update signature collection');
   }
 
-  return data;
+  return data[0];
 }
 
 /**
  * Reorder signature collection items
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function reorderSignatureCollections(
   items: { id: string; display_order: number }[]
 ): Promise<void> {
-  const updates = items.map((item) =>
-    supabase
-      .from('signature_collections')
-      .update({ display_order: item.display_order })
-      .eq('id', item.id)
+  // Update each item individually through the proxy
+  const updatePromises = items.map((item) =>
+    db.update('signature_collections', { id: item.id }, { display_order: item.display_order })
   );
 
-  const results = await Promise.all(updates);
-  const errors = results.filter((result) => result.error);
-
-  if (errors.length > 0) {
-    throw new Error(`Failed to reorder signature collections: ${errors[0].error?.message}`);
+  try {
+    await Promise.all(updatePromises);
+  } catch (error) {
+    throw new Error(`Failed to reorder signature collections: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 

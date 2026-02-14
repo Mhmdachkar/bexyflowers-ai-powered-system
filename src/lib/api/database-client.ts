@@ -163,6 +163,7 @@ export const db = {
   
   /**
    * Insert data into table
+   * For single object: returns the inserted row. For array: returns array of rows.
    */
   async insert<T = any>(
     table: string,
@@ -171,12 +172,15 @@ export const db = {
       select?: string;
     }
   ): Promise<T> {
-    return databaseRequest<T>({
+    const isSingle = !Array.isArray(data);
+    const result = await databaseRequest<T | T[]>({
       operation: 'insert',
       table,
       data: Array.isArray(data) ? data : [data],
       select: options?.select,
     });
+    // Supabase returns array; unwrap for single-row inserts
+    return (isSingle && Array.isArray(result) && result.length > 0 ? result[0] : result) as T;
   },
   
   /**

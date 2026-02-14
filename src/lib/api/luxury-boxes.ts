@@ -1,5 +1,4 @@
 import { db } from './database-client';
-import { supabase } from '../supabase';
 import type { Database } from '../supabase';
 
 type LuxuryBox = Database['public']['Tables']['luxury_boxes']['Row'];
@@ -23,69 +22,56 @@ export interface LuxuryBoxWithDetails extends LuxuryBox {
 
 /**
  * Get all luxury boxes
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function getLuxuryBoxes(type?: 'box' | 'wrap'): Promise<LuxuryBox[]> {
-  let query = supabase
-    .from('luxury_boxes')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (type) {
-    query = query.eq('type', type);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    throw new Error(`Failed to fetch luxury boxes: ${error.message}`);
-  }
+  const filters = type ? { type } : undefined;
+  
+  const data = await db.select<LuxuryBox>('luxury_boxes', {
+    filters,
+    orderBy: { column: 'created_at', ascending: false },
+  });
 
   return data;
 }
 
 /**
  * Get a single luxury box by ID
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function getLuxuryBox(id: string): Promise<LuxuryBox | null> {
-  const { data, error } = await supabase
-    .from('luxury_boxes')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const data = await db.select<LuxuryBox>('luxury_boxes', {
+    filters: { id },
+    limit: 1,
+  });
 
-  if (error) {
-    if (error.code === 'PGRST116') {
-      return null;
-    }
-    throw new Error(`Failed to fetch luxury box: ${error.message}`);
-  }
-
-  return data;
+  return data && data.length > 0 ? data[0] : null;
 }
 
 /**
  * Get luxury box with colors and sizes
  * PERFORMANCE: Use single query with joins to avoid N+1
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function getLuxuryBoxWithDetails(id: string): Promise<LuxuryBoxWithDetails | null> {
-  const { data: box, error: boxError } = await supabase
-    .from('luxury_boxes')
-    .select(`
+  // Use nested select to get box with related colors and sizes in one query
+  const data = await db.select<any>('luxury_boxes', {
+    filters: { id },
+    select: `
       *,
       box_colors(*),
       box_sizes(*)
-    `)
-    .eq('id', id)
-    .single();
+    `,
+    limit: 1,
+  });
 
-  if (boxError) {
-    if (boxError.code === 'PGRST116') {
-      return null;
-    }
-    throw new Error(`Failed to fetch luxury box: ${boxError.message}`);
+  if (!data || data.length === 0) {
+    return null;
   }
 
-  // Supabase returns nested objects, transform to match expected type
+  const box = data[0];
+
+  // Transform nested objects to match expected type
   const colors = (box.box_colors || []).sort((a: any, b: any) => 
     new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
   );
@@ -95,7 +81,7 @@ export async function getLuxuryBoxWithDetails(id: string): Promise<LuxuryBoxWith
   );
 
   // Remove nested objects from box and add as top-level arrays
-  const { box_colors, box_sizes, ...boxData } = box as any;
+  const { box_colors, box_sizes, ...boxData } = box;
 
   return {
     ...boxData,
@@ -137,17 +123,13 @@ export async function deleteLuxuryBox(id: string): Promise<void> {
 
 /**
  * Get colors for a box
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function getBoxColors(boxId: string): Promise<BoxColor[]> {
-  const { data, error } = await supabase
-    .from('box_colors')
-    .select('*')
-    .eq('box_id', boxId)
-    .order('created_at', { ascending: true });
-
-  if (error) {
-    throw new Error(`Failed to fetch box colors: ${error.message}`);
-  }
+  const data = await db.select<BoxColor>('box_colors', {
+    filters: { box_id: boxId },
+    orderBy: { column: 'created_at', ascending: true },
+  });
 
   return data || [];
 }
@@ -185,17 +167,13 @@ export async function deleteBoxColor(id: string): Promise<void> {
 
 /**
  * Get sizes for a box
+ * SECURITY: Uses backend proxy instead of direct Supabase
  */
 export async function getBoxSizes(boxId: string): Promise<BoxSize[]> {
-  const { data, error } = await supabase
-    .from('box_sizes')
-    .select('*')
-    .eq('box_id', boxId)
-    .order('capacity', { ascending: true });
-
-  if (error) {
-    throw new Error(`Failed to fetch box sizes: ${error.message}`);
-  }
+  const data = await db.select<BoxSize>('box_sizes', {
+    filters: { box_id: boxId },
+    orderBy: { column: 'capacity', ascending: true },
+  });
 
   return data || [];
 }
