@@ -29,7 +29,13 @@ export default function SEO({
   jsonLd,
 }: SEOProps) {
   const fullTitle = title ? `${title} | ${SITE_NAME}` : SITE_NAME;
-  const canonicalUrl = canonical ? absoluteUrl(canonical) : SITE_URL;
+  
+  // ⚡ SEO FIX: Build proper canonical URL - use current page path if canonical is provided
+  // This fixes Google Search Console "Alternative page with proper canonical tag" issue
+  const canonicalUrl = canonical 
+    ? absoluteUrl(canonical) 
+    : (typeof window !== 'undefined' ? `${SITE_URL.replace(/\/$/, "")}${window.location.pathname}` : SITE_URL);
+  
   const imageUrl = absoluteUrl(ogImage.startsWith("/") ? ogImage : `/${ogImage}`);
 
   return (
