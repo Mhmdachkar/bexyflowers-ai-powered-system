@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
 import SEO from "@/components/SEO";
+import { breadcrumbSchema, collectionPageSchema } from "@/lib/seo";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import UltraNavigation from "@/components/UltraNavigation";
@@ -43,12 +44,25 @@ const getDefaultCategoryId = (): string => {
 const DEFAULT_CATEGORY_ID: string = getDefaultCategoryId();
 
 const Collection = () => {
+  const breadcrumbs = breadcrumbSchema([
+    { name: "Home", url: "/" },
+    { name: "Collection", url: "/collection" }
+  ]);
+
+  const collectionSchema = collectionPageSchema({
+    name: "Luxury Flower Collection",
+    description: "Browse our luxury flower collection: red roses, eternal flowers, seasonal bouquets, and couture arrangements. Premium floristry in Lebanon.",
+    url: "/collection"
+  });
+
   return (
     <>
       <SEO
-        title="Flower Collection"
-        description="Browse our luxury flower collection: red roses, eternal flowers, seasonal bouquets, and couture arrangements. Premium floristry in Lebanon."
+        title="Luxury Flower Collection"
+        description="Browse our luxury flower collection: red roses, eternal flowers, seasonal bouquets, and couture arrangements. Premium floristry in Lebanon. Shop online for delivery across Lebanon."
         canonical="/collection"
+        keywords="flower collection Lebanon, luxury bouquets, red roses Lebanon, eternal flowers, seasonal flowers, premium flower arrangements, buy flowers online Lebanon"
+        jsonLd={[breadcrumbs, collectionSchema]}
       />
       <CollectionContent />
     </>

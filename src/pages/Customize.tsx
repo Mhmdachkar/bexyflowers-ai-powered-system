@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import SEO from "@/components/SEO";
+import { breadcrumbSchema } from "@/lib/seo";
 import { motion, AnimatePresence } from "framer-motion";
 import { Box, Gift, Check, CheckCircle2, Wand2, Plus, Minus, X, Info, ChevronRight, Palette, ShoppingCart, Circle, Square, Heart, Download, MessageCircle, Sparkles, ArrowRight, Star, Crown, GraduationCap, Heart as HeartIcon, Candy, Eye, EyeOff, History, BookmarkPlus, Bookmark, RefreshCw, Loader2, Edit3 } from "lucide-react";
 import UltraNavigation from "@/components/UltraNavigation";
@@ -1164,126 +1165,130 @@ const Customize: React.FC = () => {
   const steps = [
     { id: 1, title: "Base", icon: Box },
     { id: 2, title: "Details", icon: Palette },
-    { id: 3, title: "Blooms", icon: Sparkles },
-    { id: 4, title: "Glitter", icon: Star },
-    { id: 5, title: "Extras", icon: Gift }
   ];
+
+  const breadcrumbs = breadcrumbSchema([
+    { name: "Home", url: "/" },
+    { name: "Custom Bouquet Designer", url: "/customize" }
+  ]);
 
   return (
     <div className="min-h-screen bg-white font-body" ref={containerRef}>
       <SEO
-        title="Design Your Bouquet"
-        description="Create your perfect custom bouquet with AI-powered flower customization. Choose from premium flowers, colors, and styles. Design unique floral arrangements for any occasion."
+        title="AI Custom Bouquet Designer - Create Your Perfect Arrangement"
+        description="Design your perfect bouquet with AI. Choose flowers, colors, and styles to create a unique arrangement. Lebanon's most advanced flower customization tool. Personalized floral design."
         canonical="/customize"
+        keywords="custom bouquet, AI flower design, personalized flowers, bouquet builder, design your bouquet, custom flower arrangement Lebanon"
+        jsonLd={breadcrumbs}
       />
-      <UltraNavigation />
+    <UltraNavigation />
 
-      {/* Hero Section - Matching Home & Collection Page Style */}
-      <section 
-        className="relative min-h-[50vh] sm:min-h-[60vh] md:min-h-[70vh] flex items-center justify-center overflow-hidden pt-16 sm:pt-20 md:pt-24 pb-8 sm:pb-12 md:pb-16"
-        style={{
-          background: isMobile ? 'transparent' : 'linear-gradient(180deg, #FAF8F3 0%, #F5F1E8 50%, #EDE7D9 100%)',
-          minHeight: isMobile ? 'calc(100vh + 200px)' : '70vh',
-          height: isMobile ? 'calc(100vh + 200px)' : undefined,
-          marginTop: isMobile ? '-80px' : undefined,
-          paddingTop: isMobile ? '80px' : undefined,
-          paddingBottom: isMobile ? '4rem' : undefined
-        }}
-      >
-        {/* Video background for mobile view - Absolute within hero section, extends behind header */}
-        {isMobile && (
-          <video
-            ref={videoRef}
-            className="absolute left-0 right-0 w-full object-cover object-center pointer-events-none z-0"
-            style={{
-              width: '100%',
-              maxWidth: '100%',
-              height: 'calc(100vh + 200px)',
-              minHeight: 'calc(100vh + 200px)',
-              top: '-80px',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              marginLeft: 0,
-              marginRight: 0,
-              paddingLeft: 0,
-              paddingRight: 0,
-            }}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="none"
-            aria-label="Hero background video"
-          >
-            {shouldLoadVideo && (
-              <source src={video2Url} type="video/webm" />
-            )}
-          </video>
-        )}
-
-        {/* Elegant Gradient Background Elements - Desktop Only */}
-        {!isMobile && (
-          <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-            {/* Top-left golden glow */}
-            <motion.div
-              className="absolute w-48 h-48 sm:w-72 sm:h-72 md:w-96 md:h-96 -top-24 -left-24"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 0.3, scale: 1 }}
-              transition={{ duration: 1.5, ease: "easeOut" }}
-            >
-              <div 
-                className="w-full h-full rounded-full blur-3xl"
-                style={{
-                  background: 'radial-gradient(circle, rgba(199, 158, 72, 0.2) 0%, rgba(199, 158, 72, 0.1) 40%, transparent 70%)'
-                }}
-              />
-            </motion.div>
-            
-            {/* Bottom-right rose gold accent */}
-            <motion.div
-              className="absolute w-56 h-56 sm:w-80 sm:h-80 md:w-[28rem] md:h-[28rem] -bottom-20 -right-20"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 0.25, scale: 1 }}
-              transition={{ duration: 1.5, delay: 0.2, ease: "easeOut" }}
-            >
-              <div 
-                className="w-full h-full rounded-full blur-3xl"
-                style={{
-                  background: 'radial-gradient(circle, rgba(184, 138, 68, 0.15) 0%, rgba(184, 138, 68, 0.08) 40%, transparent 70%)'
-                }}
-              />
-            </motion.div>
-            
-            {/* Center soft glow */}
-            <motion.div
-              className="absolute w-64 h-64 sm:w-96 sm:h-96 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.15 }}
-              transition={{ duration: 1.5, delay: 0.4, ease: "easeOut" }}
-            >
-              <div 
-                className="w-full h-full rounded-full blur-3xl"
-                style={{
-                  background: 'radial-gradient(circle, rgba(245, 241, 232, 0.4) 0%, rgba(245, 241, 232, 0.2) 40%, transparent 70%)'
-                }}
-              />
-            </motion.div>
-          </div>
-        )}
-
-        {/* Hero Content - Elegant Design Matching Collection Page */}
-        <div
-          className="relative z-20 text-center max-w-4xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8"
-          style={isMobile ? {
-            paddingTop: '2rem',
-            paddingBottom: '2rem',
-            minHeight: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          } : undefined}
+    {/* Hero Section - Matching Home & Collection Page Style */}
+    <section 
+      className="relative min-h-[50vh] sm:min-h-[60vh] md:min-h-[70vh] flex items-center justify-center overflow-hidden pt-16 sm:pt-20 md:pt-24 pb-8 sm:pb-12 md:pb-16"
+      style={{
+        background: isMobile ? 'transparent' : 'linear-gradient(180deg, #FAF8F3 0%, #F5F1E8 50%, #EDE7D9 100%)',
+        minHeight: isMobile ? 'calc(100vh + 200px)' : '70vh',
+        height: isMobile ? 'calc(100vh + 200px)' : undefined,
+        marginTop: isMobile ? '-80px' : undefined,
+        paddingTop: isMobile ? '80px' : undefined,
+        paddingBottom: isMobile ? '4rem' : undefined
+      }}
+    >
+      {/* Video background for mobile view - Absolute within hero section, extends behind header */}
+      {isMobile && (
+        <video
+          ref={videoRef}
+          className="absolute left-0 right-0 w-full object-cover object-center pointer-events-none z-0"
+          style={{
+            width: '100%',
+            maxWidth: '100%',
+            height: 'calc(100vh + 200px)',
+            minHeight: 'calc(100vh + 200px)',
+            top: '-80px',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            marginLeft: 0,
+            marginRight: 0,
+            paddingLeft: 0,
+            paddingRight: 0,
+          }}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="none"
+          aria-label="Hero background video"
         >
+          {shouldLoadVideo && (
+            <source src={video2Url} type="video/webm" />
+          )}
+        </video>
+      )}
+
+      {/* Elegant Gradient Background Elements - Desktop Only */}
+      {!isMobile && (
+        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+          {/* Top-left golden glow */}
+          <motion.div
+            className="absolute w-48 h-48 sm:w-72 sm:h-72 md:w-96 md:h-96 -top-24 -left-24"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 0.3, scale: 1 }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+          >
+            <div 
+              className="w-full h-full rounded-full blur-3xl"
+              style={{
+                background: 'radial-gradient(circle, rgba(199, 158, 72, 0.2) 0%, rgba(199, 158, 72, 0.1) 40%, transparent 70%)'
+              }}
+            />
+          </motion.div>
+          
+          {/* Bottom-right rose gold accent */}
+          <motion.div
+            className="absolute w-56 h-56 sm:w-80 sm:h-80 md:w-[28rem] md:h-[28rem] -bottom-20 -right-20"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 0.25, scale: 1 }}
+            transition={{ duration: 1.5, delay: 0.2, ease: "easeOut" }}
+          >
+            <div 
+              className="w-full h-full rounded-full blur-3xl"
+              style={{
+                background: 'radial-gradient(circle, rgba(184, 138, 68, 0.15) 0%, rgba(184, 138, 68, 0.08) 40%, transparent 70%)'
+              }}
+            />
+          </motion.div>
+          
+          {/* Center soft glow */}
+          <motion.div
+            className="absolute w-64 h-64 sm:w-96 sm:h-96 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.15 }}
+            transition={{ duration: 1.5, delay: 0.4, ease: "easeOut" }}
+          >
+            <div 
+              className="w-full h-full rounded-full blur-3xl"
+              style={{
+                background: 'radial-gradient(circle, rgba(245, 241, 232, 0.4) 0%, rgba(245, 241, 232, 0.2) 40%, transparent 70%)'
+              }}
+            />
+          </motion.div>
+        </div>
+      )}
+
+      {/* Hero Content - Elegant Design Matching Collection Page */}
+      <div
+        className="relative z-20 text-center max-w-4xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8"
+        style={isMobile ? {
+          paddingTop: '2rem',
+          paddingBottom: '2rem',
+          minHeight: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        } : undefined}
+      >
           <motion.div
             className="space-y-2 sm:space-y-4 md:space-y-6"
             initial={{ opacity: 0, y: 20 }}

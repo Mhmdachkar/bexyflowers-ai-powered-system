@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import SEO from '@/components/SEO';
-import { productSchema, SITE_URL } from '@/lib/seo';
+import { productSchema, breadcrumbSchema, SITE_URL } from '@/lib/seo';
 import { getProductImageAlt } from '@/lib/imageAltUtils';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -420,6 +420,24 @@ const ProductDetailPage = () => {
   const productUrl = `${SITE_URL}/product/${productData.id}`;
   const ogImage = productData.images?.[0] || productData.imageUrl;
 
+  const breadcrumbs = breadcrumbSchema([
+    { name: "Home", url: "/" },
+    { name: "Collection", url: "/collection" },
+    { name: productData.title, url: `/product/${productData.id}` }
+  ]);
+
+  const productSchemaData = productSchema({
+    name: productData.title,
+    description: productData.description || '',
+    image: ogImage,
+    price: currentPrice,
+    currency: 'USD',
+    url: productUrl,
+    inStock: productData.inStock,
+    sku: productData.id,
+    brand: "Bexy Flowers"
+  });
+
   return (
     <motion.div 
       className="min-h-screen bg-white"
@@ -434,15 +452,8 @@ const ProductDetailPage = () => {
         canonical={`/product/${productData.id}`}
         ogImage={ogImage}
         ogType="product"
-        jsonLd={productSchema({
-          name: productData.title,
-          description: productData.description || '',
-          image: ogImage,
-          price: currentPrice,
-          currency: 'USD',
-          url: productUrl,
-          inStock: productData.inStock,
-        })}
+        keywords={`${productData.title}, ${productData.category}, luxury flowers Lebanon, premium bouquet, flower delivery Lebanon`}
+        jsonLd={[breadcrumbs, productSchemaData]}
       />
       {/* Navigation Bar */}
       <UltraNavigation />

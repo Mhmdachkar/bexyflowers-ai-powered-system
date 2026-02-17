@@ -53,14 +53,17 @@
   X-Frame-Options: DENY
   X-XSS-Protection: 1; mode=block
   Referrer-Policy: strict-origin-when-cross-origin
+  Link: </assets/bexy-flowers-logo.webp>; rel=preload; as=image
 
-# Root index
+# Root index - preload critical resources
 /
   Cache-Control: public, max-age=0, must-revalidate
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   X-XSS-Protection: 1; mode=block
   Referrer-Policy: strict-origin-when-cross-origin
+  Link: <https://fonts.googleapis.com>; rel=preconnect
+  Link: <https://fonts.gstatic.com>; rel=preconnect; crossorigin
 
 # API responses - short cache
 /.netlify/functions/*

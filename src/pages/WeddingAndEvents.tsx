@@ -1,5 +1,6 @@
 import React, { Suspense, useEffect, useRef, useState, useMemo } from "react";
 import SEO from "@/components/SEO";
+import { breadcrumbSchema } from "@/lib/seo";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -2077,12 +2078,19 @@ const WeddingAndEvents = () => {
     };
   }, []);
 
+  const breadcrumbs = breadcrumbSchema([
+    { name: "Home", url: "/" },
+    { name: "Wedding & Events", url: "/wedding-and-events" }
+  ]);
+
   return (
     <div className="min-h-screen overflow-x-hidden relative bg-white">
       <SEO
-        title="Wedding & Events Flowers"
-        description="Wedding flowers and event floral arrangements in Lebanon. Bridal bouquets, ceremony decorations, centerpieces, and custom designs for your special day."
+        title="Wedding & Event Flowers - Luxury Floral Design"
+        description="Exquisite wedding flowers and event florals in Lebanon. From bridal bouquets to venue decorations, we create unforgettable floral experiences for your special day. Expert wedding florist."
         canonical="/wedding-and-events"
+        keywords="wedding flowers Lebanon, bridal bouquet, wedding florist Beirut, event flowers, wedding decorations, ceremony flowers, reception florals, luxury wedding flowers"
+        jsonLd={breadcrumbs}
       />
       <UltraNavigation />
       <div className="relative z-10">

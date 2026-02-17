@@ -1,7 +1,7 @@
 import React, { Suspense, useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import SEO from "@/components/SEO";
-import { orgSchema, webSiteSchema } from "@/lib/seo";
+import { orgSchema, webSiteSchema, localBusinessSchema, breadcrumbSchema } from "@/lib/seo";
 import {
   Sparkles,
   Wand2,
@@ -374,7 +374,8 @@ const Index = () => {
         title="Lebanon's Premier Luxury Florist"
         description="Lebanon's most luxurious floral portfolio. Premium custom bouquets, wedding flowers, eternal flowers &amp; couture arrangements. AI-powered flower customization. Order online."
         canonical="/"
-        jsonLd={[orgSchema(), webSiteSchema()]}
+        keywords="flowers Lebanon, luxury florist Lebanon, custom bouquets, wedding flowers Beirut, eternal flowers, premium flower delivery, Sidon florist, AI flower design, online flower shop Lebanon"
+        jsonLd={[orgSchema(), webSiteSchema(), localBusinessSchema()]}
       />
       <UltraNavigation />
       <div className="relative z-10">

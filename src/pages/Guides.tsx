@@ -12,18 +12,45 @@ import {
   ChevronRight,
 } from "lucide-react";
 import SEO from "@/components/SEO";
+import { breadcrumbSchema, faqPageSchema } from "@/lib/seo";
 import UltraNavigation from "@/components/UltraNavigation";
 import Footer from "@/components/Footer";
 import BackToTop from "@/components/BackToTop";
 import LazySection from "@/components/LazySection";
 
 const Guides = () => {
+  const breadcrumbs = breadcrumbSchema([
+    { name: "Home", url: "/" },
+    { name: "Guides", url: "/guides" }
+  ]);
+
+  const faqs = faqPageSchema([
+    {
+      question: "How do I care for fresh flowers?",
+      answer: "Cut stems at a 45° angle with sharp, clean shears before placing in water. Remove any leaves that would sit below the waterline to prevent bacteria growth. Change water every 2-3 days and keep flowers in a cool location away from direct sunlight."
+    },
+    {
+      question: "What flowers are best for weddings in Lebanon?",
+      answer: "Popular wedding flowers in Lebanon include roses, peonies, hydrangeas, and orchids. We recommend choosing seasonal flowers for the best quality and value. Our expert florists can help you select the perfect blooms for your wedding theme and season."
+    },
+    {
+      question: "How long do fresh flowers last?",
+      answer: "With proper care, most fresh flowers last 5-7 days. Some varieties like roses and carnations can last up to 2 weeks, while delicate flowers like tulips may last 3-5 days. Our eternal flowers are preserved and last for years."
+    },
+    {
+      question: "What occasions are appropriate for sending flowers?",
+      answer: "Flowers are perfect for birthdays, anniversaries, weddings, sympathy and condolences, congratulations, get well wishes, thank you gestures, and romantic occasions. Each occasion has traditional flower choices that convey the right sentiment."
+    }
+  ]);
+
   return (
     <div className="min-h-screen overflow-x-hidden relative">
       <SEO
-        title="Flower Care, Occasions & Wedding Tips"
+        title="Flower Care, Occasions & Wedding Tips - Expert Guides"
         description="Expert flower care tips, occasion guides, and wedding floral advice from Bexy Flowers Lebanon. How to care for fresh flowers, choose bouquets for birthdays, sympathy, and weddings."
         canonical="/guides"
+        keywords="flower care tips, how to care for flowers, wedding flower guide, occasion flowers, flower meanings, fresh flower care, Lebanon florist guide"
+        jsonLd={[breadcrumbs, faqs]}
       />
       <UltraNavigation />
 

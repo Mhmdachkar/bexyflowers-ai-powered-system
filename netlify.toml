@@ -17,6 +17,33 @@
   # This requires Netlify Pro plan or higher for timeouts > 10 seconds
   timeout = 60
 
+# SEO Redirects - enforce HTTPS and canonical domain
+[[redirects]]
+  from = "http://bexyflowers.shop/*"
+  to = "https://bexyflowers.shop/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "http://www.bexyflowers.shop/*"
+  to = "https://bexyflowers.shop/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.bexyflowers.shop/*"
+  to = "https://bexyflowers.shop/:splat"
+  status = 301
+  force = true
+
+# Trailing slash redirect (optional - enforce consistency)
+# Uncomment if you want to enforce trailing slashes
+# [[redirects]]
+#   from = "/*/"
+#   to = "/:splat"
+#   status = 301
+
+# SPA fallback - must be last
 [[redirects]]
   from = "/*"
   to = "/index.html"
