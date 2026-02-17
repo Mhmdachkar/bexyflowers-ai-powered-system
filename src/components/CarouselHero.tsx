@@ -337,10 +337,12 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
           }}
           speed={800}
           autoplay={false}
-          {...(isMobile && {
-            touchStartPreventDefault: false,
-            allowTouchMove: true
-          })}
+          touchStartPreventDefault={false}
+          allowTouchMove={true}
+          simulateTouch={true}
+          touchRatio={1}
+          touchAngle={45}
+          grabCursor={false}
           pagination={slides.length > 1 ? {
             el: '.swiper-pagination',
             type: 'fraction',
