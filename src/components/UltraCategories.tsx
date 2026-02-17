@@ -101,6 +101,12 @@ const categories = [
   }
 ];
 
+// ⚡ PERFORMANCE: Check if device is mobile - skip heavy GSAP animations
+const isMobileDevice = () => {
+  if (typeof window === 'undefined') return true;
+  return window.innerWidth < 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+};
+
 const UltraCategories = () => {
   const navigate = useNavigate();
   const sectionRef = useRef<HTMLElement>(null);
@@ -122,7 +128,13 @@ const UltraCategories = () => {
   };
 
   // Scroll-reveal animations for title and description (sliding from left to right)
+  // ⚡ PERFORMANCE: Skip GSAP ScrollTrigger on mobile - use CSS animations instead
   useEffect(() => {
+    // Skip heavy GSAP animations on mobile for better scroll performance
+    if (isMobileDevice()) {
+      return;
+    }
+    
     const title = titleRef.current;
     const description = descriptionRef.current;
     const section = sectionRef.current;
@@ -170,7 +182,12 @@ const UltraCategories = () => {
   }, []);
 
   // Scroll-reveal animations for category cards (desktop)
+  // ⚡ PERFORMANCE: Skip on mobile
   useEffect(() => {
+    if (isMobileDevice()) {
+      return;
+    }
+    
     const container = containerRef.current;
     const section = sectionRef.current;
 
@@ -209,7 +226,14 @@ const UltraCategories = () => {
   }, []);
 
   // Scroll-reveal animations for category cards (mobile)
+  // ⚡ PERFORMANCE: DISABLED on mobile - GSAP ScrollTrigger causes scroll jank
+  // Cards will be visible immediately with CSS, no animation needed
   useEffect(() => {
+    // Skip GSAP animations on mobile entirely for smooth scrolling
+    if (isMobileDevice()) {
+      return;
+    }
+    
     const row1 = mobileRow1Ref.current;
     const row2 = mobileRow2Ref.current;
     const section = sectionRef.current;

@@ -76,7 +76,13 @@ const UltraFeaturedBouquets = () => {
 
 
   // Setup GSAP hover effects (no scroll animations)
+  // ⚡ PERFORMANCE: Skip GSAP on mobile - CSS handles hover states
   useEffect(() => {
+    // Skip GSAP animations on mobile devices for better performance
+    if (isMobile) {
+      return;
+    }
+    
     if (loading || bouquets.length === 0) {
       // Return empty cleanup if not ready
       return () => {
@@ -94,7 +100,7 @@ const UltraFeaturedBouquets = () => {
     // Set initial states - visible immediately
     gsap.set(cards, { y: 0, opacity: 1, rotateX: 0 });
 
-    // Enhanced 3D hover effects for modern cards
+    // Enhanced 3D hover effects for modern cards (desktop only)
     const eventHandlers: Array<{ card: HTMLElement; mouseenter: (e: Event) => void; mouseleave: (e: Event) => void }> = [];
     
     cards.forEach((card, index) => {

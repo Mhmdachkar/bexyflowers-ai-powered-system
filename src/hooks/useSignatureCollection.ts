@@ -27,12 +27,12 @@ export const useSignatureCollection = (filters?: {
   return useQuery({
     queryKey: signatureQueryKeys.list(filters),
     queryFn: () => getSignatureCollections(),
-    // PERFORMANCE: Balance between fresh data and mobile performance
-    // 2 min staleTime reduces unnecessary refetches on mobile while keeping data reasonably fresh
-    staleTime: 2 * 60 * 1000, // 2 minutes - prevents excessive refetches on mobile
-    gcTime: 5 * 60 * 1000, // 5 minutes - cache cleanup
-    refetchOnWindowFocus: false, // PERFORMANCE: Disabled for mobile - prevents refetch on tab switches
-    refetchOnMount: true, // Refetch on mount only (not on every focus change)
+    // ⚡ PERFORMANCE: Increased cache times to reduce API calls and improve mobile loading
+    staleTime: 10 * 60 * 1000, // 10 minutes - signature collection rarely changes
+    gcTime: 15 * 60 * 1000, // 15 minutes - keep in cache longer
+    refetchOnWindowFocus: false, // PERFORMANCE: Disabled - prevents refetch on tab switches
+    refetchOnMount: false, // ⚡ CHANGED: Use cached data if available - prevents duplicate API calls
+    refetchOnReconnect: false, // Don't refetch on network reconnect
   });
 };
 

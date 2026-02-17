@@ -85,11 +85,12 @@ const AdminClients = lazy(() => import("./pages/admin/AdminClients"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 2 * 60 * 1000, // 2 minutes - reduced from 10 min to prevent memory buildup
-      gcTime: 5 * 60 * 1000, // 5 minutes - reduced from 30 min to prevent memory leaks
+      // ⚡ PERFORMANCE: Increased cache times to reduce API calls on mobile
+      staleTime: 10 * 60 * 1000, // 10 minutes - data doesn't change frequently
+      gcTime: 15 * 60 * 1000, // 15 minutes - keep cached data longer
       refetchOnWindowFocus: false, // Don't refetch on window focus for better performance
-      refetchOnMount: false, // Use cached data if available
-      refetchOnReconnect: true, // Refetch on reconnect (network recovery)
+      refetchOnMount: false, // Use cached data if available - prevents duplicate API calls
+      refetchOnReconnect: false, // Don't refetch on reconnect - use cached data
       retry: 1, // Reduced retry attempts to prevent excessive queries
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000), // Reduced max delay
       // ⚡ SCALABILITY: Network mode for better offline support
