@@ -25,7 +25,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
-import logoImage from '/assets/bexy-flowers-logo.webp';
+import logoImage from '/assets/bexy-flowers-logo-sm.webp';
 
 // WhatsApp Icon Component
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -294,6 +294,8 @@ const UltraNavigation = () => {
                       <img
                         src={logoImage}
                         alt="Bexy Flowers Logo"
+                        width="160"
+                        height="99"
                         className="w-full h-full object-contain relative z-10 drop-shadow-lg filter brightness-110"
                       />
                     </div>

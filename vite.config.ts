@@ -1,10 +1,11 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { criticalCssPlugin } from "./vite-plugin-critical-css";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), criticalCssPlugin()],
   server: {
     port: 8080,
     strictPort: false, // If 8080 is taken, try next available port (8081, etc.)
