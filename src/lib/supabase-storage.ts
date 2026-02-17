@@ -57,10 +57,12 @@ export async function uploadImage(
     const filePath = folder ? `${folder}/${fileName}` : fileName;
 
     // Upload file
+    // ⚡ PERFORMANCE: Increased cache duration from 1 hour to 1 year (31536000 seconds)
+    // Images rarely change, so long cache = faster repeat visits
     const { data, error: uploadError } = await supabase.storage
       .from(bucket)
       .upload(filePath, uploadFile, {
-        cacheControl: '3600',
+        cacheControl: '31536000',
         upsert: false,
         contentType: uploadFile.type || 'image/webp',
       });

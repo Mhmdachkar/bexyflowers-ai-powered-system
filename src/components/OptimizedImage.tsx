@@ -3,17 +3,26 @@
  * 
  * Features:
  * - Lazy loading with native browser lazy loading
- * - Responsive images with srcset
  * - Placeholder/skeleton while loading
  * - Error handling with fallback
  * - WebP format support
  * 
- * ⚡ PERFORMANCE FIX: Removed IntersectionObserver to prevent CPU issues
- * Using native browser lazy loading instead - much more efficient!
+ * ⚡ PERFORMANCE FIX: Removed broken srcSet generation
+ * Supabase Storage doesn't support query params for image resizing
+ * Using direct image URLs with native lazy loading for best performance
+ * 
+ * ⚡ PERFORMANCE FIX: Removed animated placeholders on mobile
+ * Static background instead of animate-pulse to reduce CPU usage
  */
 
 import { useState } from 'react';
 import type { ImgHTMLAttributes } from 'react';
+
+// ⚡ PERFORMANCE: Check if device is mobile - use simpler placeholders
+const isMobileDevice = () => {
+  if (typeof window === 'undefined') return true;
+  return window.innerWidth < 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+};
 
 interface OptimizedImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> {
   src: string;
@@ -24,7 +33,7 @@ interface OptimizedImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 
   placeholder?: string;
   fallback?: string;
   priority?: boolean; // Load immediately (above the fold)
-  sizes?: string; // For responsive images
+  sizes?: string; // For responsive images (kept for future CDN support)
 }
 
 export function OptimizedImage({
@@ -51,68 +60,37 @@ export function OptimizedImage({
     setIsLoaded(true);
   };
 
-  // Generate responsive srcset for WebP
-  const generateSrcSet = (baseSrc: string): string => {
-    if (!baseSrc || baseSrc.startsWith('data:') || baseSrc.startsWith('blob:')) {
-      return '';
-    }
-
-    // If already has query params or is external, return as-is
-    if (baseSrc.includes('?') || baseSrc.startsWith('http')) {
-      return '';
-    }
-
-    // Generate different sizes for responsive images
-    const sizes = [400, 800, 1200, 1600];
-    return sizes
-      .map((size) => {
-        // Try WebP first, fallback to original
-        const webpSrc = baseSrc.replace(/\.(jpg|jpeg|png)$/i, '.webp');
-        return `${webpSrc}?w=${size} ${size}w`;
-      })
-      .join(', ');
-  };
-
   const imageSrc = hasError && fallback ? fallback : src;
-  const srcSet = generateSrcSet(imageSrc);
 
   return (
     <div
       className={`relative overflow-hidden ${className.includes('!w-full') ? 'w-full h-full' : className}`}
       style={{ width: width || '100%', height: height || '100%' }}
     >
-      {/* Placeholder/Skeleton */}
-      {!isLoaded && placeholder && (
+      {/* Placeholder/Skeleton - Static on mobile for better performance */}
+      {!isLoaded && (
         <div
-          className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200 animate-pulse"
+          className={`absolute inset-0 bg-[#F5F5F5] ${isMobileDevice() ? '' : 'bg-gradient-to-br from-slate-100 to-slate-200'}`}
           style={{ width, height }}
         />
       )}
 
-      {/* Actual Image - Always render, let browser handle lazy loading */}
+      {/* Actual Image - Direct src, no broken srcSet */}
       <img
         src={imageSrc}
-        srcSet={srcSet}
-        sizes={sizes || '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'}
         alt={alt}
         width={width}
         height={height}
         loading={priority ? 'eager' : 'lazy'}
         decoding="async"
-        className={`transition-opacity duration-300 w-full h-full ${
+        fetchPriority={priority ? 'high' : 'auto'}
+        className={`transition-opacity duration-200 w-full h-full ${
           isLoaded ? 'opacity-100' : 'opacity-0'
         } ${className.includes('object-cover') ? 'object-cover object-center' : ''}`}
         onLoad={handleLoad}
         onError={handleError}
         {...props}
       />
-
-      {/* Loading indicator */}
-      {!isLoaded && !placeholder && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
     </div>
   );
 }

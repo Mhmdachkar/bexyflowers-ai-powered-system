@@ -156,13 +156,14 @@ const BouquetCard = memo(({
 
       {/* Image Container - Clean with light background */}
       <div className="relative aspect-[3/4] overflow-hidden bg-[#F5F5F5]">
+        {/* ⚡ PERFORMANCE: First 8 images load eagerly (2 rows on mobile, 2 rows on desktop) */}
         <OptimizedImage
           src={bouquet.image}
           alt={getProductImageAlt(bouquet)}
           className={`w-full h-full object-cover object-center transition-transform duration-500 ease-out group-hover:scale-110 ${bouquet.is_out_of_stock ? 'grayscale' : ''}`}
-          loading="lazy"
+          loading={index < 8 ? "eager" : "lazy"}
           decoding="async"
-          priority={index < 4}
+          priority={index < 8}
         />
 
         {/* Out of Stock Overlay */}

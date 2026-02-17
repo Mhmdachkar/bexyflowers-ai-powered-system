@@ -37,10 +37,12 @@ export const useCollectionProducts = (filters?: {
   return useQuery<CollectionProduct[]>({
     queryKey: collectionQueryKeys.list(filters),
     queryFn: () => getCollectionProducts(filters),
-    staleTime: 2 * 60 * 1000, // Reduced from 5 min to prevent memory buildup
-    gcTime: 5 * 60 * 1000, // Reduced from 10 min to prevent memory leaks
+    // ⚡ PERFORMANCE: Increased cache times to reduce API calls and improve mobile loading
+    staleTime: 30 * 60 * 1000, // 30 minutes - products don't change frequently
+    gcTime: 60 * 60 * 1000, // 60 minutes - keep cached data longer for repeat visits
     refetchOnWindowFocus: false, // Don't refetch on window focus for better UX
     refetchOnMount: false, // Use cached data if available
+    refetchOnReconnect: false, // Don't refetch on network reconnect
     placeholderData: (previousData) => previousData, // Use previous data while fetching
   });
 };
@@ -53,10 +55,12 @@ export const useCollectionProduct = (id: string | undefined) => {
     queryKey: collectionQueryKeys.detail(id!),
     queryFn: () => getCollectionProduct(id!),
     enabled: !!id,
-    staleTime: 2 * 60 * 1000, // Reduced from 5 min to prevent memory buildup
-    gcTime: 5 * 60 * 1000, // Reduced from 10 min to prevent memory leaks
+    // ⚡ PERFORMANCE: Increased cache times for faster product detail loading
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 60 * 60 * 1000, // 60 minutes
     refetchOnWindowFocus: false,
     refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 };
 
@@ -67,8 +71,9 @@ export const useCollectionTags = () => {
   return useQuery({
     queryKey: collectionQueryKeys.tags(),
     queryFn: getAllTags,
-    staleTime: 5 * 60 * 1000, // Reduced from 10 min - tags change rarely but still need limits
-    gcTime: 10 * 60 * 1000, // Reduced from 30 min to prevent memory leaks
+    // ⚡ PERFORMANCE: Tags rarely change, cache for longer
+    staleTime: 60 * 60 * 1000, // 60 minutes - tags change very rarely
+    gcTime: 120 * 60 * 1000, // 2 hours - keep tags cached
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
