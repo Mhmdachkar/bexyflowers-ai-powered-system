@@ -439,32 +439,13 @@ const ServiceSection = ({
   
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // Debug: Log image array to console
-  useEffect(() => {
-    if (imageArray.length === 0) {
-      console.warn(`ServiceSection "${title}": No images provided`);
-    }
-  }, [imageArray.length, title]);
+  // ⚡ PERFORMANCE FIX: Removed console.warn - unnecessary in production
 
   // Auto-rotate images every 4 seconds if multiple images provided
-  // Seamless loop - no blank/blink between transitions
-  // Preload all images to ensure smooth transitions
-  // PERFORMANCE FIX: Only run when section is visible
-  const preloadedImagesRef = React.useRef<Set<string>>(new Set());
-  
+  // ⚡ PERFORMANCE FIX: Removed image preloading - let browser handle it natively
+  // This prevents memory leaks from Image() objects that were never cleaned up
   useEffect(() => {
     if (imageArray.length <= 1) return;
-
-    // Preload all images for smooth transitions (no blank moments)
-    // Track preloaded images to avoid repeated preloading
-    imageArray.forEach((imgSrc) => {
-      const encodedSrc = encodeImageUrl(imgSrc);
-      if (!preloadedImagesRef.current.has(encodedSrc)) {
-        const img = new Image();
-        img.src = encodedSrc;
-        preloadedImagesRef.current.add(encodedSrc);
-      }
-    });
 
     let interval: NodeJS.Timeout | null = null;
     
@@ -585,36 +566,15 @@ const ServiceSection = ({
               <div ref={imageRef} className="relative h-[280px] overflow-hidden">
                 {imageArray.length > 0 ? (
                   imageArray.map((img, idx) => (
-                    <motion.img
+                    <img
                       key={idx}
-                      src={img}
+                      src={encodeImageUrl(img)}
                       alt={title}
-                      className="absolute inset-0 w-full h-full object-cover"
-                      initial={{ opacity: idx === 0 ? 1 : 0 }}
-                      animate={{
-                        opacity: idx === currentImageIndex ? 1 : 0,
-                        scale: idx === currentImageIndex ? 1 : 1.05
-                      }}
-                      transition={{
-                        duration: 1.2,
-                        ease: [0.4, 0, 0.2, 1], // Smooth easing for seamless transition
-                        opacity: { duration: 1.2 } // Longer fade for smoother loop
-                      }}
+                      className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000"
                       style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        willChange: 'opacity', // Optimize for smooth transitions
+                        opacity: idx === currentImageIndex ? 1 : 0,
                       }}
-                      onLoad={() => {
-                        // Ensure image is loaded before showing
-                        if (idx === currentImageIndex) {
-                          // Image is ready
-                        }
-                      }}
+                      loading={idx === 0 ? "eager" : "lazy"}
                     />
                   ))
                 ) : (
@@ -711,39 +671,15 @@ const ServiceSection = ({
             <div className="relative overflow-hidden rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl" style={{ height: '500px', minHeight: '500px' }}>
               {imageArray.length > 0 ? (
                 imageArray.map((img, idx) => (
-                  <motion.img
+                  <img
                     key={idx}
                     src={encodeImageUrl(img)}
                     alt={title}
-                    className="absolute inset-0 w-full h-full object-cover"
-                    initial={{ opacity: idx === 0 ? 1 : 0 }}
-                    animate={{
-                      opacity: idx === currentImageIndex ? 1 : 0,
-                      scale: idx === currentImageIndex ? 1 : 1.05
-                    }}
-                    transition={{
-                      duration: 1.5,
-                      ease: [0.25, 0.1, 0.25, 1], // Smooth cubic bezier for seamless crossfade
-                      opacity: {
-                        duration: 1.5,
-                        ease: [0.25, 0.1, 0.25, 1] // Overlapping fade for seamless loop
-                      }
-                    }}
+                    className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000"
                     style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      willChange: 'opacity', // Optimize for smooth transitions
+                      opacity: idx === currentImageIndex ? 1 : 0,
                     }}
-                    onLoad={() => {
-                      // Ensure image is loaded before showing
-                      if (idx === currentImageIndex) {
-                        // Image is ready
-                      }
-                    }}
+                    loading={idx === 0 ? "eager" : "lazy"}
                   />
                 ))
               ) : (
@@ -1608,20 +1544,16 @@ const ImageGallery = () => {
     // Only process when we have data or error
     const data = weddingCreationsQuery.data;
     if (data && Array.isArray(data)) {
-      console.log('Loaded wedding creations:', data.length);
-
       // Filter out empty/null/undefined image URLs and encode valid ones
       const imageUrls = data
         .map((creation: any) => creation.image_url)
         .filter((url): url is string => Boolean(url && url.trim()))
         .map(url => encodeImageUrl(url))
         .filter(url => url.trim() !== ''); // Filter out any empty strings after encoding
-
-      console.log('Final wedding image URLs:', imageUrls.length);
       setWeddingImages(imageUrls);
       setLoadingImages(false);
     } else if (weddingCreationsQuery.error) {
-      console.error('Failed to load wedding images:', weddingCreationsQuery.error);
+      // ⚡ PERFORMANCE FIX: Removed console.error - unnecessary in production
       setWeddingImages([]);
       setLoadingImages(false);
     }
@@ -1635,36 +1567,9 @@ const ImageGallery = () => {
     }
   }, [weddingCreationsQuery.isLoading, weddingCreationsQuery.data]);
 
-  useEffect(() => {
-    // Only animate when images are loaded and gallery ref is ready
-    if (loadingImages || weddingImages.length === 0 || !galleryRef.current) return;
-
-    const ctx = gsap.context(() => {
-      // Animate gallery items - reduced on mobile
-      gsap.utils.toArray(galleryRef.current?.querySelectorAll('.gallery-item') || []).forEach((item: any, index: number) => {
-        gsap.fromTo(
-          item,
-          { scale: isMobile ? 0.95 : 0.8, opacity: 0, y: isMobile ? 20 : 50 },
-          {
-            scale: 1,
-            opacity: 1,
-            y: 0,
-            duration: isMobile ? 0.6 : 0.8,
-            delay: isMobile ? index * 0.05 : index * 0.1,
-            ease: "power2.out",
-            scrollTrigger: {
-              trigger: item,
-              start: "top 85%",
-              toggleActions: "play none none none",
-              refreshPriority: -1, // Lower priority for better performance
-            },
-          }
-        );
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, [isMobile, loadingImages, weddingImages.length]); // Add dependencies to prevent re-animation loops
+  // ⚡ PERFORMANCE FIX: Removed per-item ScrollTrigger animations
+  // These were creating 20+ ScrollTriggers that accumulated in memory and caused crashes
+  // Using CSS animations instead for gallery items
 
   // Prevent body scroll when modal is open and restore scroll position
   useEffect(() => {
@@ -1761,13 +1666,7 @@ const ImageGallery = () => {
                         src={image}
                         alt={`Wedding decoration ${index + 1}`}
                         className="w-full h-full object-cover"
-                        onError={(e) => {
-                          console.error('Failed to load wedding carousel image:', image, e);
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                        onLoad={() => {
-                          console.log('Successfully loaded wedding carousel image:', image);
-                        }}
+                        loading={index === 0 ? "eager" : "lazy"}
                       />
                     </div>
                   </div>
@@ -1830,9 +1729,10 @@ const ImageGallery = () => {
                     }}
                   >
                     <img
-                      src={encodeImageUrl(image)}
+                      src={image}
                       alt={`Thumbnail ${index + 1}`}
                       className="w-full h-full object-cover"
+                      loading="lazy"
                     />
                   </div>
                 ))}
@@ -1922,13 +1822,7 @@ const ImageGallery = () => {
                   src={image}
                   alt={`Wedding decoration ${index + 1}`}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  onError={(e) => {
-                    console.error('Failed to load wedding image:', image, e);
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                  onLoad={() => {
-                    console.log('Successfully loaded wedding image:', image);
-                  }}
+                  loading={index < 8 ? "eager" : "lazy"}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="absolute bottom-0 left-0 right-0 p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-500">

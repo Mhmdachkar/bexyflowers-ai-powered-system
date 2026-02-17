@@ -28,11 +28,12 @@ export const useWeddingCreations = (filters?: {
   return useQuery({
     queryKey: weddingQueryKeys.list(filters),
     queryFn: () => getWeddingCreations(filters),
-    staleTime: 2 * 60 * 1000, // Reduced from 5 min to prevent memory buildup
-    gcTime: 5 * 60 * 1000, // Reduced from 10 min to prevent memory leaks
+    // ⚡ PERFORMANCE: Increased cache times to reduce API calls and improve loading
+    staleTime: 30 * 60 * 1000, // 30 minutes - wedding data doesn't change frequently
+    gcTime: 60 * 60 * 1000, // 60 minutes - keep cached data longer for repeat visits
     refetchOnWindowFocus: false,
     refetchOnMount: false, // Use cached data if available
-    // Removed onSuccess prefetching to prevent memory accumulation
+    refetchOnReconnect: false, // Don't refetch on network reconnect
   });
 };
 
@@ -44,10 +45,12 @@ export const useWeddingCreation = (id: string | undefined) => {
     queryKey: weddingQueryKeys.detail(id!),
     queryFn: () => getWeddingCreation(id!),
     enabled: !!id,
-    staleTime: 2 * 60 * 1000, // Reduced from 5 min to prevent memory buildup
-    gcTime: 5 * 60 * 1000, // Reduced from 10 min to prevent memory leaks
+    // ⚡ PERFORMANCE: Increased cache times for faster detail loading
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 60 * 60 * 1000, // 60 minutes
     refetchOnWindowFocus: false,
     refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 };
 
