@@ -89,3 +89,39 @@ export function encodeImageUrl(url: string | null | undefined): string {
   return encodeURI(url);
 }
 
+/**
+ * Generate a srcSet string for responsive images using optimized variants.
+ * The optimize-images.mjs script creates -sm (400w) and -md (800w) variants.
+ * Returns srcSet + the smallest appropriate src for mobile-first loading.
+ */
+export function getResponsiveImageProps(url: string | null | undefined): {
+  src: string;
+  srcSet?: string;
+} {
+  if (!url || url.trim() === '') return { src: '' };
+
+  // Only works for local /assets/ webp images
+  if (!url.startsWith('/') || url.startsWith('http') || url.startsWith('blob:')) {
+    return { src: encodeImageUrl(url) };
+  }
+
+  const encoded = encodeImageUrl(url);
+
+  // Build variant paths: replace .webp with -sm.webp and -md.webp
+  const extMatch = url.match(/\.(webp|jpg|jpeg|png)$/i);
+  if (!extMatch) {
+    return { src: encoded };
+  }
+
+  const ext = extMatch[0]; // e.g. ".webp"
+  const basePath = url.slice(0, url.length - ext.length);
+
+  const smUrl = encodeImageUrl(`${basePath}-sm.webp`);
+  const mdUrl = encodeImageUrl(`${basePath}-md.webp`);
+
+  return {
+    src: smUrl, // Mobile-first: serve smallest by default
+    srcSet: `${smUrl} 400w, ${mdUrl} 800w, ${encoded} 1600w`,
+  };
+}
+

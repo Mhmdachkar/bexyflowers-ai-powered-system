@@ -4,7 +4,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useNavigate } from 'react-router-dom';
 import { Heart, Gift, Cake, Crown, Briefcase, Flower2, Star, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
-import { encodeImageUrl } from '@/lib/imageUtils';
+import { encodeImageUrl, getResponsiveImageProps } from '@/lib/imageUtils';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -536,11 +536,11 @@ const UltraCategories = () => {
                     {/* Enhanced Background Image */}
                     <div className="absolute inset-0 overflow-hidden rounded-[30px]">
                       <img
-                        src={encodeImageUrl(category.image)}
+                        {...getResponsiveImageProps(category.image)}
                         alt={category.name}
                         width="320"
                         height="384"
-                        sizes="(max-width: 768px) 200px, 320px"
+                        sizes="320px"
                         className="w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-110 group-hover:brightness-110"
                         loading="lazy"
                         decoding="async"
@@ -656,7 +656,7 @@ const UltraCategories = () => {
                       {/* Enhanced Background Image */}
                       <div className="absolute inset-0 overflow-hidden rounded-[24px]">
                         <img
-                          src={encodeImageUrl(category.image)}
+                          {...getResponsiveImageProps(category.image)}
                           alt={category.name}
                           width="196"
                           height="224"
@@ -737,7 +737,7 @@ const UltraCategories = () => {
                       {/* Enhanced Background Image */}
                       <div className="absolute inset-0 overflow-hidden rounded-[24px]">
                         <img
-                          src={encodeImageUrl(category.image)}
+                          {...getResponsiveImageProps(category.image)}
                           alt={category.name}
                           width="196"
                           height="224"

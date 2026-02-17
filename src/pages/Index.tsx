@@ -18,15 +18,14 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import LazySection from "@/components/LazySection";
 import UltraNavigation from "@/components/UltraNavigation";
 import BackToTop from "@/components/BackToTop";
+import CarouselHero from "@/components/CarouselHero";
 import {
-  HeroSkeleton,
   FeaturedBouquetsSkeleton,
   CategoriesSkeleton,
   GenericSectionSkeleton,
   FooterSkeleton
 } from "@/components/SectionSkeletons";
 
-const CarouselHero = React.lazy(() => import("@/components/CarouselHero"));
 const UltraFeaturedBouquets = React.lazy(() => import("@/components/UltraFeaturedBouquets"));
 const UltraCategories = React.lazy(() => import("@/components/UltraCategories"));
 // Replaced heavy interactive builder on home with lightweight CTA
@@ -379,9 +378,7 @@ const Index = () => {
       />
       <UltraNavigation />
       <div className="relative z-10">
-        <Suspense fallback={<HeroSkeleton />}>
-          <CarouselHero isHomepage={true} />
-        </Suspense>
+        <CarouselHero isHomepage={true} />
         <LazySection rootMargin="400px 0px">
           <Suspense fallback={<FeaturedBouquetsSkeleton />}>
             <UltraFeaturedBouquets />

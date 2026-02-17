@@ -101,6 +101,7 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isVideoVisible, setIsVideoVisible] = useState(false);
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
 
   // Determine which slides to use
   // Homepage desktop: 1 slide, Homepage mobile: all slides, Collection: all slides
@@ -135,6 +136,13 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
 
     return () => clearTimeout(timer);
   }, []);
+
+  // PERFORMANCE: Delay video source injection on mobile by 3s to prioritize LCP
+  useEffect(() => {
+    if (!isMobile) return;
+    const timer = setTimeout(() => setVideoReady(true), 3000);
+    return () => clearTimeout(timer);
+  }, [isMobile]);
 
   // Intersection Observer for lazy loading video only when visible
   // PERFORMANCE FIX: Keep observer active to pause/resume video
@@ -320,7 +328,7 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
           poster={getImagePath('image1.png')}
           aria-label="Hero background video"
         >
-          {shouldLoadVideo && (
+          {shouldLoadVideo && videoReady && (
             <source src={video1Url} type="video/webm" />
           )}
         </video>
