@@ -19,8 +19,7 @@ import {
   Star,
   Calendar,
   Settings,
-  Instagram,
-  BookOpen
+  Instagram
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
@@ -113,12 +112,6 @@ const navigationItems: NavigationItem[] = [
     path: "/wedding-and-events",
     icon: <Calendar className="w-5 h-5" />,
     description: "Special Occasions"
-  },
-  {
-    name: "Guides",
-    path: "/guides",
-    icon: <BookOpen className="w-5 h-5" />,
-    description: "Care & Occasion Tips"
   },
   {
     name: "About",

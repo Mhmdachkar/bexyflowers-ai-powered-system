@@ -39,7 +39,6 @@ const staticPages = [
   { url: '/customize', changefreq: 'weekly', priority: '0.9' },
   { url: '/wedding-and-events', changefreq: 'weekly', priority: '0.9' },
   { url: '/about', changefreq: 'monthly', priority: '0.8' },
-  { url: '/guides', changefreq: 'monthly', priority: '0.8' },
 ];
 
 function formatDate(date) {

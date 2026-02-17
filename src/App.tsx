@@ -63,7 +63,6 @@ const AboutPage = lazy(() => import("./pages/About"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Customize = lazy(() => import("./pages/Customize"));
 const WeddingAndEvents = lazy(() => import("./pages/WeddingAndEvents"));
-const Guides = lazy(() => import("./pages/Guides"));
 const ProductDetailPage = lazy(() => import("./pages/ProductDetailPage"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const CartTest = lazy(() => import("./pages/CartTest"));
@@ -138,7 +137,6 @@ const AppRouter = () => {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/customize" element={<Customize />} />
           <Route path="/wedding-and-events" element={<WeddingAndEvents />} />
-          <Route path="/guides" element={<Guides />} />
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/cart-test" element={<CartTest />} />
