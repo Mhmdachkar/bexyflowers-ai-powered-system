@@ -40,12 +40,38 @@
     <link rel="shortcut icon" type="image/webp" href="/assets/bexy-flowers-logo.webp" />
     <link rel="apple-touch-icon" href="/assets/bexy-flowers-logo.webp" />
     
-    <!-- Google Fonts - Non-blocking with display=swap -->
+    <!-- Preconnect to critical origins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://rkjvoeppgkgmcxzyujwk.supabase.co" crossorigin>
+    <link rel="dns-prefetch" href="https://rkjvoeppgkgmcxzyujwk.supabase.co">
+    
+    <!-- Critical CSS to prevent CLS from font loading -->
+    <style>
+      /* Font fallback to prevent CLS */
+      :root {
+        --font-luxury: 'Playfair Display', Georgia, 'Times New Roman', serif;
+        --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      /* Reserve space for hero content to prevent layout shift */
+      .main-content__subtitle {
+        min-height: 1.5em;
+        font-family: var(--font-body);
+      }
+      /* Prevent image layout shift */
+      img {
+        content-visibility: auto;
+      }
+      /* Initial loading state */
+      #root {
+        min-height: 100vh;
+      }
+    </style>
+    
+    <!-- Google Fonts - Non-blocking with display=swap -->
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Lato:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Lato:wght@400;700&display=swap" rel="stylesheet"></noscript>
-   </head>
+  </head>
 
   <body>
     <div id="root"></div>

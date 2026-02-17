@@ -538,11 +538,13 @@ const UltraCategories = () => {
                       <img
                         src={encodeImageUrl(category.image)}
                         alt={category.name}
-                        width="400"
-                        height="500"
+                        width="320"
+                        height="384"
+                        sizes="(max-width: 768px) 200px, 320px"
                         className="w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-110 group-hover:brightness-110"
                         loading="lazy"
                         decoding="async"
+                        fetchPriority="low"
                       />
                       
                       {/* Modern Gradient Overlay */}
@@ -656,11 +658,13 @@ const UltraCategories = () => {
                         <img
                           src={encodeImageUrl(category.image)}
                           alt={category.name}
-                          width="400"
-                          height="500"
+                          width="196"
+                          height="224"
+                          sizes="196px"
                           className="w-full h-full object-cover transition-all duration-700 ease-out"
                           loading="lazy"
                           decoding="async"
+                          fetchPriority="low"
                         />
                         
                         {/* Modern Gradient Overlay */}
@@ -735,11 +739,13 @@ const UltraCategories = () => {
                         <img
                           src={encodeImageUrl(category.image)}
                           alt={category.name}
-                          width="400"
-                          height="500"
+                          width="196"
+                          height="224"
+                          sizes="196px"
                           className="w-full h-full object-cover transition-all duration-700 ease-out"
                           loading="lazy"
                           decoding="async"
+                          fetchPriority="low"
                         />
                         
                         {/* Modern Gradient Overlay */}

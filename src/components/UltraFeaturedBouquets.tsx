@@ -392,8 +392,9 @@ const UltraFeaturedBouquets = () => {
                   <motion.img
                     src={bouquet.image}
                     alt={getProductImageAlt(bouquet)}
-                    width="400"
-                    height="500"
+                    width="280"
+                    height="336"
+                    sizes="(max-width: 640px) 33vw, (max-width: 1024px) 250px, 280px"
                          style={{
                            width: '100%',
                            height: '100%',
@@ -405,6 +406,7 @@ const UltraFeaturedBouquets = () => {
                          className="transition-all duration-300 ease-out group-hover:scale-105"
                          loading={index < 3 ? "eager" : "lazy"}
                          decoding="async"
+                         fetchPriority={index < 3 ? "high" : "low"}
                          onError={(e) => {
                            console.error('Failed to load signature collection image:', bouquet.image, bouquet.name, e);
                            (e.target as HTMLImageElement).style.display = 'none';
