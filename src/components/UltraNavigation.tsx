@@ -7,6 +7,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useRoutePrefetch } from '@/hooks/useRoutePrefetch';
 import { useRouteState } from '@/contexts/RouteStateContext';
 import { useNavigationPrefetch } from '@/hooks/useNavigationPrefetch';
+import { isAndroid } from '@/utils/performance';
 import {
   ShoppingBag,
   Menu,
@@ -134,11 +135,22 @@ const UltraNavigation = () => {
   const { getTotalFavorites } = useFavorites();
   const cartItems = getTotalItems();
   const favoritesCount = getTotalFavorites();
-  
+  const [isAndroidDevice, setIsAndroidDevice] = useState(false);
+
   // React Query-based navigation prefetching
   const { handleLinkHover, handleLinkFocus } = useNavigationPrefetch();
   const isMobile = useIsMobile();
   const shouldReduceMotion = useReducedMotion();
+
+  // Detect Android device once on mount for Android-specific UI optimizations
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      setIsAndroidDevice(isAndroid());
+    } catch {
+      setIsAndroidDevice(false);
+    }
+  }, []);
 
   // ⚡ PERFORMANCE: Preload cart + checkout on hover for fast navigation
   const preloadCartDashboard = () => {
@@ -255,9 +267,12 @@ const UltraNavigation = () => {
               pointerEvents: 'auto', // Ensure navigation is clickable
               position: 'fixed',
               width: '100%',
-              backgroundColor: isScrolled ? 'rgba(255, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.05)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)', // Force iOS blur
+              // On Android and small screens, avoid heavy backdrop blur for smoother scrolling
+              backgroundColor: isScrolled
+                ? (isMobile || isAndroidDevice ? 'rgba(229, 228, 226, 0.98)' : 'rgba(255, 255, 255, 0.85)')
+                : (isMobile || isAndroidDevice ? 'rgba(229, 228, 226, 0.95)' : 'rgba(255, 255, 255, 0.05)'),
+              backdropFilter: (isMobile || isAndroidDevice) ? 'none' : 'blur(20px)',
+              WebkitBackdropFilter: (isMobile || isAndroidDevice) ? 'none' : 'blur(20px)', // Disable blur on Android/mobile
               // Removed will-change as it causes performance issues with scroll
             }}
           >

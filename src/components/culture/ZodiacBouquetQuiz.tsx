@@ -114,15 +114,15 @@ const ZodiacBouquetQuiz = () => {
         <div className="absolute bottom-32 left-1/4 w-40 h-40 bg-gradient-to-br from-yellow-400/8 to-amber-500/8 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
-      <section className="py-32 px-4 relative z-10">
-        <div className="container mx-auto px-4 max-w-4xl">
+      <section className="py-16 sm:py-24 lg:py-32 px-4 sm:px-6 relative z-10">
+        <div className="container mx-auto px-2 sm:px-4 max-w-4xl">
         {/* Header */}
         <div
-          className="text-center mb-16 relative"
+          className="text-center mb-10 sm:mb-16 relative"
         >
           {/* Modern Floating Badge */}
           <div
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-slate-800/10 to-slate-700/10 backdrop-blur-xl border border-slate-600/20 mb-8"
+            className="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-gradient-to-r from-slate-800/10 to-slate-700/10 backdrop-blur-xl border border-slate-600/20 mb-6 sm:mb-8"
           >
             <div className="w-2 h-2 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 animate-pulse" />
             <span className="text-sm font-medium text-slate-700 tracking-wider uppercase">Zodiac Bouquet Finder</span>
@@ -130,7 +130,7 @@ const ZodiacBouquetQuiz = () => {
           
           {/* Luxury Typography with Gold Accent */}
           <h1 
-            className="font-luxury text-5xl md:text-7xl font-normal mb-6 relative"
+            className="font-luxury text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-normal mb-6 relative"
             style={{
               fontFamily: 'EB Garamond, serif',
               background: 'linear-gradient(135deg, #2c2d2a 0%, #3D3027 50%, #2c2d2a 100%)',
@@ -160,7 +160,7 @@ const ZodiacBouquetQuiz = () => {
           
           {/* Enhanced Description */}
           <p 
-            className="text-gray-600 text-xl max-w-2xl mx-auto leading-relaxed font-light"
+            className="text-gray-600 text-base sm:text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-light"
           >
             Discover the perfect floral arrangement that aligns with your zodiac sign and cosmic energy
           </p>
@@ -171,7 +171,7 @@ const ZodiacBouquetQuiz = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="mb-12 px-4"
+          className="mb-8 sm:mb-12 px-2 sm:px-4"
         >
           <div className="relative flex justify-between items-center max-w-2xl mx-auto">
             {/* Continuous Background Line */}
@@ -219,7 +219,7 @@ const ZodiacBouquetQuiz = () => {
         </motion.div>
 
         {/* Luxury Quiz Content Card */}
-        <Card className="p-10 bg-gradient-to-br from-white to-[#F5F1E8] border border-[#D4A85A] shadow-xl shadow-[#C79E48]/15 rounded-3xl">
+        <Card className="p-6 sm:p-8 md:p-10 bg-gradient-to-br from-white to-[#F5F1E8] border border-[#D4A85A] shadow-xl shadow-[#C79E48]/15 rounded-3xl">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}
@@ -259,7 +259,7 @@ const ZodiacBouquetQuiz = () => {
           </AnimatePresence>
 
           {/* Luxury Navigation Buttons */}
-          <div className="flex justify-between mt-10">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 justify-between mt-8 sm:mt-10">
             <motion.div
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
@@ -312,7 +312,7 @@ const WelcomeStep = ({
   userInfo: any; 
   setUserInfo: (info: any) => void; 
 }) => (
-  <div className="text-center space-y-10">
+      <div className="text-center space-y-8 sm:space-y-10">
     
     <motion.h3 
       className="text-4xl font-bold text-gray-900 mb-6 tracking-wide"
@@ -568,7 +568,7 @@ const BouquetSelectionStep = ({
       </p>
     </motion.div>
     
-    <div className="grid gap-8">
+    <div className="grid gap-6 sm:gap-8">
       {sign.recommendedBouquets.map((bouquet, index) => (
         <motion.div
           key={bouquet.id}
@@ -578,15 +578,15 @@ const BouquetSelectionStep = ({
           whileHover={{ y: -8 }}
         >
           <Card 
-            className={`p-8 cursor-pointer transition-all duration-500 rounded-2xl border-2 shadow-lg ${
+            className={`p-5 sm:p-6 md:p-8 cursor-pointer transition-all duration-500 rounded-2xl border-2 shadow-lg ${
               selectedBouquet?.id === bouquet.id
                 ? 'ring-4 ring-[#C79E48] bg-gradient-to-br from-[#F5F1E8] to-white border-[#C79E48] shadow-xl shadow-[#C79E48]/30'
                 : 'bg-white border-[#E8D4A8] hover:border-[#D4A85A] hover:shadow-xl'
             }`}
             onClick={() => onBouquetSelect(bouquet)}
           >
-            <div className="flex items-center gap-8">
-              <div className="w-32 h-32 bg-white rounded-2xl overflow-hidden flex-shrink-0 border-2 border-[#E8D4A8] shadow-lg">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 bg-white rounded-2xl overflow-hidden flex-shrink-0 border-2 border-[#E8D4A8] shadow-lg">
                 <img
                   src={bouquet.image}
                   alt={getProductImageAlt(bouquet)}
@@ -595,14 +595,14 @@ const BouquetSelectionStep = ({
               </div>
               
               <div className="flex-1">
-                <h4 className="font-bold text-gray-900 text-2xl mb-4 tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
+                <h4 className="font-bold text-gray-900 text-xl sm:text-2xl mb-3 sm:mb-4 tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
                   {bouquet.name}
                 </h4>
-                <p className="text-gray-700 mb-6 leading-relaxed text-lg">
+                <p className="text-gray-700 mb-4 sm:mb-6 leading-relaxed text-sm sm:text-base md:text-lg">
                   {bouquet.description}
                 </p>
-                <div className="flex items-center gap-6 text-xl">
-                  <span className="text-[#C79E48] font-bold text-2xl">
+                <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-base sm:text-lg md:text-xl">
+                  <span className="text-[#C79E48] font-bold text-xl sm:text-2xl">
                     ${bouquet.price}
                   </span>
                   <span className="text-gray-800 bg-[#F5F1E8] border border-[#D4A85A] px-4 py-2 rounded-full text-sm font-medium">
@@ -611,7 +611,7 @@ const BouquetSelectionStep = ({
                 </div>
               </div>
               
-              <div className="text-center">
+              <div className="text-center md:self-center">
                 <motion.div 
                   className={`w-12 h-12 rounded-full border-3 flex items-center justify-center transition-all duration-300 ${
                     selectedBouquet?.id === bouquet.id
@@ -655,7 +655,7 @@ const ZodiacResult = ({
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.8 }}
-      className="space-y-16 p-8"
+      className="space-y-10 sm:space-y-16 px-4 sm:px-8 py-8"
     >
       {/* Success Header */}
       <motion.div 
@@ -681,7 +681,7 @@ const ZodiacResult = ({
         </motion.div>
         
         <motion.h2 
-          className="text-5xl md:text-6xl font-bold text-gray-900 mb-8 tracking-wide"
+          className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 sm:mb-8 tracking-wide"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
@@ -693,7 +693,7 @@ const ZodiacResult = ({
         </motion.h2>
         
         <motion.p 
-          className="text-gray-600 text-2xl max-w-3xl mx-auto font-light leading-relaxed"
+          className="text-gray-600 text-base sm:text-lg md:text-2xl max-w-3xl mx-auto font-light leading-relaxed"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
@@ -708,33 +708,33 @@ const ZodiacResult = ({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.8 }}
       >
-        <Card className="p-12 bg-gradient-to-br from-white to-[#F5F1E8] border-2 border-[#D4A85A] shadow-2xl shadow-[#C79E48]/15 rounded-3xl">
-          <div className="grid md:grid-cols-2 gap-16 items-center">
+        <Card className="p-6 sm:p-8 md:p-12 bg-gradient-to-br from-white to-[#F5F1E8] border-2 border-[#D4A85A] shadow-2xl shadow-[#C79E48]/15 rounded-3xl">
+          <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-center">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 1 }}
-            >
+              >
               <img
                 src={bouquet.image}
                 alt={getProductImageAlt(bouquet)}
-                className="w-full h-96 object-cover rounded-3xl shadow-2xl border-2 border-[#E8D4A8]"
+                className="w-full h-64 sm:h-80 md:h-96 object-cover rounded-3xl shadow-2xl border-2 border-[#E8D4A8]"
               />
             </motion.div>
             
-            <div className="space-y-10">
+            <div className="space-y-8 sm:space-y-10">
               <motion.div
                 initial={{ opacity: 0, x: 30 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, delay: 1.2 }}
-              >
-                <h3 className="text-5xl font-bold text-gray-900 mb-6 tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
+                >
+                <h3 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 sm:mb-6 tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
                   {bouquet.name}
                 </h3>
-                <p className="text-[#C79E48] text-4xl font-bold mb-8">
+                <p className="text-[#C79E48] text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8">
                   ${bouquet.price}
                 </p>
-                <p className="text-gray-800 text-xl leading-relaxed">
+                <p className="text-gray-800 text-base sm:text-lg md:text-xl leading-relaxed">
                   {bouquet.description}
                 </p>
               </motion.div>
@@ -743,12 +743,12 @@ const ZodiacResult = ({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 1.4 }}
-                className="bg-white rounded-2xl p-8 border-2 border-[#E8D4A8] shadow-lg"
+                className="bg-white rounded-2xl p-6 sm:p-8 border-2 border-[#E8D4A8] shadow-lg"
               >
                 <h4 className="font-bold text-gray-900 text-2xl mb-6 tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
                   Why This Bouquet?
                 </h4>
-                <p className="text-gray-800 mb-8 leading-relaxed text-lg">
+                <p className="text-gray-800 mb-6 sm:mb-8 leading-relaxed text-base sm:text-lg">
                   {bouquet.meaning}
                 </p>
                 <div className="flex flex-wrap gap-3">
@@ -768,19 +768,19 @@ const ZodiacResult = ({
               </motion.div>
               
               <motion.div 
-                className="flex gap-6"
+                className="flex flex-col sm:flex-row gap-4 sm:gap-6"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 1.8 }}
               >
                 <motion.div whileHover={{ scale: 1.05, y: -3 }} whileTap={{ scale: 0.95 }} className="flex-1">
-                  <Button size="lg" className="w-full bg-gradient-to-r from-[#C79E48] to-[#C79E48] hover:from-[#C79E48] hover:to-[#C79E48] text-white shadow-lg shadow-[#C79E48]/40 h-16 text-xl font-semibold rounded-xl">
+                  <Button size="lg" className="w-full bg-gradient-to-r from-[#C79E48] to-[#C79E48] hover:from-[#C79E48] hover:to-[#C79E48] text-white shadow-lg shadow-[#C79E48]/40 h-14 sm:h-16 text-lg sm:text-xl font-semibold rounded-xl">
                     <Gift className="w-6 h-6 mr-3" />
                     Add to Cart
                   </Button>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant="outline" size="lg" onClick={onRestart} className="bg-white border-2 border-[#C79E48] text-[#C79E48] hover:bg-[#F5F1E8] h-16 text-xl px-8 rounded-xl font-semibold">
+                  <Button variant="outline" size="lg" onClick={onRestart} className="bg-white border-2 border-[#C79E48] text-[#C79E48] hover:bg-[#F5F1E8] h-14 sm:h-16 text-lg sm:text-xl px-6 sm:px-8 rounded-xl font-semibold">
                     Try Again
                   </Button>
                 </motion.div>
@@ -796,7 +796,7 @@ const ZodiacResult = ({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 2 }}
       >
-        <Card className="p-10 bg-gradient-to-r from-[#F5F1E8] to-white border-2 border-[#D4A85A] shadow-xl shadow-[#C79E48]/10 rounded-3xl">
+        <Card className="p-6 sm:p-8 md:p-10 bg-gradient-to-r from-[#F5F1E8] to-white border-2 border-[#D4A85A] shadow-xl shadow-[#C79E48]/10 rounded-3xl">
           <h3 className="font-bold text-gray-900 text-3xl mb-12 text-center tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
             Your Zodiac Insights
           </h3>

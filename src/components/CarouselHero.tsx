@@ -345,9 +345,11 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
           }}
           speed={800}
           autoplay={false}
+          // On mobile, completely disable Swiper touch interactions so the page
+          // never captures vertical scroll gestures inside the hero section.
           touchStartPreventDefault={false}
-          allowTouchMove={true}
-          simulateTouch={true}
+          allowTouchMove={!isMobile}
+          simulateTouch={!isMobile}
           touchRatio={1}
           touchAngle={45}
           grabCursor={false}

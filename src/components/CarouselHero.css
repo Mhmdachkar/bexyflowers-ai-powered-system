@@ -970,3 +970,24 @@
     transform: scale(0.8);
   }
 }
+
+/* Android mobile: use dynamic viewport height to avoid 100vh issues with browser UI bars */
+@media screen and (max-width: 768px) {
+  @supports (height: 100dvh) {
+    [data-android="true"] .carousel-hero-container {
+      height: 100dvh;
+      min-height: 100dvh;
+      max-height: 100dvh;
+    }
+
+    [data-android="true"] .carousel-hero-wrapper {
+      height: 100dvh;
+      min-height: 100dvh;
+      max-height: 100dvh;
+    }
+
+    [data-android="true"] .main {
+      min-height: 100dvh;
+    }
+  }
+}
