@@ -149,7 +149,7 @@ export async function updateWeddingCreation(
     throw new Error('Failed to update wedding creation');
   }
 
-  return data;
+  return data[0];
 }
 
 /**

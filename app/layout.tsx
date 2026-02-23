@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { EB_Garamond, Montserrat } from 'next/font/google';
 import { Providers } from './providers';
 import { ClientProviders } from './client-providers';
@@ -100,7 +101,9 @@ export default function RootLayout({
         <Providers>
           <ClientProviders>
             <ScrollManager />
-            <UltraNavigation />
+            <Suspense fallback={null}>
+              <UltraNavigation />
+            </Suspense>
             <main className="relative">{children}</main>
             <Footer />
             <BackToTop />

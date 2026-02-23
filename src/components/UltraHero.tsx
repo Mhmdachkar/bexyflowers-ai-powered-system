@@ -70,7 +70,7 @@ const UltraHero = () => {
         }}
       >
         <motion.img
-          src={heroBackground}
+          src={typeof heroBackground === 'string' ? heroBackground : heroBackground.src}
           alt="Luxury floral background"
           className={`w-full h-full ${isMobile ? 'opacity-70 scale-105 blur-[2px]' : 'transform-3d shadow-gold opacity-10'}`}
           style={{

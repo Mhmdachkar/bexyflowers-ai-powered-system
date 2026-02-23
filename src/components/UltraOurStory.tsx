@@ -18,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import logoImage from '/assets/bexy-flowers-logo.webp';
 import whoWeAreImage from '@/assets/who we-are-bexy-flowers.jpeg';
+import { toImageSrc } from '@/lib/imageUtils';
 import ThreeJSErrorBoundary from '@/components/3D/ThreeJSErrorBoundary';
 import { useWebGL } from '@/hooks/useWebGL';
 
@@ -281,7 +282,7 @@ const UltraOurStory = () => {
               transition={{ duration: 0.3 }}
             >
               <img
-                src={logoImage}
+                src={toImageSrc(logoImage)}
                 alt="Bexy Flowers Logo"
                 className="w-full h-full object-contain"
               />
@@ -336,7 +337,7 @@ const UltraOurStory = () => {
           >
             <div className="relative overflow-hidden shadow-3d">
               <img
-                src={whoWeAreImage}
+                src={toImageSrc(whoWeAreImage)}
                 alt="Who We Are - Bexy Flowers Team"
                 className="w-full h-80 sm:h-96 object-cover transition-transform duration-700 group-hover:scale-105"
               />
@@ -358,7 +359,7 @@ const UltraOurStory = () => {
                 }}
               >
                 <img
-                  src={logoImage}
+                  src={toImageSrc(logoImage)}
                   alt="Bexy Flowers"
                   className="w-10 h-10 object-contain"
                 />

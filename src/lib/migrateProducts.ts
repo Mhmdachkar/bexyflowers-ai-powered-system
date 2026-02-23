@@ -6,6 +6,7 @@
  */
 
 import { db } from './api/database-client';
+import { supabase } from './supabase';
 import type { Database } from './supabase';
 
 type CollectionProductInsert = Database['public']['Tables']['collection_products']['Insert'];

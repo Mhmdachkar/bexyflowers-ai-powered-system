@@ -7,6 +7,7 @@ interface ImageUploadProps {
   images: string[];
   onImagesChange: (images: string[]) => void;
   onFilesChange?: (files: File[]) => void;
+  onDeleteImage?: (url: string) => void;
   maxImages?: number;
   bucket?: 'product-images' | 'flower-images' | 'accessory-images';
   multiple?: boolean;
@@ -17,6 +18,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   images,
   onImagesChange,
   onFilesChange,
+  onDeleteImage,
   maxImages = 10,
   multiple = true,
   label = 'Upload Images',
@@ -86,6 +88,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   };
 
   const handleRemoveImage = (index: number) => {
+    const removedUrl = images[index];
     const newPreviewUrls = previewUrls.filter((_, i) => i !== index);
     const newImages = images.filter((_, i) => i !== index);
     const newFiles = uploadedFiles.filter((_, i) => i !== index);
@@ -100,6 +103,9 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     onImagesChange(newImages);
     if (onFilesChange) {
       onFilesChange(newFiles);
+    }
+    if (onDeleteImage && removedUrl && !removedUrl.startsWith('blob:')) {
+      onDeleteImage(removedUrl);
     }
   };
 

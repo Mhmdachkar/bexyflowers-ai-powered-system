@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIOSPerformance } from "@/hooks/use-ios-performance";
 import heroBouquetMain from "@/assets/bouquet-1.jpg";
+import { toImageSrc } from "@/lib/imageUtils";
 import { flowerFamilies, EnhancedFlower, Season } from "@/data/flowers";
 import { useFlowersForCustomize } from "@/hooks/useFlowers";
 import type { CustomizeFlower } from "@/lib/api/flowers";
@@ -672,7 +673,7 @@ const Customize: React.FC = () => {
       id: `custom-${Date.now()}`,
       title: "Custom Bouquet",
       price: totalPrice,
-      image: generatedImage || Object.values(selectedFlowers)[0]?.flower.imageUrl || heroBouquetMain,
+      image: generatedImage || Object.values(selectedFlowers)[0]?.flower.imageUrl || toImageSrc(heroBouquetMain),
       description: desc,
       personalNote: ""
     });

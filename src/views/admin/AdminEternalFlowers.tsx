@@ -163,16 +163,16 @@ const AdminEternalFlowers = () => {
 
       if (imagesToDelete.length > 0) {
         for (const url of imagesToDelete) {
-          const path = extractPathFromUrl(url);
+          const path = extractPathFromUrl(url, 'product-images');
           if (path) {
-            await deleteImage(path);
+            await deleteImage('product-images', path);
           }
         }
         imageUrls = imageUrls.filter(url => !imagesToDelete.includes(url));
       }
 
       if (imageFiles.length > 0) {
-        const uploadedUrls = await uploadMultipleImages(imageFiles, 'products');
+        const uploadedUrls = await uploadMultipleImages('product-images', imageFiles, 'products');
         imageUrls = [...imageUrls, ...uploadedUrls];
       }
 

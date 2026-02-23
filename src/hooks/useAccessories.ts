@@ -61,7 +61,7 @@ export const useCreateAccessory = () => {
     mutationFn: ({ accessory, images }: {
       accessory: Parameters<typeof createAccessory>[0];
       images?: File[];
-    }) => createAccessory(accessory, images),
+    }) => createAccessory(accessory, images?.[0]),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: accessoriesQueryKeys.lists() });
     },
@@ -85,7 +85,7 @@ export const useUpdateAccessory = () => {
       updates: Parameters<typeof updateAccessory>[1];
       newImages?: File[];
       imagesToDelete?: string[];
-    }) => updateAccessory(id, updates, newImages, imagesToDelete),
+    }) => updateAccessory(id, updates, newImages?.[0], (imagesToDelete?.length ?? 0) > 0),
     onSuccess: (data) => {
       queryClient.setQueryData(accessoriesQueryKeys.detail(data.id), data);
       queryClient.invalidateQueries({ queryKey: accessoriesQueryKeys.lists() });

@@ -2,6 +2,12 @@
  * Utility functions for handling image URLs safely
  */
 
+/** Normalize image source - accepts string or StaticImageData (Next.js imported images) */
+export function toImageSrc(img: string | { src: string } | null | undefined): string {
+  if (!img) return '';
+  return typeof img === 'string' ? img : img.src;
+}
+
 /**
  * Checks if a string contains percent-encoded characters
  */

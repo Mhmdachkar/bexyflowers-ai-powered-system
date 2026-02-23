@@ -16,7 +16,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import heroWeddingImage from "@/assets/heroWedding.webp";
 import { useWeddingCreations } from "@/hooks/useWeddingCreations";
-import { encodeImageUrl } from "@/lib/imageUtils";
+import { encodeImageUrl, toImageSrc } from "@/lib/imageUtils";
 // Video for mobile hero background
 const video3Url = '/assets/video/Video3.webm';
 
@@ -301,7 +301,7 @@ const WeddingHero = () => {
           }}
         >
           <img
-            src={heroWeddingImage}
+            src={toImageSrc(heroWeddingImage)}
             alt="Elegant Wedding Couple"
             className="w-full h-full object-cover"
             loading="eager"

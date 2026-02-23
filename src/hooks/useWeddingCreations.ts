@@ -64,7 +64,7 @@ export const useCreateWeddingCreation = () => {
     mutationFn: ({ creation, images }: {
       creation: Parameters<typeof createWeddingCreation>[0];
       images?: File[];
-    }) => createWeddingCreation(creation, images),
+    }) => createWeddingCreation(creation, images?.[0] as File),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: weddingQueryKeys.lists() });
     },
@@ -88,7 +88,7 @@ export const useUpdateWeddingCreation = () => {
       updates: Parameters<typeof updateWeddingCreation>[1];
       newImages?: File[];
       imagesToDelete?: string[];
-    }) => updateWeddingCreation(id, updates, newImages, imagesToDelete),
+    }) => updateWeddingCreation(id, updates, newImages?.[0], (imagesToDelete?.length ?? 0) > 0),
     onSuccess: (data) => {
       queryClient.setQueryData(weddingQueryKeys.detail(data.id), data);
       queryClient.invalidateQueries({ queryKey: weddingQueryKeys.lists() });

@@ -292,7 +292,15 @@ const BouquetBuilder: React.FC<BouquetBuilderProps> = ({
 
               <TabsContent value="premade" className="mt-6">
                 <PreDesignedBouquets
-                  bouquets={generatedBouquets}
+                  bouquets={generatedBouquets.map((b) => ({
+                    id: b.id,
+                    name: b.name,
+                    description: b.description,
+                    imageUrl: b.image,
+                    flowers: [],
+                    totalPrice: b.price,
+                    category: b.category,
+                  }))}
                   onBouquetSelect={handlePreDesignedSelect}
                 />
               </TabsContent>

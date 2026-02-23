@@ -3,6 +3,7 @@ import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import heroBackground from "@/assets/hero-bg.jpg";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { toImageSrc } from "@/lib/imageUtils";
 
 const Hero = () => {
   const isMobile = useIsMobile();
@@ -23,7 +24,7 @@ const Hero = () => {
         }}
       >
         <img
-          src={heroBackground}
+          src={toImageSrc(heroBackground)}
           alt="Luxury floral background"
           className="w-full h-full object-cover opacity-30"
           loading="eager"

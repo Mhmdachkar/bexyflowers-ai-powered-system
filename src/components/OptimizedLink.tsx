@@ -22,7 +22,7 @@ const OptimizedLinkComponent: React.FC<OptimizedLinkProps> = ({
   const navigate = useNavigate();
   const { handleLinkHover, handleLinkFocus } = useNavigationPrefetch();
   
-  const path = typeof to === 'string' ? to : to.pathname || '';
+  const path = typeof to === 'string' ? to : (to && typeof to === 'object' && 'pathname' in to ? (to as { pathname: string }).pathname : '');
 
   const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
     if (prefetch) {

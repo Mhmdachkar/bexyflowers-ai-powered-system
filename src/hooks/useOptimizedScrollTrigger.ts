@@ -125,7 +125,7 @@ export const useOptimizedGSAP = () => {
     // ⚡ PERFORMANCE: Configure GSAP for better performance
     gsap.config({
       nullTargetWarn: false, // Reduce console warnings
-      trialWarn: false, // Reduce console warnings
+      // trialWarn removed - not a valid GSAPConfig property
     });
 
     // Use will-change hints more efficiently

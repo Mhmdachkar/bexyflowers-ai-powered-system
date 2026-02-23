@@ -24,7 +24,7 @@ import { collectionQueryKeys } from '@/hooks/useCollectionProducts';
 import { useSignatureCollection } from '@/hooks/useSignatureCollection';
 import { PriceDisplay } from '@/components/PriceDisplay';
 import type { Bouquet } from '@/types/bouquet';
-import { encodeImageUrl } from '@/lib/imageUtils';
+import { encodeImageUrl, toImageSrc } from '@/lib/imageUtils';
 
 // Import real images from assets
 import bouquet1 from '@/assets/bouquet-1.jpg';
@@ -272,11 +272,11 @@ const ProductDetailPage = () => {
       title: 'Ember Rose Symphony',
       price: 125.00,
       description: 'A passionate arrangement of crimson Grand Prix roses and rich burgundy snapdragons, accented with delicate seeded eucalyptus. Each stem is carefully selected to create a dramatic, textural masterpiece that speaks of timeless romance and devotion. Handcrafted by our artisans in Sidon.',
-      imageUrl: bouquet1,
+      imageUrl: toImageSrc(bouquet1),
       images: [
-        bouquet1,
-        bouquet2,
-        bouquet3
+        toImageSrc(bouquet1),
+        toImageSrc(bouquet2),
+        toImageSrc(bouquet3)
       ],
       category: 'Premium Bouquets',
       inStock: true

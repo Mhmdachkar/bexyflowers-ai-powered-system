@@ -28,7 +28,7 @@ export const useFlowers = (filters?: {
 }) => {
   return useQuery({
     queryKey: flowersQueryKeys.list(filters),
-    queryFn: () => getFlowers(filters),
+    queryFn: () => getFlowers(),
     staleTime: 2 * 60 * 1000, // Reduced from 5 min to prevent memory buildup
     gcTime: 5 * 60 * 1000, // Reduced from 10 min to prevent memory leaks
     refetchOnWindowFocus: false,

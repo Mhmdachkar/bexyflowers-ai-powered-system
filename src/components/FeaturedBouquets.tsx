@@ -90,7 +90,7 @@ const FeaturedBouquets = () => {
               <Card className="group overflow-hidden bg-card border-2 border-border/50 shadow-platinum hover:shadow-luxury transition-luxury">
                 <div className="relative overflow-hidden">
                   <img
-                    src={bouquet.image}
+                    src={typeof bouquet.image === 'string' ? bouquet.image : bouquet.image.src}
                     alt={getProductImageAlt(bouquet)}
                     className="w-full h-64 object-cover transition-luxury group-hover:scale-110"
                     loading="lazy"
@@ -132,7 +132,7 @@ const FeaturedBouquets = () => {
                           id: bouquet.id as number,
                           title: bouquet.name,
                           price: priceNumber,
-                          image: bouquet.image
+                          image: typeof bouquet.image === 'string' ? bouquet.image : bouquet.image.src
                         });
                       }}
                     >

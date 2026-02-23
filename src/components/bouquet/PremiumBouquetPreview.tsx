@@ -15,10 +15,10 @@ const Flower3D: React.FC<Flower3DProps> = ({ flower, index }) => {
   const [hovered, setHovered] = useState(false);
 
   // Use the position directly since we're now setting proper 3D coordinates
-  const position3D = [
-    flower.position?.x || (Math.random() - 0.5) * 2,
-    flower.position?.y || Math.random() * 2 + 0.5,
-    flower.position?.z || (Math.random() - 0.5) * 1
+  const position3D: [number, number, number] = [
+    flower.position?.x ?? (Math.random() - 0.5) * 2,
+    flower.position?.y ?? Math.random() * 2 + 0.5,
+    (flower.position as { x?: number; y?: number; z?: number })?.z ?? (Math.random() - 0.5) * 1
   ];
 
   useFrame((state) => {

@@ -72,7 +72,7 @@ export async function submitCheckoutOrder(input: CheckoutOrderInput): Promise<Ch
  * Fetch all checkout orders (admin) – latest first.
  */
 export async function getCheckoutOrders(): Promise<CheckoutOrderRecord[]> {
-  const data = await db.select<CheckoutOrderRecord[]>('checkout_orders', {
+  const data = await db.select<CheckoutOrderRecord>('checkout_orders', {
     orderBy: { column: 'created_at', ascending: false },
     select: 'id, full_name, phone, email, location, order_items, subtotal, delivery_fee, total, created_at',
   });

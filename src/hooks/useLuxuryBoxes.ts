@@ -27,7 +27,7 @@ export const useLuxuryBoxes = (filters?: {
 }) => {
   return useQuery({
     queryKey: luxuryBoxesQueryKeys.list(filters),
-    queryFn: () => getLuxuryBoxes(filters),
+    queryFn: () => getLuxuryBoxes(),
     staleTime: 2 * 60 * 1000, // Reduced from 5 min to prevent memory buildup
     gcTime: 5 * 60 * 1000, // Reduced from 10 min to prevent memory leaks
     refetchOnWindowFocus: false,
@@ -61,7 +61,7 @@ export const useCreateLuxuryBox = () => {
     mutationFn: ({ box, images }: {
       box: Parameters<typeof createLuxuryBox>[0];
       images?: File[];
-    }) => createLuxuryBox(box, images),
+    }) => createLuxuryBox(box),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: luxuryBoxesQueryKeys.lists() });
     },
@@ -85,7 +85,7 @@ export const useUpdateLuxuryBox = () => {
       updates: Parameters<typeof updateLuxuryBox>[1];
       newImages?: File[];
       imagesToDelete?: string[];
-    }) => updateLuxuryBox(id, updates, newImages, imagesToDelete),
+    }) => updateLuxuryBox(id, updates),
     onSuccess: (data) => {
       queryClient.setQueryData(luxuryBoxesQueryKeys.detail(data.id), data);
       queryClient.invalidateQueries({ queryKey: luxuryBoxesQueryKeys.lists() });

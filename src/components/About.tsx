@@ -266,7 +266,7 @@ const About = () => {
         transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
       >
         <img
-          src={aboutHeroBg}
+          src={typeof aboutHeroBg === 'string' ? aboutHeroBg : aboutHeroBg.src}
           alt="About hero background"
           className="w-full h-full object-cover"
           loading="eager"
@@ -352,7 +352,7 @@ const About = () => {
             viewport={{ once: true }}
           >
             <motion.img 
-              src={signatureGlitterFlower} 
+              src={typeof signatureGlitterFlower === 'string' ? signatureGlitterFlower : signatureGlitterFlower.src} 
               alt="Signature glitter-dusted rose bouquet" 
               className="w-full h-full object-cover" 
             style={{ 
