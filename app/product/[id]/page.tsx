@@ -89,13 +89,6 @@ async function generateProductStructuredData(id: string) {
         '@type': 'Brand',
         name: 'Bexy Flowers',
       },
-      aggregateRating: product.rating
-        ? {
-            '@type': 'AggregateRating',
-            ratingValue: product.rating,
-            reviewCount: product.review_count || 1,
-          }
-        : undefined,
     };
   } catch (error) {
     return null;
