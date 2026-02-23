@@ -1,7 +1,9 @@
+'use client';
+
 import { useEffect, useRef, useState, useCallback, startTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from '@/lib/navigation-compat';
 import { gsap } from 'gsap';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRoutePrefetch } from '@/hooks/useRoutePrefetch';
@@ -25,7 +27,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
-import logoImage from '/assets/bexy-flowers-logo-sm.webp';
+// Import from public folder - Next.js serves /public files at root
+const logoImage = '/assets/bexy-flowers-logo-sm.webp';
 
 // WhatsApp Icon Component
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -155,7 +158,7 @@ const UltraNavigation = () => {
   // ⚡ PERFORMANCE: Preload cart + checkout on hover for fast navigation
   const preloadCartDashboard = () => {
     import('@/components/cart/CartDashboard');
-    import('@/pages/Checkout');
+    import('@/views/Checkout');
   };
 
   useEffect(() => {
@@ -173,7 +176,7 @@ const UltraNavigation = () => {
     setIsMenuOpen(newState);
 
     // Prevent body scroll when menu is open on mobile
-    if (isMobile) {
+    if (isMobile && typeof document !== 'undefined') {
       if (newState) {
         // Use overflow-only lock to avoid Android scroll bugs with position: fixed
         document.body.style.overflow = "hidden";
@@ -646,7 +649,7 @@ const UltraNavigation = () => {
             </div>
 
             {/* Mobile Menu - Full-Screen Overlay - Rendered via Portal */}
-            {createPortal(
+            {typeof document !== 'undefined' && createPortal(
               <AnimatePresence>
                 {isMenuOpen && (
                   <>

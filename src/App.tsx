@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from '@/lib/navigation-compat';
 import ScrollToTop from "@/components/ScrollToTop";
 import RouteLoader from "@/components/RouteLoader";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -37,8 +37,8 @@ const preloadCriticalRoutes = () => {
   }
   
   // Only preload on desktop after page is interactive
-  import("./pages/Index");
-  import("./pages/Collection");
+  import("./views/Index");
+  import("./views/Collection");
 };
 
 // Start preloading only after page is fully loaded and idle
@@ -57,28 +57,28 @@ if (typeof window !== 'undefined') {
 
 // ⚡ PERFORMANCE OPTIMIZATION: Route-based code splitting
 // Lazy load all routes to reduce initial bundle size by ~68%
-const Index = lazy(() => import("./pages/Index"));
-const Collection = lazy(() => import("./pages/Collection"));
-const AboutPage = lazy(() => import("./pages/About"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const Customize = lazy(() => import("./pages/Customize"));
-const WeddingAndEvents = lazy(() => import("./pages/WeddingAndEvents"));
-const ProductDetailPage = lazy(() => import("./pages/ProductDetailPage"));
-const Checkout = lazy(() => import("./pages/Checkout"));
-const CartTest = lazy(() => import("./pages/CartTest"));
-const Favorites = lazy(() => import("./pages/Favorites"));
+const Index = lazy(() => import("./views/Index"));
+const Collection = lazy(() => import("./views/Collection"));
+const AboutPage = lazy(() => import("./views/About"));
+const NotFound = lazy(() => import("./views/NotFound"));
+const Customize = lazy(() => import("./views/Customize"));
+const WeddingAndEvents = lazy(() => import("./views/WeddingAndEvents"));
+const ProductDetailPage = lazy(() => import("./views/ProductDetailPage"));
+const Checkout = lazy(() => import("./views/Checkout"));
+const CartTest = lazy(() => import("./views/CartTest"));
+const Favorites = lazy(() => import("./views/Favorites"));
 const CartPage = lazy(() => import("./components/cart/CartPage"));
-const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
-const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
-const AdminProducts = lazy(() => import("./pages/admin/AdminProducts"));
-const AdminSignatureCollection = lazy(() => import("./pages/admin/AdminSignatureCollection"));
-const AdminEternalFlowers = lazy(() => import("./pages/admin/AdminEternalFlowers"));
-const AdminAccessories = lazy(() => import("./pages/admin/AdminAccessories"));
-const AdminFlowers = lazy(() => import("./pages/admin/AdminFlowers"));
-const AdminLuxuryBoxes = lazy(() => import("./pages/admin/AdminLuxuryBoxes"));
-const AdminWeddingCreations = lazy(() => import("./pages/admin/AdminWeddingCreations"));
-const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
-const AdminClients = lazy(() => import("./pages/admin/AdminClients"));
+const AdminLogin = lazy(() => import("./views/admin/AdminLogin"));
+const AdminDashboard = lazy(() => import("./views/admin/AdminDashboard"));
+const AdminProducts = lazy(() => import("./views/admin/AdminProducts"));
+const AdminSignatureCollection = lazy(() => import("./views/admin/AdminSignatureCollection"));
+const AdminEternalFlowers = lazy(() => import("./views/admin/AdminEternalFlowers"));
+const AdminAccessories = lazy(() => import("./views/admin/AdminAccessories"));
+const AdminFlowers = lazy(() => import("./views/admin/AdminFlowers"));
+const AdminLuxuryBoxes = lazy(() => import("./views/admin/AdminLuxuryBoxes"));
+const AdminWeddingCreations = lazy(() => import("./views/admin/AdminWeddingCreations"));
+const AdminSettings = lazy(() => import("./views/admin/AdminSettings"));
+const AdminClients = lazy(() => import("./views/admin/AdminClients"));
 
 // ⚡ MEMORY LEAK FIX: Reduced cache times to prevent memory accumulation
 const queryClient = new QueryClient({
@@ -114,7 +114,7 @@ const isMobileDevice = () => {
 const AppRouter = () => {
   // CRITICAL FIX: Disable heavy performance hooks on mobile AND in development
   // These hooks do prefetching, pattern learning, and monitoring which can overload mobile devices
-  const isProduction = import.meta.env.PROD;
+  const isProduction = process.env.NODE_ENV === 'production';
   const isMobile = isMobileDevice();
   
   // ⚡ PERFORMANCE: Only enable these hooks on desktop in production
@@ -168,7 +168,7 @@ const App = () => {
 
   // Register service worker for caching
   useEffect(() => {
-    if (import.meta.env.PROD) {
+    if (process.env.NODE_ENV === 'production') {
       registerServiceWorker();
       console.log('[App] Service Worker registration initiated');
     }

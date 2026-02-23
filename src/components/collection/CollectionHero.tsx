@@ -1,9 +1,11 @@
+'use client';
+
 import { useRef, memo, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIOSPerformance } from "@/hooks/use-ios-performance";
 // Video for mobile hero background
-import video4Url from '@/assets/video/video4.webm?url';
+const video4Url = '/assets/video/video4.webm';
 
 const CollectionHeroComponent = () => {
   const heroRef = useRef<HTMLElement>(null);

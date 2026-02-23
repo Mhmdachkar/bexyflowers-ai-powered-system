@@ -1,3 +1,4 @@
+'use client';
 
 import { lazy, Suspense } from 'react';
 import { useCart } from '@/contexts/CartContext';

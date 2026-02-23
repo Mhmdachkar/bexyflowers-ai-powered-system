@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from '@/lib/navigation-compat';
 import { useQueryClient } from '@tanstack/react-query';
 
 /**
@@ -84,24 +84,24 @@ export const useComponentPrefetch = () => {
 
       case '/product/:id':
         // Pre-load product detail components
-        import('@/pages/ProductDetailPage').catch(() => {});
+        import('@/views/ProductDetailPage').catch(() => {});
         break;
 
       case '/wedding-and-events':
         // Pre-load wedding-specific components
-        import('@/pages/WeddingAndEvents').catch(() => {});
+        import('@/views/WeddingAndEvents').catch(() => {});
         import('@/components/culture/FlowerCareGuide').catch(() => {});
         break;
 
       case '/customize':
         // Pre-load customization components
-        import('@/pages/Customize').catch(() => {});
+        import('@/views/Customize').catch(() => {});
         import('@/components/bouquet/BouquetBuilder').catch(() => {});
         break;
 
       case '/checkout':
         // Pre-load checkout components
-        import('@/pages/Checkout').catch(() => {});
+        import('@/views/Checkout').catch(() => {});
         break;
 
       case '/cart':
@@ -111,7 +111,7 @@ export const useComponentPrefetch = () => {
 
       case '/favorites':
         // Pre-load favorites components
-        import('@/pages/Favorites').catch(() => {});
+        import('@/views/Favorites').catch(() => {});
         break;
     }
   }, []);

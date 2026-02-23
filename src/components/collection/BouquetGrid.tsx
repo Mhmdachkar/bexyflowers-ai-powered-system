@@ -3,7 +3,7 @@ import { Heart, ShoppingCart } from "lucide-react";
 import { useCartWithToast } from "@/hooks/useCartWithToast";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useFlyingHeart } from "@/contexts/FlyingHeartContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from '@/lib/navigation-compat';
 import { useQueryClient } from "@tanstack/react-query";
 import { collectionQueryKeys } from "@/hooks/useCollectionProducts";
 import { OptimizedImage } from "@/components/OptimizedImage";

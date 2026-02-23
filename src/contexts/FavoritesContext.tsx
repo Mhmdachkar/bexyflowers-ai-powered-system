@@ -1,3 +1,5 @@
+'use client';
+
 import React, { createContext, useContext, useEffect, useState, ReactNode, useRef, useMemo } from 'react';
 import { FavoriteProduct, FavoritesContextType } from '@/types/favorites';
 import { getVisitorFavorites, addVisitorFavorite, removeVisitorFavorite, clearVisitorFavorites, syncFavoritesToDatabase } from '@/lib/api/visitor-favorites';
@@ -41,7 +43,7 @@ export const FavoritesProvider: React.FC<FavoritesProviderProps> = ({ children }
           return; // No DB call for new/empty visitors
         }
 
-        if (import.meta.env.PROD || import.meta.env.VITE_USE_NETLIFY_FUNCTIONS === 'true') {
+        if (process.env.NODE_ENV === 'production' || process.env.NEXT_PUBLIC_USE_NETLIFY_FUNCTIONS === 'true') {
           try {
             const dbFavorites = await getVisitorFavorites();
             if (dbFavorites.length > 0) {

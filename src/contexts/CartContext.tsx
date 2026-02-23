@@ -1,3 +1,5 @@
+'use client';
+
 import React, { createContext, useContext, useEffect, useState, ReactNode, useRef, useMemo } from 'react';
 import { CartItem, CartContextType, Product } from '@/types/cart';
 import { getVisitorCart, upsertVisitorCartItem, removeVisitorCartItem, updateVisitorCartItemQuantity, clearVisitorCart, syncCartToDatabase } from '@/lib/api/visitor-cart';
@@ -42,7 +44,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           return; // No DB call for new/empty visitors
         }
 
-        if (import.meta.env.PROD || import.meta.env.VITE_USE_NETLIFY_FUNCTIONS === 'true') {
+        if (process.env.NODE_ENV === 'production' || process.env.NEXT_PUBLIC_USE_NETLIFY_FUNCTIONS === 'true') {
           try {
             const dbCart = await getVisitorCart();
             if (dbCart.length > 0) {

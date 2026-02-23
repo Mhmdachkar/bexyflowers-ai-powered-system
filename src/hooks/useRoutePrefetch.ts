@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import type { NavigateFunction, Location } from 'react-router-dom';
+import { useNavigate, useLocation } from '@/lib/navigation-compat';
+import type { NavigateFunction, Location } from '@/lib/navigation-compat';
 
 /**
  * Hook for prefetching routes on hover to enable instant navigation

@@ -1,5 +1,7 @@
+'use client';
+
 import { useEffect, useLayoutEffect, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation } from '@/lib/navigation-compat';
 import { scrollTo } from "@/hooks/useSmoothScroll";
 
 const ScrollToTop = () => {

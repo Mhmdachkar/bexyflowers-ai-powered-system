@@ -1,5 +1,5 @@
 import React, { memo, useCallback, startTransition } from 'react';
-import { Link, LinkProps, useNavigate } from 'react-router-dom';
+import { Link, LinkProps, useNavigate } from '@/lib/navigation-compat';
 import { useNavigationPrefetch } from '@/hooks/useNavigationPrefetch';
 
 /**

@@ -7,7 +7,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import heroBackground from '@/assets/hero-bg.jpg';
 import { useIsMobile } from '@/hooks/use-mobile';
 import logoImage from '/assets/bexy-flowers-logo.webp';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/navigation-compat';
 
 gsap.registerPlugin(ScrollTrigger);
 

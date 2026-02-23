@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -20,7 +22,7 @@ import {
   Truck
 } from 'lucide-react';
 import { useCartWithToast } from '@/hooks/useCartWithToast';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/navigation-compat';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useQueryClient } from '@tanstack/react-query';
 import { collectionQueryKeys } from '@/hooks/useCollectionProducts';

@@ -1,5 +1,5 @@
 import React, { useCallback, memo, startTransition, useEffect } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from '@/lib/navigation-compat';
 import { Button } from "@/components/ui/button";
 import {
   Home,

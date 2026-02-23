@@ -1,6 +1,8 @@
+'use client';
+
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from '@/lib/navigation-compat';
 import { useQueryClient } from '@tanstack/react-query';
 import { collectionQueryKeys } from '@/hooks/useCollectionProducts';
 import { Button } from '@/components/ui/button';
@@ -52,7 +54,8 @@ const UltraFeaturedBouquets = () => {
     const imageRotations = (item as any).image_rotations || {};
 
     return {
-      id: item.product?.id || item.id,
+      // Use product_id for links - /product/:id looks up collection_products, not signature_collections
+      id: item.product_id || item.product?.id || item.id,
       name: title,
       price: price,
       image: encodeImageUrl(imageUrl),

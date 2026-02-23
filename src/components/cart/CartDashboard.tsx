@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/navigation-compat';
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { X, ShoppingCart, Trash2, Plus, Minus, CreditCard, ArrowRight, Sparkles, Package } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';

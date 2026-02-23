@@ -1,6 +1,8 @@
+'use client';
+
 import React, { createContext, useContext, useRef, useCallback, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import type { Location, NavigateFunction } from 'react-router-dom';
+import { useLocation, useNavigate } from '@/lib/navigation-compat';
+import type { Location, NavigateFunction } from '@/lib/navigation-compat';
 
 interface RouteStateCache {
   [key: string]: {

@@ -61,7 +61,10 @@ export const AI_CONFIG = {
       // Set to true to use Netlify function instead of direct API calls
       // SECURITY: Secret key is only used server-side, never exposed to frontend
       useServerless: true, // Enabled: Uses serverless function with secret key (unlimited rate limits)
-      serverlessEndpoint: '/.netlify/functions/generate-image', // Netlify function endpoint
+      // Use Next.js API route by default; Netlify function when explicitly enabled
+      serverlessEndpoint: typeof process !== 'undefined' && process.env.NEXT_PUBLIC_USE_NETLIFY_FUNCTIONS === 'true'
+        ? '/.netlify/functions/generate-image'
+        : '/api/generate-image',
       params: {
         // NOTE: Only basic parameters are supported in new API
         // enhance, nologo, seed may cause 400 errors - not including them

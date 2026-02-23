@@ -69,11 +69,10 @@ export async function createSignedRequest(data: {
   nonce: string;
   signature: string;
 }> {
-  const secret = import.meta.env.VITE_FRONTEND_API_SECRET;
+  const secret = process.env.NEXT_PUBLIC_FRONTEND_API_SECRET;
   
   if (!secret) {
-    // If secret not configured, return unsigned request (backward compatibility)
-    console.warn('[Request Signing] VITE_FRONTEND_API_SECRET not set - sending unsigned request');
+    console.warn('[Request Signing] NEXT_PUBLIC_FRONTEND_API_SECRET not set - sending unsigned request');
     return {
       ...data,
       width: data.width || 768,

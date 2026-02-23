@@ -1,8 +1,10 @@
+'use client';
+
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/navigation-compat';
 import { Heart, Gift, Cake, Crown, Briefcase, Flower2, Star, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { encodeImageUrl, getResponsiveImageProps } from '@/lib/imageUtils';
 

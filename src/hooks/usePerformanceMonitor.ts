@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from '@/lib/navigation-compat';
 
 /**
  * Performance monitoring hook for navigation and loading times

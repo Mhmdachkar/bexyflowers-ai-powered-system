@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from '@/lib/navigation-compat';
 import { collectionQueryKeys } from '@/hooks/useCollectionProducts';
 import { getCheckoutOrders } from '@/lib/api/checkout';
 import { getCollectionProducts } from '@/lib/api/collection-products';

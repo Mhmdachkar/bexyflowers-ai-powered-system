@@ -6,7 +6,7 @@ import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Trash2, ShoppingBag, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/navigation-compat';
 import UltraNavigation from '@/components/UltraNavigation';
 import Footer from '@/components/Footer';
 import BackToTop from '@/components/BackToTop';

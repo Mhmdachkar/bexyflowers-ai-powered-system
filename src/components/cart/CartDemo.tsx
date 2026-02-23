@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Code, Database, Smartphone } from 'lucide-react';
-import CartApp from '@/pages/CartApp';
+import CartApp from '@/views/CartApp';
 
 /**
  * Demo component that showcases the shopping cart functionality

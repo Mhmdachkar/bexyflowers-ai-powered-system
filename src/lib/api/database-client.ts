@@ -8,7 +8,10 @@
  * Frontend → Backend API → Database
  */
 
-const API_ENDPOINT = '/.netlify/functions/database';
+// Use Next.js API route by default; fall back to Netlify functions when explicitly enabled
+const API_ENDPOINT = process.env.NEXT_PUBLIC_USE_NETLIFY_FUNCTIONS === 'true'
+  ? '/.netlify/functions/database'
+  : '/api/database';
 
 // Track if we've already warned about Netlify functions (prevents console spam)
 let hasWarnedAboutNetlify = false;
@@ -36,10 +39,10 @@ interface DatabaseResponse<T = any> {
  * Make database request to backend API with timeout
  */
 async function databaseRequest<T = any>(request: DatabaseRequest): Promise<T> {
-  const frontendApiKey = import.meta.env.VITE_FRONTEND_API_KEY;
+  const frontendApiKey = process.env.NEXT_PUBLIC_FRONTEND_API_KEY;
   
   // CRITICAL FIX: Add timeout to prevent infinite hanging
-  const TIMEOUT_MS = import.meta.env.DEV ? 3000 : 10000; // 3s in dev, 10s in prod
+  const TIMEOUT_MS = process.env.NODE_ENV === 'development' ? 3000 : 10000; // 3s in dev, 10s in prod
   
   try {
     // Create abort controller for timeout
@@ -62,16 +65,14 @@ async function databaseRequest<T = any>(request: DatabaseRequest): Promise<T> {
       if (!response.ok) {
         // Handle 404 specifically (Netlify Functions not available)
         if (response.status === 404) {
-          if (import.meta.env.DEV) {
-            // Only warn once to prevent console spam
+          if (process.env.NODE_ENV === 'development') {
             if (!hasWarnedAboutNetlify) {
               hasWarnedAboutNetlify = true;
-              console.info('[Database] Netlify Functions not available in local dev. Using localStorage fallback.');
+              console.info('[Database] API endpoint not available in local dev. Using localStorage fallback.');
             }
-            // Return empty result instead of throwing - let the calling code use localStorage fallback
             throw new Error('NETLIFY_FUNCTIONS_UNAVAILABLE');
           }
-          throw new Error('Database endpoint not found. Please ensure Netlify Functions are deployed.');
+          throw new Error('Database endpoint not found. Please ensure the /api/database route is deployed.');
         }
         
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
@@ -90,10 +91,10 @@ async function databaseRequest<T = any>(request: DatabaseRequest): Promise<T> {
       
       // Handle abort/timeout
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        if (import.meta.env.DEV) {
+        if (process.env.NODE_ENV === 'development') {
           if (!hasWarnedAboutNetlify) {
             hasWarnedAboutNetlify = true;
-            console.info('[Database] Request timed out. Netlify Functions not available in local dev. Using localStorage fallback.');
+            console.info('[Database] Request timed out. API endpoint not available in local dev. Using localStorage fallback.');
           }
           throw new Error('NETLIFY_FUNCTIONS_UNAVAILABLE');
         }
@@ -108,9 +109,9 @@ async function databaseRequest<T = any>(request: DatabaseRequest): Promise<T> {
       throw error;
     }
     // Handle network errors
-    if (import.meta.env.DEV) {
+    if (process.env.NODE_ENV === 'development') {
       throw new Error(
-        `Network error: ${error}. Make sure Netlify Dev is running with \`npm run dev:netlify\``
+        `Network error: ${error}. Make sure the dev server is running with \`npm run dev\``
       );
     }
     throw new Error(`Database request failed: ${error}`);

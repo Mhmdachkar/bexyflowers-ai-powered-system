@@ -1,5 +1,7 @@
+'use client';
+
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/navigation-compat';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, EffectFade } from 'swiper/modules';
 import type { Swiper as SwiperType } from 'swiper';
@@ -10,9 +12,8 @@ import './CarouselHero.css';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useIOSPerformance } from '@/hooks/use-ios-performance';
 import { useImagePreloader } from '@/hooks/useImagePreloader';
-// WebM video - using ?url suffix for Vite to handle it as an asset
-// Optimized: 720p max, no audio, compressed WebM for smaller file size
-import video1Url from '@/assets/video/video1.WebM?url';
+// Video is served from public folder in Next.js
+const video1Url = '/assets/video/video1.WebM';
 
 interface SlideData {
   id: string;

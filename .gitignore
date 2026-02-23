@@ -1,56 +1,22 @@
-# Logs
-logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-node_modules
-dist
-dist-ssr
-*.local
-
-# Environment variables (NEVER commit secrets!)
+*.lock
+.DS_Store
 .env
+.env.*
 .env.local
 .env.production
-.env.development
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# AI Training and Model Files
-backend/fine_tuned_model_test/
-backend/training_data/
-backend/venv/
-backend/*.py
-backend/*.bat
-backend/*.sh
-backend/*.txt
-backend/*.md
-backend/generated_images/
-backend/test_*.py
-backend/train_*.py
-backend/convert_*.py
-backend/prepare_*.py
-backend/setup_*.py
-backend/server.py
-backend/test_backend.py
-
-# Large model files (exceed GitHub's 100MB limit)
-models/*.safetensors
-models/*.ckpt
-models/*.pt
-models/*.pth
-# Local Netlify folder
+!.env.example
+node_modules/
+dist/
+build/
+.next/
+out/
+.vercel
 .netlify
+coverage/
+.nyc_output/
+.cache/
+temp/
+tmp/
+*.tsbuildinfo
+next-env.d.ts
