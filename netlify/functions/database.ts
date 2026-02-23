@@ -78,6 +78,7 @@ interface DatabaseRequest {
   select?: string;
   orderBy?: { column: string; ascending?: boolean };
   limit?: number;
+  offset?: number;
   functionName?: string; // For RPC calls
   functionParams?: Record<string, any>;
 }
