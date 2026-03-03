@@ -443,7 +443,6 @@
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
-}
 
 /* Luxury title styling for desktop */
 @media screen and (min-width: 769px) {
