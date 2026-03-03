@@ -252,11 +252,7 @@ const UltraNavigation = () => {
         document.body.scrollTop = 0;
       });
     });
-<<<<<<< HEAD
-  }, [cancelPrefetch, navigateWithState]);
-=======
   }, [cancelPrefetch, navigateWithState, isMobile]);
->>>>>>> 09af128 (fix: resolve syntax error in UltraNavigation handleNavigation callback)
 
   // Scroll effect for navbar
   const [isScrolled, setIsScrolled] = useState(false);
