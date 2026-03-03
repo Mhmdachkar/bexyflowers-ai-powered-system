@@ -8,8 +8,8 @@
  * Frontend → Backend API → Database
  */
 
-// Use Next.js API route by default; fall back to Netlify functions when explicitly enabled
-const API_ENDPOINT = process.env.NEXT_PUBLIC_USE_NETLIFY_FUNCTIONS === 'true'
+// Use Netlify functions or API route based on environment
+const API_ENDPOINT = import.meta.env.VITE_USE_NETLIFY_FUNCTIONS === 'true'
   ? '/.netlify/functions/database'
   : '/api/database';
 
@@ -39,10 +39,10 @@ interface DatabaseResponse<T = any> {
  * Make database request to backend API with timeout
  */
 async function databaseRequest<T = any>(request: DatabaseRequest): Promise<T> {
-  const frontendApiKey = process.env.NEXT_PUBLIC_FRONTEND_API_KEY;
+  const frontendApiKey = import.meta.env.VITE_FRONTEND_API_KEY;
   
   // CRITICAL FIX: Add timeout to prevent infinite hanging
-  const TIMEOUT_MS = process.env.NODE_ENV === 'development' ? 3000 : 10000; // 3s in dev, 10s in prod
+  const TIMEOUT_MS = import.meta.env.DEV ? 3000 : 10000; // 3s in dev, 10s in prod
   
   try {
     // Create abort controller for timeout
@@ -65,7 +65,7 @@ async function databaseRequest<T = any>(request: DatabaseRequest): Promise<T> {
       if (!response.ok) {
         // Handle 404 specifically (Netlify Functions not available)
         if (response.status === 404) {
-          if (process.env.NODE_ENV === 'development') {
+          if (import.meta.env.DEV) {
             if (!hasWarnedAboutNetlify) {
               hasWarnedAboutNetlify = true;
               console.info('[Database] API endpoint not available in local dev. Using localStorage fallback.');
@@ -91,7 +91,7 @@ async function databaseRequest<T = any>(request: DatabaseRequest): Promise<T> {
       
       // Handle abort/timeout
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.DEV) {
           if (!hasWarnedAboutNetlify) {
             hasWarnedAboutNetlify = true;
             console.info('[Database] Request timed out. API endpoint not available in local dev. Using localStorage fallback.');
@@ -109,7 +109,7 @@ async function databaseRequest<T = any>(request: DatabaseRequest): Promise<T> {
       throw error;
     }
     // Handle network errors
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       throw new Error(
         `Network error: ${error}. Make sure the dev server is running with \`npm run dev\``
       );

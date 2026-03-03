@@ -15,11 +15,11 @@ const getAdminAccounts = () => {
   const accounts = [];
   
   // Primary admin account
-  if (process.env.NEXT_PUBLIC_ADMIN_USERNAME && process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+  if (import.meta.env.VITE_ADMIN_USERNAME && import.meta.env.VITE_ADMIN_PASSWORD) {
     accounts.push({
-      username: process.env.NEXT_PUBLIC_ADMIN_USERNAME,
-      password: process.env.NEXT_PUBLIC_ADMIN_PASSWORD,
-      displayName: process.env.NEXT_PUBLIC_ADMIN_DISPLAY_NAME || "Admin"
+      username: import.meta.env.VITE_ADMIN_USERNAME,
+      password: import.meta.env.VITE_ADMIN_PASSWORD,
+      displayName: import.meta.env.VITE_ADMIN_DISPLAY_NAME || "Admin"
     });
   } else {
     // Fallback to default admin credentials
@@ -31,11 +31,11 @@ const getAdminAccounts = () => {
   }
   
   // Secondary admin account
-  if (process.env.NEXT_PUBLIC_ADMIN2_USERNAME && process.env.NEXT_PUBLIC_ADMIN2_PASSWORD) {
+  if (import.meta.env.VITE_ADMIN2_USERNAME && import.meta.env.VITE_ADMIN2_PASSWORD) {
     accounts.push({
-      username: process.env.NEXT_PUBLIC_ADMIN2_USERNAME,
-      password: process.env.NEXT_PUBLIC_ADMIN2_PASSWORD,
-      displayName: process.env.NEXT_PUBLIC_ADMIN2_DISPLAY_NAME || "Admin 2"
+      username: import.meta.env.VITE_ADMIN2_USERNAME,
+      password: import.meta.env.VITE_ADMIN2_PASSWORD,
+      displayName: import.meta.env.VITE_ADMIN2_DISPLAY_NAME || "Admin 2"
     });
   }
   

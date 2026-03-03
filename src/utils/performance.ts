@@ -11,7 +11,7 @@ export function measurePerformance<T>(
   name: string,
   fn: () => T
 ): T {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     const start = performance.now();
     const result = fn();
     const end = performance.now();
@@ -28,7 +28,7 @@ export async function measureAsyncPerformance<T>(
   name: string,
   fn: () => Promise<T>
 ): Promise<T> {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     const start = performance.now();
     const result = await fn();
     const end = performance.now();

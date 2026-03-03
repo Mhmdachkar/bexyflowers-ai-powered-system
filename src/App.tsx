@@ -114,7 +114,7 @@ const isMobileDevice = () => {
 const AppRouter = () => {
   // CRITICAL FIX: Disable heavy performance hooks on mobile AND in development
   // These hooks do prefetching, pattern learning, and monitoring which can overload mobile devices
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = import.meta.env.PROD;
   const isMobile = isMobileDevice();
   
   // ⚡ PERFORMANCE: Only enable these hooks on desktop in production
@@ -168,7 +168,7 @@ const App = () => {
 
   // Register service worker for caching
   useEffect(() => {
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.PROD) {
       registerServiceWorker();
       console.log('[App] Service Worker registration initiated');
     }

@@ -137,7 +137,7 @@ async function generateWithPollinationsServerless(
     
     // Call Netlify serverless function
     // SECURITY: Include API key and signed request for authentication
-    const frontendApiKey = process.env.NEXT_PUBLIC_FRONTEND_API_KEY;
+    const frontendApiKey = import.meta.env.VITE_FRONTEND_API_KEY;
     
     // Create signed request payload (prevents replay attacks)
     const { createSignedRequest } = await import('./requestSigning');

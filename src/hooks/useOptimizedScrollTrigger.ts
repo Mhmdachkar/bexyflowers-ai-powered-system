@@ -90,7 +90,7 @@ export const useOptimizedScrollTrigger = () => {
       // Reduce scrub sensitivity for smoother animations
       scrub: typeof config.scrub === 'number' ? config.scrub : (config.scrub ? 1 : false),
       // Use markers only in development
-      markers: process.env.NODE_ENV === 'development' ? config.markers : false,
+      markers: import.meta.env.DEV ? config.markers : false,
     };
 
     if (element) {

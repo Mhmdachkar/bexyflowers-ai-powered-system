@@ -43,7 +43,7 @@ export const FavoritesProvider: React.FC<FavoritesProviderProps> = ({ children }
           return; // No DB call for new/empty visitors
         }
 
-        if (process.env.NODE_ENV === 'production' || process.env.NEXT_PUBLIC_USE_NETLIFY_FUNCTIONS === 'true') {
+        if (import.meta.env.PROD || import.meta.env.VITE_USE_NETLIFY_FUNCTIONS === 'true') {
           try {
             const dbFavorites = await getVisitorFavorites();
             if (dbFavorites.length > 0) {

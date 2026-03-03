@@ -239,8 +239,24 @@ const UltraNavigation = () => {
       navigateWithState(path, state);
 
       setIsMenuOpen(false);
+      
+      // Restore body scroll on mobile
+      if (isMobile) {
+        document.body.style.overflow = "";
+      }
+      
+      // Run again on next frame to beat layout/animation timing
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      });
     });
+<<<<<<< HEAD
   }, [cancelPrefetch, navigateWithState]);
+=======
+  }, [cancelPrefetch, navigateWithState, isMobile]);
+>>>>>>> 09af128 (fix: resolve syntax error in UltraNavigation handleNavigation callback)
 
   // Scroll effect for navbar
   const [isScrolled, setIsScrolled] = useState(false);

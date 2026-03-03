@@ -44,7 +44,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           return; // No DB call for new/empty visitors
         }
 
-        if (process.env.NODE_ENV === 'production' || process.env.NEXT_PUBLIC_USE_NETLIFY_FUNCTIONS === 'true') {
+        if (import.meta.env.PROD || import.meta.env.VITE_USE_NETLIFY_FUNCTIONS === 'true') {
           try {
             const dbCart = await getVisitorCart();
             if (dbCart.length > 0) {

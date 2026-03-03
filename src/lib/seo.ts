@@ -2,7 +2,7 @@
  * SEO configuration for Bexy Flowers
  * Set VITE_SITE_URL in .env to your production URL (e.g. https://bexyflowers.com)
  */
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bexyflowers.shop";
+export const SITE_URL = import.meta.env.VITE_SITE_URL || "https://bexyflowers.shop";
 export const SITE_NAME = "Bexy Flowers";
 export const DEFAULT_DESCRIPTION =
   "Lebanon's most luxurious floral portfolio. Premium custom bouquets, wedding flowers, and couture arrangements. AI-powered flower customization. Order online.";

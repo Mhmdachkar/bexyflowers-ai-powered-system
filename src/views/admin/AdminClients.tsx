@@ -409,7 +409,7 @@ const AdminClients = () => {
     if (!recipients.length) return;
     setIsSendingEmail(true);
     try {
-      const apiKey = process.env.NEXT_PUBLIC_FRONTEND_API_KEY;
+      const apiKey = import.meta.env.VITE_FRONTEND_API_KEY;
       const response = await fetch('/.netlify/functions/bulk-email', {
         method: 'POST',
         headers: {
@@ -457,7 +457,7 @@ const AdminClients = () => {
     if (!recipients.length) return;
     setIsSendingSms(true);
     try {
-      const apiKey = process.env.NEXT_PUBLIC_FRONTEND_API_KEY;
+      const apiKey = import.meta.env.VITE_FRONTEND_API_KEY;
       const response = await fetch('/.netlify/functions/bulk-sms', {
         method: 'POST',
         headers: {
