@@ -8,7 +8,7 @@ export default defineConfig({
   plugins: [react(), criticalCssPlugin()],
   server: {
     port: 8080,
-    strictPort: true, // Always use 8080, fail if taken
+    strictPort: false, // If 8080 is taken, use next available port (8081, etc.)
     host: true,
   },
   resolve: {
