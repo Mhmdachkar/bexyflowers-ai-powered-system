@@ -103,7 +103,7 @@
   }
 }
 
-/* Mobile view with video background */
+/* Mobile view with video background - matches Collection/Customize hero video structure */
 @media screen and (max-width: 768px) {
   .carousel-hero-container {
     padding: 0;
@@ -116,35 +116,10 @@
     height: 100vh;
     max-height: 100vh;
     overflow-x: hidden;
-    /* ⚡ FIXED: Changed from hidden to visible to allow page scrolling */
     overflow-y: visible;
     box-sizing: border-box;
     position: relative;
-    /* Ensure video stays within this container */
     isolation: isolate;
-  }
-  
-  .hero-video-bg {
-    position: absolute !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    left: 0 !important;
-    right: 0 !important;
-    /* Video extends from top to cover header area */
-    top: -80px !important;
-    bottom: 0 !important;
-    height: calc(100vh + 200px) !important;
-    min-height: calc(100vh + 200px) !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    /* Video extends behind header - visible through transparent nav */
-    z-index: 0 !important;
-    /* FIX: Allow scroll on iOS - video captures touch and blocks scroll until tap.
-       pointer-events: none lets touches pass through to the page for scrolling.
-       Video is decorative (autoplay, muted) so no interaction is needed. */
-    pointer-events: none !important;
   }
   
   .carousel-hero-wrapper {
@@ -157,7 +132,6 @@
     border-radius: 0;
     box-sizing: border-box;
     overflow-x: hidden;
-    /* FIX: Allow page scroll - do not trap scroll with overflow-y: hidden */
     overflow-y: visible;
   }
   

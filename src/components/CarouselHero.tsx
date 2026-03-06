@@ -316,11 +316,25 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
 
   return (
     <div className="carousel-hero-container" ref={containerRef}>
-      {/* Video background for mobile view - Optimized with lazy loading */}
+      {/* Video background for mobile view - Same structure as Collection/Customize for consistent scrolling */}
       {isMobile && (
         <video
           ref={videoRef}
-          className="hero-video-bg"
+          className="absolute left-0 right-0 w-full object-cover object-center z-0 pointer-events-none"
+          style={{
+            width: '100%',
+            maxWidth: '100%',
+            height: 'calc(100vh + 200px)',
+            minHeight: 'calc(100vh + 200px)',
+            top: '-80px',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            marginLeft: 0,
+            marginRight: 0,
+            paddingLeft: 0,
+            paddingRight: 0,
+          }}
           autoPlay
           muted
           loop
