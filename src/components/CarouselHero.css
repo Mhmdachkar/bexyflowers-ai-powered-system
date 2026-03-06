@@ -103,7 +103,7 @@
   }
 }
 
-/* Mobile view with video background - matches Collection/Customize hero video structure */
+/* Mobile view with video background */
 @media screen and (max-width: 768px) {
   .carousel-hero-container {
     padding: 0;
@@ -120,6 +120,23 @@
     box-sizing: border-box;
     position: relative;
     isolation: isolate;
+  }
+
+  /* Overlay on top of hero so swipes scroll the page normally (iOS video captures touch otherwise) */
+  .hero-scroll-overlay {
+    position: absolute;
+    top: -80px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    pointer-events: auto;
+    touch-action: pan-y;
+  }
+
+  .hero-cta-above-overlay {
+    position: relative;
+    z-index: 20;
   }
   
   .carousel-hero-wrapper {
