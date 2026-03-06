@@ -388,7 +388,9 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
             <SwiperSlide key={`${slide.id}-${index}`} className="main">
               <div className="left-side">
                 <div className="main-wrapper">
-                  <h3 className="main-header">Bexy Flowers</h3>
+                  <h3 className="main-header">
+                    {slide.id === 'bexy-brand' ? 'BEXY FLOWERS' : slide.title.toUpperCase()}
+                  </h3>
                   <h1 className="main-title">{slide.title}</h1>
                   {isMobile && <h2 className="main-subtitle">{slide.price}</h2>}
                 </div>
@@ -400,7 +402,7 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
                     onClick={handleShopNow}
                     aria-label={`Shop ${slide.title} collection`}
                   >
-                    Shop Now
+                    SHOP NOW
                     <svg 
                       xmlns="http://www.w3.org/2000/svg" 
                       viewBox="0 0 24 24" 
@@ -457,7 +459,9 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
           ))}
         </Swiper>
 
-        <div className="swiper-pagination" aria-label="Slide navigation"></div>
+        {slides.length > 1 && !isHomepage && (
+          <div className="swiper-pagination" aria-label="Slide navigation"></div>
+        )}
       </div>
     </div>
   );
