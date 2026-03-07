@@ -10,7 +10,10 @@ import 'swiper/css/effect-fade';
 import 'swiper/css/pagination';
 import './CarouselHero.css';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useIOSPerformance } from '@/hooks/use-ios-performance';
 import { useImagePreloader } from '@/hooks/useImagePreloader';
+
+const video1Url = '/assets/video/video1.WebM';
 
 interface SlideData {
   id: string;
@@ -90,10 +93,16 @@ const homepageSlides: SlideData[] = [
 const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = {}) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { isOldIOS, needsMobileOptimizations } = useIOSPerformance();
+  const needsOptimizations = needsMobileOptimizations;
   const swiperRef = useRef<SwiperType | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isVideoVisible, setIsVideoVisible] = useState(false);
+  const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
 
   // Determine which slides to use
   // Homepage desktop: 1 slide, Homepage mobile: all slides, Collection: all slides
@@ -129,6 +138,118 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
     return () => clearTimeout(timer);
   }, []);
 
+  // Delay video source on mobile to prioritize LCP
+  useEffect(() => {
+    if (!isMobile) return;
+    const timer = setTimeout(() => setVideoReady(true), 3000);
+    return () => clearTimeout(timer);
+  }, [isMobile]);
+
+  // Intersection Observer: load/play video when visible, pause when not
+  useEffect(() => {
+    if (!isMobile) return;
+    const targetElement = containerRef.current || videoRef.current;
+    if (!targetElement) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const videoElement = videoRef.current;
+          if (entry.isIntersecting) {
+            setIsVideoVisible(true);
+            setShouldLoadVideo(true);
+            if (videoElement) {
+              if (needsOptimizations) videoElement.playbackRate = 0.85;
+              videoElement.play().catch(() => {});
+            }
+          } else {
+            setIsVideoVisible(false);
+            if (videoElement) {
+              videoElement.pause();
+              if (needsOptimizations) {
+                videoElement.currentTime = 0;
+                if (isOldIOS) {
+                  videoElement.removeAttribute('src');
+                  videoElement.load();
+                }
+              } else {
+                videoElement.currentTime = 0;
+              }
+            }
+          }
+        });
+      },
+      { root: null, rootMargin: needsOptimizations ? '50px' : '100px', threshold: 0.01 }
+    );
+
+    observer.observe(targetElement);
+    return () => observer.disconnect();
+  }, [isMobile, needsOptimizations, isOldIOS]);
+
+  // Load and play video when visible
+  useEffect(() => {
+    if (!isMobile || !videoRef.current || !shouldLoadVideo) return;
+    const videoElement = videoRef.current;
+    if (needsOptimizations) {
+      videoElement.playbackRate = 0.85;
+      videoElement.volume = 0.9;
+    }
+    const forceFullWidth = () => {
+      if (videoElement) {
+        videoElement.style.width = '100vw';
+        videoElement.style.maxWidth = '100vw';
+        videoElement.style.left = '0';
+        videoElement.style.right = '0';
+        videoElement.style.marginLeft = '0';
+        videoElement.style.marginRight = '0';
+      }
+    };
+    forceFullWidth();
+    videoElement.load();
+    videoElement.addEventListener('loadedmetadata', forceFullWidth);
+    videoElement.addEventListener('loadeddata', forceFullWidth);
+    const playPromise = videoElement.play();
+    if (playPromise !== undefined) playPromise.catch(() => {});
+    return () => {
+      videoElement.removeEventListener('loadedmetadata', forceFullWidth);
+      videoElement.removeEventListener('loadeddata', forceFullWidth);
+    };
+  }, [isMobile, shouldLoadVideo, needsOptimizations]);
+
+  // Resize handler for video full width
+  useEffect(() => {
+    if (!isMobile || !videoRef.current) return;
+    let resizeTimer: NodeJS.Timeout | null = null;
+    let initialTimeoutId: NodeJS.Timeout | null = null;
+    const handleResize = () => {
+      if (!videoRef.current) return;
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          videoRef.current.style.width = '100vw';
+          videoRef.current.style.maxWidth = '100vw';
+          videoRef.current.style.left = '0';
+          videoRef.current.style.right = '0';
+        }
+      });
+    };
+    const throttledResize = () => {
+      if (resizeTimer) return;
+      resizeTimer = setTimeout(() => {
+        handleResize();
+        resizeTimer = null;
+      }, 150);
+    };
+    window.addEventListener('resize', throttledResize, { passive: true });
+    window.addEventListener('orientationchange', handleResize, { passive: true });
+    initialTimeoutId = setTimeout(handleResize, 100);
+    return () => {
+      if (initialTimeoutId) clearTimeout(initialTimeoutId);
+      if (resizeTimer) clearTimeout(resizeTimer);
+      window.removeEventListener('resize', throttledResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, [isMobile]);
+
   const handleShopNow = () => {
     navigate('/collection');
   };
@@ -139,6 +260,37 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
 
   return (
     <div className="carousel-hero-container" ref={containerRef}>
+      {isMobile && (
+        <video
+          ref={videoRef}
+          className="absolute left-0 right-0 w-full object-cover object-center z-0 pointer-events-none"
+          style={{
+            width: '100%',
+            maxWidth: '100%',
+            height: 'calc(100vh + 200px)',
+            minHeight: 'calc(100vh + 200px)',
+            top: '-80px',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            marginLeft: 0,
+            marginRight: 0,
+            paddingLeft: 0,
+            paddingRight: 0,
+          }}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="none"
+          poster={getImagePath('image1.png')}
+          aria-label="Hero background video"
+        >
+          {shouldLoadVideo && videoReady && (
+            <source src={video1Url} type="video/webm" />
+          )}
+        </video>
+      )}
       <div className="carousel-hero-wrapper">
         <Swiper
           modules={[Pagination, EffectFade]}

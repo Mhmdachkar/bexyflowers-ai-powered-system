@@ -81,14 +81,14 @@
   }
 }
 
-/* Mobile view - text only, gradient background */
+/* Mobile view with video background - same simple scroll as other pages */
 @media screen and (max-width: 768px) {
   .carousel-hero-container {
     padding: 0;
     margin: 0;
     margin-top: -80px;
     padding-top: 80px;
-    background: linear-gradient(135deg, #8B7355 0%, #6B5D52 50%, #5c4d42 100%);
+    background-color: transparent;
     width: 100vw;
     max-width: 100vw;
     height: 100vh;
@@ -112,8 +112,7 @@
     overflow-x: hidden;
     overflow-y: visible;
   }
-  
-  /* Remove overlay - text blends directly with video */
+
   .carousel-hero-wrapper::before {
     display: none;
   }
