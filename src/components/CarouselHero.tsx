@@ -412,7 +412,7 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
                   <div className="main-content__title">{slide.contentTitle}</div>
                   <div className="main-content__subtitle">{slide.contentSubtitle}</div>
                   <button 
-                    className="more-menu hero-cta-above-overlay"
+                    className="more-menu"
                     onClick={handleShopNow}
                     aria-label={`Shop ${slide.title} collection`}
                   >
@@ -477,8 +477,6 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
           <div className="swiper-pagination" aria-label="Slide navigation"></div>
         )}
       </div>
-      {/* Unblock scroll on iOS: overlay receives swipe so page scrolls without needing a tap (video layer often captures touch) */}
-      {isMobile && <div className="hero-scroll-overlay" aria-hidden="true" />}
     </div>
   );
 };
