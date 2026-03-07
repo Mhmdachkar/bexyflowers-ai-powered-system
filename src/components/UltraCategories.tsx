@@ -399,19 +399,65 @@ const UltraCategories = () => {
     const isMobile = window.innerWidth < 1024;
     if (!isMobile) return;
 
-    // PERFORMANCE: Disable infinite animations on mobile to save battery and prevent jank
-    // These continuous GSAP transforms can cause frame drops on mobile devices
-    // Users can still scroll horizontally to see all categories
+    // Respect user reduced-motion preference
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
+
+    // Ensure starting positions
+    gsap.set(row1, { x: 0 });
+    gsap.set(row2, { x: 0 });
+
+    // Use the fact that each row contains 3 repeated sets of categories
+    const singleSetWidthRow1 = row1.scrollWidth / 3;
+    const singleSetWidthRow2 = row2.scrollWidth / 3;
+
+    // Avoid division issues
+    if (!singleSetWidthRow1 || !singleSetWidthRow2) return;
+
+    // Continuous, smooth auto-scroll for mobile rows
+    const anim1 = gsap.to(row1, {
+      x: -singleSetWidthRow1,
+      duration: 35,
+      ease: "none",
+      repeat: -1,
+      modifiers: {
+        x: (x) => {
+          const num = parseFloat(x);
+          return `${num % singleSetWidthRow1}px`;
+        }
+      }
+    });
+
+    const anim2 = gsap.to(row2, {
+      x: singleSetWidthRow2,
+      duration: 40,
+      ease: "none",
+      repeat: -1,
+      modifiers: {
+        x: (x) => {
+          const num = parseFloat(x);
+          return `${num % singleSetWidthRow2}px`;
+        }
+      }
+    });
+
+    return () => {
+      anim1.kill();
+      anim2.kill();
+      gsap.killTweensOf(row1);
+      gsap.killTweensOf(row2);
+    };
   }, []);
 
   const scrollLeft = () => {
     const container = containerRef.current;
     if (container) {
-      const currentX = gsap.getProperty(container, "x") as number;
-      const newPosition = Math.max(0, currentX + 400);
+      const currentX = (gsap.getProperty(container, "x") as number) || 0;
+      const currentOffset = -currentX;
+      const newOffset = Math.max(0, currentOffset - 400);
       
       gsap.to(container, {
-        x: -newPosition,
+        x: -newOffset,
         duration: 0.6,
         ease: "power2.out"
       });
@@ -421,12 +467,13 @@ const UltraCategories = () => {
   const scrollRight = () => {
     const container = containerRef.current;
     if (container) {
-      const currentX = gsap.getProperty(container, "x") as number;
+      const currentX = (gsap.getProperty(container, "x") as number) || 0;
+      const currentOffset = -currentX;
       const maxScroll = (categories.length * 352) - 1200;
-      const newPosition = Math.min(maxScroll, currentX + 400);
+      const newOffset = Math.min(maxScroll, currentOffset + 400);
       
       gsap.to(container, {
-        x: -newPosition,
+        x: -newOffset,
         duration: 0.6,
         ease: "power2.out"
       });

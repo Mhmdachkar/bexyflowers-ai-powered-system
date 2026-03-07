@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
 import { Product } from '@/types/cart';
@@ -8,7 +9,7 @@ import { Product } from '@/types/cart';
 export const useCartWithToast = () => {
   const cartContext = useCart();
 
-  const addToCartWithToast = (product: Product) => {
+  const addToCartWithToast = useCallback((product: Product) => {
     cartContext.addToCart(product);
     
     toast.success('Added to Cart!', {
@@ -17,9 +18,9 @@ export const useCartWithToast = () => {
       position: 'top-right',
       closeButton: true,
     });
-  };
+  }, [cartContext.addToCart]);
 
-  const removeFromCartWithToast = (productId: number) => {
+  const removeFromCartWithToast = useCallback((productId: number) => {
     const item = cartContext.cartItems.find(item => item.id === productId);
     cartContext.removeFromCart(productId);
     
@@ -31,7 +32,7 @@ export const useCartWithToast = () => {
         closeButton: true,
       });
     }
-  };
+  }, [cartContext.cartItems, cartContext.removeFromCart]);
 
   return {
     ...cartContext,

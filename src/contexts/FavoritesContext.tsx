@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode, useRef, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useRef, useMemo, useCallback } from 'react';
 import { FavoriteProduct, FavoritesContextType } from '@/types/favorites';
 import { getVisitorFavorites, addVisitorFavorite, removeVisitorFavorite, clearVisitorFavorites, syncFavoritesToDatabase } from '@/lib/api/visitor-favorites';
 
@@ -103,7 +103,7 @@ export const FavoritesProvider: React.FC<FavoritesProviderProps> = ({ children }
   /**
    * Add a product to favorites
    */
-  const addToFavorites = async (product: FavoriteProduct): Promise<void> => {
+  const addToFavorites = useCallback(async (product: FavoriteProduct): Promise<void> => {
     setFavorites(prevFavorites => {
       // Check if product already exists
       const exists = prevFavorites.some(item => item.id === product.id);
@@ -130,12 +130,9 @@ export const FavoritesProvider: React.FC<FavoritesProviderProps> = ({ children }
 
       return [...prevFavorites, normalizedProduct];
     });
-  };
+  }, []);
 
-  /**
-   * Remove a product from favorites
-   */
-  const removeFromFavorites = async (productId: number | string): Promise<void> => {
+  const removeFromFavorites = useCallback(async (productId: number | string): Promise<void> => {
     setFavorites(prevFavorites => 
       prevFavorites.filter(item => item.id !== productId)
     );
@@ -144,44 +141,32 @@ export const FavoritesProvider: React.FC<FavoritesProviderProps> = ({ children }
     removeVisitorFavorite(productId).catch(error => {
       console.error('Error removing favorite from database:', error);
     });
-  };
+  }, []);
 
-  /**
-   * Check if a product is in favorites
-   */
-  const isFavorite = (productId: number | string): boolean => {
+  const isFavorite = useCallback((productId: number | string): boolean => {
     return favorites.some(item => item.id === productId);
-  };
+  }, [favorites]);
 
-  /**
-   * Toggle favorite status of a product
-   */
-  const toggleFavorite = (product: FavoriteProduct): void => {
+  const toggleFavorite = useCallback((product: FavoriteProduct): void => {
     if (isFavorite(product.id)) {
       removeFromFavorites(product.id);
     } else {
       addToFavorites(product);
     }
-  };
+  }, [isFavorite, removeFromFavorites, addToFavorites]);
 
-  /**
-   * Get the total number of favorites
-   */
-  const getTotalFavorites = (): number => {
+  const getTotalFavorites = useCallback((): number => {
     return favorites.length;
-  };
+  }, [favorites]);
 
-  /**
-   * Clear all favorites
-   */
-  const clearFavorites = async (): Promise<void> => {
+  const clearFavorites = useCallback(async (): Promise<void> => {
     setFavorites([]);
 
     // Clear from database (async, non-blocking)
     clearVisitorFavorites().catch(error => {
       console.error('Error clearing favorites from database:', error);
     });
-  };
+  }, []);
 
   // PERFORMANCE: Memoize context value to prevent unnecessary re-renders
   const value: FavoritesContextType = useMemo(() => ({

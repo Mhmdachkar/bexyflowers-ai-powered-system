@@ -122,10 +122,7 @@ const CartPage: React.FC = () => {
           <p className="text-sm font-normal mb-2" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>DEBUG: Test if buttons work on this page</p>
           <button
             type="button"
-            onClick={() => {
-              console.log('✅ TEST BUTTON CLICKED - Buttons work on this page!');
-              alert('TEST BUTTON WORKS!');
-            }}
+            onClick={() => alert('TEST BUTTON WORKS!')}
             className="px-4 py-2 bg-blue-500 text-white rounded"
           >
             TEST BUTTON (Click Me)

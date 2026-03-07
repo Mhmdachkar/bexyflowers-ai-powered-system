@@ -34,6 +34,13 @@ const Checkout = () => {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [usedLocalFallback, setUsedLocalFallback] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const redirectTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    };
+  }, []);
   const [savedOrderDetails, setSavedOrderDetails] = useState<{
     items: typeof cartItems;
     subtotal: number;
@@ -159,7 +166,7 @@ Please confirm my order and let me know about delivery timing. Thank you! 🌸`;
       setUsedLocalFallback(false);
       setSubmitSuccess(true);
       clearCart();
-      setTimeout(() => navigate('/'), 3000);
+      redirectTimerRef.current = setTimeout(() => navigate('/'), 3000);
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       const isDbUnavailable =
@@ -211,7 +218,7 @@ Please confirm my order and let me know about delivery timing. Thank you! 🌸`;
         setUsedLocalFallback(true);
         setSubmitSuccess(true);
         clearCart();
-        setTimeout(() => navigate('/'), 4000);
+        redirectTimerRef.current = setTimeout(() => navigate('/'), 4000);
       } else {
         setFormError(msg || 'Could not place order. Please try again.');
       }

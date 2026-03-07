@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
 import { FlyingHeartContainer } from '@/components/FlyingHeartAnimation';
 
 interface FlyingHeartConfig {
@@ -64,11 +64,11 @@ export const FlyingHeartProvider: React.FC<FlyingHeartProviderProps> = ({ childr
     setFlyingHearts(prev => prev.filter((_, i) => i !== index));
   }, []);
 
-  const value: FlyingHeartContextType = {
+  const value: FlyingHeartContextType = useMemo(() => ({
     triggerFlyingHeart,
     navHeartPulse,
     setNavHeartPulse
-  };
+  }), [triggerFlyingHeart, navHeartPulse]);
 
   // Cleanup timeouts on unmount
   React.useEffect(() => {

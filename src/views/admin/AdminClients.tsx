@@ -34,7 +34,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recha
 import { useToast } from '@/hooks/use-toast';
 import { getCheckoutOrders, importCheckoutOrders } from '@/lib/api/checkout';
 import type { CartItem } from '@/types/cart';
-import * as XLSX from 'xlsx';
+// XLSX is loaded dynamically in handleExport/handleImport to reduce bundle size
 
 const GOLD_COLOR = 'rgb(199, 158, 72)';
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -278,8 +278,9 @@ const AdminClients = () => {
     return unique.size;
   }, [orders, viewMode]);
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!orders.length) return;
+    const XLSX = await import('xlsx');
     const exportRows = orders.map((order) => ({
       'Order ID': order.id,
       'Created At': order.created_at,
@@ -304,6 +305,7 @@ const AdminClients = () => {
     if (!file) return;
     setIsImporting(true);
     try {
+      const XLSX = await import('xlsx');
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data, { type: 'array', cellDates: true });
       const sheetName = workbook.SheetNames[0];

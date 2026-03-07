@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode, useRef, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useRef, useMemo, useCallback } from 'react';
 import { CartItem, CartContextType, Product } from '@/types/cart';
 import { getVisitorCart, upsertVisitorCartItem, removeVisitorCartItem, updateVisitorCartItemQuantity, clearVisitorCart, syncCartToDatabase } from '@/lib/api/visitor-cart';
 
@@ -104,7 +104,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   /**
    * Add a product to the cart or increment quantity if it already exists
    */
-  const addToCart = async (product: Product): Promise<void> => {
+  const addToCart = useCallback(async (product: Product): Promise<void> => {
     setCartItems(prevItems => {
       const existingItem = prevItems.find(item =>
         item.id === product.id &&
@@ -146,12 +146,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
       return newItems;
     });
-  };
+  }, []);
 
-  /**
-   * Remove a product completely from the cart
-   */
-  const removeFromCart = async (productId: number | string, size?: string, personalNote?: string): Promise<void> => {
+  const removeFromCart = useCallback(async (productId: number | string, size?: string, personalNote?: string): Promise<void> => {
     setCartItems(prevItems =>
       prevItems.filter(item =>
         !(item.id === productId &&
@@ -164,26 +161,17 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     removeVisitorCartItem(productId, size, personalNote).catch(error => {
       console.error('Error removing cart item from database:', error);
     });
-  };
+  }, []);
 
-  /**
-   * Get the total number of items in the cart (sum of all quantities)
-   */
-  const getTotalItems = (): number => {
+  const getTotalItems = useCallback((): number => {
     return cartItems.reduce((total, item) => total + item.quantity, 0);
-  };
+  }, [cartItems]);
 
-  /**
-   * Get the total price of all items in the cart
-   */
-  const getTotalPrice = (): number => {
+  const getTotalPrice = useCallback((): number => {
     return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-  };
+  }, [cartItems]);
 
-  /**
-   * Update the quantity of a specific cart item
-   */
-  const updateQuantity = async (productId: number | string, newQuantity: number, size?: string, personalNote?: string): Promise<void> => {
+  const updateQuantity = useCallback(async (productId: number | string, newQuantity: number, size?: string, personalNote?: string): Promise<void> => {
     if (newQuantity <= 0) {
       await removeFromCart(productId, size, personalNote);
       return;
@@ -203,19 +191,16 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     updateVisitorCartItemQuantity(productId, newQuantity, size, personalNote).catch(error => {
       console.error('Error updating cart item quantity in database:', error);
     });
-  };
+  }, [removeFromCart]);
 
-  /**
-   * Clear all items from the cart
-   */
-  const clearCart = async (): Promise<void> => {
+  const clearCart = useCallback(async (): Promise<void> => {
     setCartItems([]);
 
     // Clear from database (async, non-blocking)
     clearVisitorCart().catch(error => {
       console.error('Error clearing cart from database:', error);
     });
-  };
+  }, []);
 
   // PERFORMANCE: Memoize context value to prevent unnecessary re-renders
   const value: CartContextType = useMemo(() => ({

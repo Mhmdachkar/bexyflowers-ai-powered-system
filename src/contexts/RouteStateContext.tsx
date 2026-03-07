@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useRef, useCallback, useState } from 'react';
+import React, { createContext, useContext, useRef, useCallback, useMemo } from 'react';
 import { useLocation, useNavigate } from '@/lib/navigation-compat';
 import type { Location, NavigateFunction } from '@/lib/navigation-compat';
 
@@ -126,16 +126,16 @@ export const RouteStateProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, []);
 
+  const value = useMemo(() => ({
+    cacheRouteState,
+    getCachedState,
+    clearCache,
+    navigateWithState,
+    restoreScrollPosition
+  }), [cacheRouteState, getCachedState, clearCache, navigateWithState, restoreScrollPosition]);
+
   return (
-    <RouteStateContext.Provider
-      value={{
-        cacheRouteState,
-        getCachedState,
-        clearCache,
-        navigateWithState,
-        restoreScrollPosition
-      }}
-    >
+    <RouteStateContext.Provider value={value}>
       {children}
     </RouteStateContext.Provider>
   );
