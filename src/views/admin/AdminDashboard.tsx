@@ -329,17 +329,7 @@ const AdminDashboard = () => {
     }));
 
     // Store detailed analytics for potential future use
-    // You can add these to state if needed for more detailed breakdowns
-    console.log('Sales Analytics:', {
-      totalOrders: orders.length,
-      totalRevenue: totalAllTimeRevenue,
-      totalFlowerRevenue: totalAllTimeFlowerRevenue,
-      totalAddOnsRevenue: totalAllTimeAddOnsRevenue,
-      todayOrders: todayOrders.length,
-      todayRevenue: todayTotalRevenue,
-      totalUniqueClients,
-      todayUniqueClients,
-    });
+    // Analytics data available in state for dashboard display
   }, [orders]);
 
   const loading = loadingProducts;

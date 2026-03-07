@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from '@/lib/navigation-compat';
 import { motion } from 'framer-motion';
 import { useQueryClient } from '@tanstack/react-query';
@@ -98,16 +98,7 @@ const AdminSignatureCollection = () => {
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    const isAuthenticated = localStorage.getItem('adminAuthenticated');
-    if (!isAuthenticated) {
-      navigate('/admin/login');
-      return;
-    }
-    loadData();
-  }, [navigate]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [collectionsData, productsData] = await Promise.all([
@@ -125,7 +116,16 @@ const AdminSignatureCollection = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    const isAuthenticated = localStorage.getItem('adminAuthenticated');
+    if (!isAuthenticated) {
+      navigate('/admin/login');
+      return;
+    }
+    loadData();
+  }, [navigate, loadData]);
 
   const handleAddProduct = async () => {
     if (!selectedProductId) {

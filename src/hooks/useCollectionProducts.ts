@@ -32,8 +32,6 @@ export const useCollectionProducts = (filters?: {
   featured?: boolean;
   isActive?: boolean;
 }) => {
-  const queryClient = useQueryClient();
-  
   return useQuery<CollectionProduct[]>({
     queryKey: collectionQueryKeys.list(filters),
     queryFn: () => getCollectionProducts(filters),

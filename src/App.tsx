@@ -9,6 +9,7 @@ import ScrollToTop from "@/components/ScrollToTop";
 import RouteLoader from "@/components/RouteLoader";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { CartProvider } from "@/contexts/CartContext";
 import { FavoritesProvider } from "@/contexts/FavoritesContext";
 import { FlyingHeartProvider } from "@/contexts/FlyingHeartContext";
@@ -31,10 +32,7 @@ gsap.config({
 const preloadCriticalRoutes = () => {
   // Skip preloading on mobile devices to save bandwidth
   const isMobile = window.innerWidth < 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  if (isMobile) {
-    console.log('[Preload] Skipping preload on mobile device');
-    return;
-  }
+  if (isMobile) return;
   
   // Only preload on desktop after page is interactive
   import("./views/Index");
@@ -168,10 +166,7 @@ const App = () => {
 
   // Register service worker for caching
   useEffect(() => {
-    if (import.meta.env.PROD) {
-      registerServiceWorker();
-      console.log('[App] Service Worker registration initiated');
-    }
+    if (import.meta.env.PROD) registerServiceWorker();
   }, []);
 
   // Android: set data attribute for Android-specific CSS optimizations
@@ -186,8 +181,6 @@ const App = () => {
   // React Query already has built-in garbage collection with gcTime
   useEffect(() => {
     // DISABLED: Periodic cleanup removed - React Query handles this automatically
-    console.log('✅ Manual cache cleanup DISABLED - using React Query built-in GC');
-    
     // React Query will automatically clean up stale queries based on:
     // - staleTime: 2 minutes
     // - gcTime: 5 minutes
@@ -201,6 +194,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <NextThemesProvider attribute="class" defaultTheme="light" enableSystem={false}>
         <ThemeProvider>
           <CartProvider>
             <FavoritesProvider>
@@ -215,6 +209,7 @@ const App = () => {
             </FavoritesProvider>
           </CartProvider>
         </ThemeProvider>
+        </NextThemesProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

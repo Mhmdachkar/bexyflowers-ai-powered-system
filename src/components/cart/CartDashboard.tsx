@@ -685,10 +685,7 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
                     <div className="space-y-3" style={{ position: 'relative', zIndex: 10 }}>
                       <Button
                         type="button"
-                        onClick={(e) => {
-                          console.log('🎯🎯🎯 CART DASHBOARD BUTTON CLICKED! 🎯🎯🎯');
-                          handleCheckout(e);
-                        }}
+                        onClick={(e) => handleCheckout(e)}
                         disabled={isCheckingOut}
                         className="w-full py-4 font-semibold text-sm uppercase tracking-wider relative overflow-hidden"
                         style={{
