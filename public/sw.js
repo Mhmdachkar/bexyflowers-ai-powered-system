@@ -109,7 +109,7 @@ self.addEventListener('fetch', (event) => {
 
           // Fetch from network and update cache
           return fetch(request).then((networkResponse) => {
-            if (networkResponse.ok) {
+            if (networkResponse.ok && networkResponse.status === 200) {
               return addTimestampToResponse(networkResponse).then((responseWithTimestamp) => {
                 cache.put(request, responseWithTimestamp.clone());
                 return networkResponse;
@@ -131,7 +131,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.open(API_CACHE).then((cache) => {
         return fetch(request).then((networkResponse) => {
-          if (networkResponse.ok) {
+          if (networkResponse.ok && networkResponse.status === 200) {
             return addTimestampToResponse(networkResponse).then((responseWithTimestamp) => {
               cache.put(request, responseWithTimestamp.clone());
               return networkResponse;
@@ -166,7 +166,7 @@ self.addEventListener('fetch', (event) => {
           }
 
           return fetch(request).then((networkResponse) => {
-            if (networkResponse.ok) {
+            if (networkResponse.ok && networkResponse.status === 200) {
               return addTimestampToResponse(networkResponse).then((responseWithTimestamp) => {
                 cache.put(request, responseWithTimestamp.clone());
                 return networkResponse;
@@ -187,7 +187,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request).then((networkResponse) => {
         return caches.open(DYNAMIC_CACHE).then((cache) => {
-          if (networkResponse.ok) {
+          if (networkResponse.ok && networkResponse.status === 200) {
             cache.put(request, networkResponse.clone());
           }
           return networkResponse;
@@ -201,11 +201,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Default: Network First with cache fallback
+  // Default: Network First with cache fallback (skip caching 206 Partial - Cache API doesn't support it)
   event.respondWith(
     fetch(request).then((networkResponse) => {
       return caches.open(DYNAMIC_CACHE).then((cache) => {
-        if (networkResponse.ok) {
+        if (networkResponse.ok && networkResponse.status === 200) {
           cache.put(request, networkResponse.clone());
         }
         return networkResponse;

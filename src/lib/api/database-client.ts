@@ -8,8 +8,8 @@
  * Frontend → Backend API → Database
  */
 
-// Use Netlify functions or API route based on environment
-const API_ENDPOINT = import.meta.env.VITE_USE_NETLIFY_FUNCTIONS === 'true'
+// Production (Netlify) has no /api/database; use Netlify function. Dev can use /api/database if available.
+const API_ENDPOINT = (import.meta.env.PROD || import.meta.env.VITE_USE_NETLIFY_FUNCTIONS === 'true')
   ? '/.netlify/functions/database'
   : '/api/database';
 

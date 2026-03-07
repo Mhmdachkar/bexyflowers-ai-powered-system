@@ -43,6 +43,13 @@
 #   to = "/:splat"
 #   status = 301
 
+# Database API: rewrite so /api/database hits Netlify function (fixes 404 when client uses /api/database)
+[[redirects]]
+  from = "/api/database"
+  to = "/.netlify/functions/database"
+  status = 200
+  force = true
+
 # SPA fallback - must be last
 [[redirects]]
   from = "/*"
