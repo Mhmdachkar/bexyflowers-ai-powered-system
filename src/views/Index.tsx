@@ -381,35 +381,23 @@ const Index = () => {
       <UltraNavigation />
       <div className="relative z-10">
         <CarouselHero isHomepage={true} />
-        <LazySection rootMargin="400px 0px">
-          <Suspense fallback={<FeaturedBouquetsSkeleton />}>
-            <UltraFeaturedBouquets />
-          </Suspense>
-        </LazySection>
-        <LazySection rootMargin="400px 0px">
-          <Suspense fallback={<CategoriesSkeleton />}>
-            <UltraCategories />
-          </Suspense>
-        </LazySection>
+        <Suspense fallback={<FeaturedBouquetsSkeleton />}>
+          <UltraFeaturedBouquets />
+        </Suspense>
+        <Suspense fallback={<CategoriesSkeleton />}>
+          <UltraCategories />
+        </Suspense>
         {/* Professional Custom Bouquet Design Section - Premium Redesign */}
-        <LazySection rootMargin="400px 0px">
-          <ProfessionalCustomSection />
-        </LazySection>
-        <LazySection rootMargin="400px 0px">
-          <Suspense fallback={<GenericSectionSkeleton />}>
-            <ZodiacBouquetQuiz />
-          </Suspense>
-        </LazySection>
-        <LazySection rootMargin="400px 0px">
-          <Suspense fallback={<GenericSectionSkeleton />}>
-            <FlowerCareGuide />
-          </Suspense>
-        </LazySection>
-        <LazySection rootMargin="600px 0px">
-          <Suspense fallback={<FooterSkeleton />}>
-            <Footer />
-          </Suspense>
-        </LazySection>
+        <ProfessionalCustomSection />
+        <Suspense fallback={<GenericSectionSkeleton />}>
+          <ZodiacBouquetQuiz />
+        </Suspense>
+        <Suspense fallback={<GenericSectionSkeleton />}>
+          <FlowerCareGuide />
+        </Suspense>
+        <Suspense fallback={<FooterSkeleton />}>
+          <Footer />
+        </Suspense>
       </div>
       <BackToTop />
     </div>
