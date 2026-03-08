@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from '@/lib/navigation-compat';
 import { AdminLayout } from "@/components/admin/AdminLayout";
@@ -51,6 +51,7 @@ import { encodeImageUrl } from "@/lib/imageUtils";
 import { useCollectionProducts } from "@/hooks/useCollectionProducts";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { getCheckoutOrders } from "@/lib/api/checkout";
+import { getOwnerAvailabilitySchedule, upsertOwnerAvailability, deleteOwnerAvailability } from "@/lib/api/consultations";
 import type { CartItem } from "@/types/cart";
 
 const GOLD_COLOR = "rgb(199, 158, 72)";
@@ -95,6 +96,7 @@ const AdminDashboard = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [availabilitySchedule, setAvailabilitySchedule] = useState<Record<string, { start: string; end: string }>>({});
   const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
+  const discountSectionRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -105,6 +107,10 @@ const AdminDashboard = () => {
     isActive: true 
   });
   const products = productsData ?? [];
+  const discountedProducts = useMemo(
+    () => products.filter((p) => p.discount_percentage && p.discount_percentage > 0),
+    [products]
+  );
 
   // ⚡ PERFORMANCE: Fetch orders with longer cache time for dashboard
   const { data: orders = [] } = useQuery({
@@ -114,16 +120,36 @@ const AdminDashboard = () => {
     gcTime: 10 * 60 * 1000, // Keep cached for 10 minutes
   });
 
-  // Load availability schedule from localStorage
+  // Load availability schedule from database (with localStorage fallback)
   useEffect(() => {
-    const saved = localStorage.getItem('ownerAvailabilitySchedule');
-    if (saved) {
+    let mounted = true;
+
+    const loadAvailability = async () => {
       try {
-        setAvailabilitySchedule(JSON.parse(saved));
+        const schedule = await getOwnerAvailabilitySchedule();
+        if (mounted) {
+          setAvailabilitySchedule(schedule);
+          // Keep localStorage in sync for offline/admin-only fallback
+          localStorage.setItem('ownerAvailabilitySchedule', JSON.stringify(schedule));
+        }
       } catch (e) {
-        console.error('Failed to load availability schedule', e);
+        console.error('Failed to load availability schedule from database, falling back to localStorage', e);
+        const saved = localStorage.getItem('ownerAvailabilitySchedule');
+        if (saved && mounted) {
+          try {
+            setAvailabilitySchedule(JSON.parse(saved));
+          } catch (err) {
+            console.error('Failed to parse local availability schedule', err);
+          }
+        }
       }
-    }
+    };
+
+    loadAvailability();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -737,13 +763,20 @@ const AdminDashboard = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 items-stretch">
           {statCards.map((stat, index) => {
             const Icon = stat.icon;
+            const isDiscountCard = stat.title === "Active Discounts";
+            const isClickable = isDiscountCard && stats.activeDiscounts > 0;
             return (
               <motion.div
                 key={stat.title}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="h-full"
+                className={`h-full ${isClickable ? 'cursor-pointer' : ''}`}
+                onClick={() => {
+                  if (isClickable && discountSectionRef.current) {
+                    discountSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
               >
                 <Card className="h-full border-0 shadow-md hover:shadow-lg transition-shadow duration-200 flex flex-col">
                   <CardHeader className="flex flex-row items-center justify-between pb-3 flex-shrink-0">
@@ -769,6 +802,92 @@ const AdminDashboard = () => {
             );
           })}
         </div>
+
+          {/* Discounted Products Quick Access */}
+          {discountedProducts.length > 0 && (
+            <div ref={discountSectionRef} className="mb-6">
+              <Card className="border-0 shadow-md">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                        <Percent className="w-5 h-5 text-purple-600" />
+                        Active Discounted Products
+                      </CardTitle>
+                      <CardDescription className="text-xs sm:text-sm">
+                        Click any product to edit or remove its discount.
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {discountedProducts.slice(0, 8).map((product) => (
+                      <motion.div
+                        key={product.id}
+                        className="group cursor-pointer"
+                        whileHover={{ y: -4 }}
+                        onClick={() => navigate(`/admin/products/${product.id}`)}
+                      >
+                        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow h-full flex flex-col">
+                          <div className="aspect-video relative">
+                            {product.image_urls?.[0] ? (
+                              <img
+                                src={encodeImageUrl(product.image_urls[0])}
+                                alt={product.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                <ImageIcon className="w-6 h-6 text-gray-400" />
+                              </div>
+                            )}
+                            <div className="absolute top-2 right-2 flex gap-1">
+                              {product.discount_percentage && product.discount_percentage > 0 && (
+                                <Badge className="bg-red-500 text-white text-xs font-bold">
+                                  {product.discount_percentage}% OFF
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="p-3 flex-1 flex flex-col justify-between">
+                            <div className="mb-2">
+                              <p className="text-sm font-medium truncate mb-1">{product.title}</p>
+                              {product.price && product.discount_percentage && product.discount_percentage > 0 ? (
+                                <div className="flex items-baseline gap-1">
+                                  <span className="text-xs line-through text-gray-400">
+                                    ${product.price.toFixed(2)}
+                                  </span>
+                                  <span className="text-sm font-semibold text-red-600">
+                                    ${(product.price * (1 - product.discount_percentage / 100)).toFixed(2)}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-sm font-semibold">
+                                  ${product.price?.toFixed(2) ?? '0.00'}
+                                </span>
+                              )}
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/admin/products/${product.id}`);
+                              }}
+                            >
+                              Edit Discount
+                            </Button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {/* Recent Activity & Quick Stats */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -1167,6 +1286,9 @@ const AdminDashboard = () => {
                             delete newSchedule[dateStr];
                             setAvailabilitySchedule(newSchedule);
                             localStorage.setItem('ownerAvailabilitySchedule', JSON.stringify(newSchedule));
+                            deleteOwnerAvailability(dateStr).catch((err) => {
+                              console.error('Failed to delete availability from database', err);
+                            });
                             toast({
                               title: 'Availability removed',
                               description: `Removed availability for ${date.toLocaleDateString()}`,
@@ -1220,6 +1342,9 @@ const AdminDashboard = () => {
                   };
                   setAvailabilitySchedule(newSchedule);
                   localStorage.setItem('ownerAvailabilitySchedule', JSON.stringify(newSchedule));
+                  upsertOwnerAvailability(date, start, end).catch((err) => {
+                    console.error('Failed to save availability to database', err);
+                  });
                   toast({
                     title: 'Availability added',
                     description: `Set availability for ${selectedDate.toLocaleDateString()} from ${start} to ${end}`,

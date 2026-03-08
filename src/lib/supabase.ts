@@ -349,6 +349,61 @@ export type Database = {
           updated_at?: string;
         };
       };
+      owner_availability: {
+        Row: {
+          id: string;
+          availability_date: string; // ISO date (YYYY-MM-DD)
+          start_time: string;        // HH:MM:SS
+          end_time: string;          // HH:MM:SS
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          availability_date: string;
+          start_time: string;
+          end_time: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          availability_date?: string;
+          start_time?: string;
+          end_time?: string;
+          created_at?: string;
+        };
+      };
+      consultation_bookings: {
+        Row: {
+          id: string;
+          full_name: string | null;
+          phone: string | null;
+          email: string | null;
+          notes: string | null;
+          scheduled_date: string; // ISO date
+          scheduled_time: string; // HH:MM:SS
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          full_name?: string | null;
+          phone?: string | null;
+          email?: string | null;
+          notes?: string | null;
+          scheduled_date: string;
+          scheduled_time: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          full_name?: string | null;
+          phone?: string | null;
+          email?: string | null;
+          notes?: string | null;
+          scheduled_date?: string;
+          scheduled_time?: string;
+          created_at?: string;
+        };
+      };
     };
   };
 };

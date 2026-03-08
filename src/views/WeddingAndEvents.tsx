@@ -17,6 +17,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import heroWeddingImage from "@/assets/heroWedding.webp";
 import { useWeddingCreations } from "@/hooks/useWeddingCreations";
 import { encodeImageUrl, toImageSrc } from "@/lib/imageUtils";
+import { getOwnerAvailabilitySchedule, getAllConsultationBookings, createConsultationBooking, type AvailabilitySchedule } from "@/lib/api/consultations";
 // Video for mobile hero background
 const video3Url = '/assets/video/Video3.webm';
 
@@ -823,6 +824,8 @@ const ConsultationModal = ({ isOpen, onClose, onConfirm }: {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [availability, setAvailability] = useState<AvailabilitySchedule>({});
+  const [bookings, setBookings] = useState<{ date: string; time: string }[]>([]);
 
   // Get today's date in YYYY-MM-DD format for min date
   const today = new Date().toISOString().split('T')[0];
@@ -833,18 +836,104 @@ const ConsultationModal = ({ isOpen, onClose, onConfirm }: {
     return `${hour.toString().padStart(2, '0')}:00`;
   });
 
-  const handleSubmit = () => {
+  // Load availability + existing bookings once when modal is mounted
+  useEffect(() => {
+    let mounted = true;
+
+    const loadData = async () => {
+      try {
+        const [schedule, bookingRows] = await Promise.all([
+          getOwnerAvailabilitySchedule(),
+          getAllConsultationBookings(),
+        ]);
+
+        if (!mounted) return;
+
+        setAvailability(schedule);
+
+        const now = new Date();
+        const upcoming = bookingRows.filter((row) => {
+          // Keep only bookings that are today or in the future
+          const dateStr = row.scheduled_date;
+          const timeStr = row.scheduled_time.slice(0, 5);
+          const bookingDateTime = new Date(`${dateStr}T${timeStr}:00`);
+          return bookingDateTime >= now;
+        }).map((row) => ({
+          date: row.scheduled_date,
+          time: row.scheduled_time.slice(0, 5),
+        }));
+
+        setBookings(upcoming);
+      } catch (e) {
+        console.error('Failed to load consultation availability/bookings', e);
+      }
+    };
+
+    loadData();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const availableTimeSlots = useMemo(() => {
+    if (!selectedDate) return timeSlots;
+
+    const schedule = availability[selectedDate];
+    if (!schedule) {
+      return [];
+    }
+
+    const bookedForDay = new Set(
+      bookings
+        .filter((b) => b.date === selectedDate)
+        .map((b) => b.time),
+    );
+
+    const now = new Date();
+
+    const isInFuture = (dateStr: string, timeStr: string) => {
+      const dt = new Date(`${dateStr}T${timeStr}:00`);
+      return dt >= now;
+    };
+
+    return timeSlots.filter((time) => {
+      // Within admin-defined window
+      if (time < schedule.start || time > schedule.end) return false;
+      // Not already booked
+      if (bookedForDay.has(time)) return false;
+      // Not in the past
+      if (!isInFuture(selectedDate, time)) return false;
+      return true;
+    });
+  }, [selectedDate, availability, bookings, timeSlots]);
+
+  const handleSubmit = async () => {
     if (!selectedDate || !selectedTime) {
       alert('Please select both date and time');
       return;
     }
     setIsSubmitting(true);
-    onConfirm(selectedDate, selectedTime);
-    setIsSubmitting(false);
-    onClose();
-    // Reset form
-    setSelectedDate('');
-    setSelectedTime('');
+    try {
+      await createConsultationBooking({
+        date: selectedDate,
+        time: selectedTime,
+      });
+
+      // Optimistically mark this slot as booked
+      setBookings((prev) => [...prev, { date: selectedDate, time: selectedTime }]);
+
+      onConfirm(selectedDate, selectedTime);
+      onClose();
+      // Reset form
+      setSelectedDate('');
+      setSelectedTime('');
+    } catch (e) {
+      console.error('Failed to create consultation booking', e);
+      alert('Could not schedule your consultation. Please try again or contact us directly.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -913,17 +1002,18 @@ const ConsultationModal = ({ isOpen, onClose, onConfirm }: {
               Select Time
             </label>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-              {timeSlots.map((time) => (
+              {availableTimeSlots.map((time) => (
                 <button
                   key={time}
                   onClick={() => setSelectedTime(time)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all ${selectedTime === time
+                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                    selectedTime === time
                       ? 'text-white'
                       : 'text-foreground border-2 border-gray-200 hover:border-gray-300'
-                    }`}
+                  }`}
                   style={{
                     backgroundColor: selectedTime === time ? GOLD_COLOR : 'transparent',
-                    borderColor: selectedTime === time ? GOLD_COLOR : undefined
+                    borderColor: selectedTime === time ? GOLD_COLOR : undefined,
                   }}
                 >
                   {time}

@@ -29,18 +29,21 @@ DROP POLICY IF EXISTS "Allow all operations on visitor_favorites" ON visitor_fav
 -- This prevents direct frontend access and ensures proper validation
 
 -- Visitors table: Service role only
+DROP POLICY IF EXISTS "Service role full access on visitors" ON visitors;
 CREATE POLICY "Service role full access on visitors"
   ON visitors FOR ALL
   USING (auth.jwt() ->> 'role' = 'service_role')
   WITH CHECK (auth.jwt() ->> 'role' = 'service_role');
 
 -- Visitor carts: Service role only
+DROP POLICY IF EXISTS "Service role full access on visitor_carts" ON visitor_carts;
 CREATE POLICY "Service role full access on visitor_carts"
   ON visitor_carts FOR ALL
   USING (auth.jwt() ->> 'role' = 'service_role')
   WITH CHECK (auth.jwt() ->> 'role' = 'service_role');
 
 -- Visitor favorites: Service role only
+DROP POLICY IF EXISTS "Service role full access on visitor_favorites" ON visitor_favorites;
 CREATE POLICY "Service role full access on visitor_favorites"
   ON visitor_favorites FOR ALL
   USING (auth.jwt() ->> 'role' = 'service_role')
@@ -202,6 +205,28 @@ BEGIN
     ALTER TABLE checkout_orders ENABLE ROW LEVEL SECURITY;
     DROP POLICY IF EXISTS "Service role full access on checkout orders" ON checkout_orders;
     CREATE POLICY "Service role full access on checkout orders" ON checkout_orders FOR ALL
+      USING (auth.jwt() ->> 'role' = 'service_role') WITH CHECK (auth.jwt() ->> 'role' = 'service_role');
+  END IF;
+END $$;
+
+-- Owner Availability (admin-controlled, service role only)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'owner_availability') THEN
+    ALTER TABLE owner_availability ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "Service role full access on owner availability" ON owner_availability;
+    CREATE POLICY "Service role full access on owner availability" ON owner_availability FOR ALL
+      USING (auth.jwt() ->> 'role' = 'service_role') WITH CHECK (auth.jwt() ->> 'role' = 'service_role');
+  END IF;
+END $$;
+
+-- Consultation Bookings (admin-only via backend, no direct anon access)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'consultation_bookings') THEN
+    ALTER TABLE consultation_bookings ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "Service role full access on consultation bookings" ON consultation_bookings;
+    CREATE POLICY "Service role full access on consultation bookings" ON consultation_bookings FOR ALL
       USING (auth.jwt() ->> 'role' = 'service_role') WITH CHECK (auth.jwt() ->> 'role' = 'service_role');
   END IF;
 END $$;
