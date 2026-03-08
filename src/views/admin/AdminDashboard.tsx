@@ -684,12 +684,14 @@ const AdminDashboard = () => {
                       {(() => {
                         const year = currentDate.getFullYear();
                         const month = currentDate.getMonth();
-                        const firstDay = new Date(year, month, 1).getDay();
+                        // Monday-first week: M=0 .. S=6. getDay() is 0=Sun, 1=Mon -> map so Sun is column 6
+                        const firstDayOfMonth = new Date(year, month, 1).getDay();
+                        const leadingBlanks = (firstDayOfMonth + 6) % 7;
                         const daysInMonth = new Date(year, month + 1, 0).getDate();
                         const today = new Date();
                         const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
                         
-                        return Array.from({ length: firstDay }, (_, i) => (
+                        return Array.from({ length: leadingBlanks }, (_, i) => (
                           <div key={`empty-${i}`} className="aspect-square" />
                         )).concat(
                           Array.from({ length: daysInMonth }, (_, i) => {
