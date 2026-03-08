@@ -827,8 +827,13 @@ const ConsultationModal = ({ isOpen, onClose, onConfirm }: {
   const [availability, setAvailability] = useState<AvailabilitySchedule>({});
   const [bookings, setBookings] = useState<{ date: string; time: string }[]>([]);
 
-  // Get today's date in YYYY-MM-DD format for min date
-  const today = new Date().toISOString().split('T')[0];
+  // Only show dates the owner added in admin (availability_date from owner_availability)
+  const availableDates = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return Object.keys(availability)
+      .filter((dateStr) => dateStr >= today)
+      .sort();
+  }, [availability]);
 
   // Generate time slots (9 AM to 6 PM, every hour)
   const timeSlots = Array.from({ length: 10 }, (_, i) => {
@@ -836,8 +841,9 @@ const ConsultationModal = ({ isOpen, onClose, onConfirm }: {
     return `${hour.toString().padStart(2, '0')}:00`;
   });
 
-  // Load availability + existing bookings once when modal is mounted
+  // Load availability + existing bookings when modal opens (so user only sees owner-set dates)
   useEffect(() => {
+    if (!isOpen) return;
     let mounted = true;
 
     const loadData = async () => {
@@ -853,7 +859,6 @@ const ConsultationModal = ({ isOpen, onClose, onConfirm }: {
 
         const now = new Date();
         const upcoming = bookingRows.filter((row) => {
-          // Keep only bookings that are today or in the future
           const dateStr = row.scheduled_date;
           const timeStr = row.scheduled_time.slice(0, 5);
           const bookingDateTime = new Date(`${dateStr}T${timeStr}:00`);
@@ -874,7 +879,15 @@ const ConsultationModal = ({ isOpen, onClose, onConfirm }: {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [isOpen]);
+
+  // Clear selected date if it’s not in the loaded availability (e.g. after refetch)
+  useEffect(() => {
+    if (selectedDate && availableDates.length > 0 && !availableDates.includes(selectedDate)) {
+      setSelectedDate('');
+      setSelectedTime('');
+    }
+  }, [availableDates, selectedDate]);
 
   const availableTimeSlots = useMemo(() => {
     if (!selectedDate) return timeSlots;
@@ -969,38 +982,66 @@ const ConsultationModal = ({ isOpen, onClose, onConfirm }: {
         </div>
 
         <div className="space-y-6">
-          {/* Date Picker */}
+          {/* Date Picker – only dates the owner set in admin (owner_availability) */}
           <div>
             <label className="block text-sm font-normal text-foreground mb-2" style={{ fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>
               Select Date
             </label>
-            <input
-              type="date"
-              min={today}
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all"
-              style={{
-                borderColor: selectedDate ? GOLD_COLOR : '#e5e7eb',
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = GOLD_COLOR;
-                e.target.style.boxShadow = `0 0 0 3px ${GOLD_COLOR}33`;
-              }}
-              onBlur={(e) => {
-                if (!selectedDate) {
-                  e.target.style.borderColor = '#e5e7eb';
-                }
-                e.target.style.boxShadow = 'none';
-              }}
-            />
+            {availableDates.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-3 px-4 rounded-lg border border-dashed border-gray-300">
+                No availability set at the moment. Please check back later or contact us directly.
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                {availableDates.map((dateStr) => {
+                  const schedule = availability[dateStr];
+                  const label = new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                  });
+                  return (
+                    <button
+                      key={dateStr}
+                      type="button"
+                      onClick={() => {
+                        setSelectedDate(dateStr);
+                        setSelectedTime('');
+                      }}
+                      className={`px-3 py-2.5 rounded-lg text-left text-sm font-medium transition-all border-2 ${
+                        selectedDate === dateStr
+                          ? 'border-current'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      style={{
+                        backgroundColor: selectedDate === dateStr ? `${GOLD_COLOR}15` : 'transparent',
+                        borderColor: selectedDate === dateStr ? GOLD_COLOR : undefined,
+                        color: selectedDate === dateStr ? undefined : 'inherit',
+                      }}
+                    >
+                      <span className="block">{label}</span>
+                      {schedule && (
+                        <span className="block text-xs opacity-80 mt-0.5">
+                          {schedule.start} – {schedule.end}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* Time Picker */}
+          {/* Time Picker – only when a date is selected; slots from admin window minus consultation_bookings */}
           <div>
             <label className="block text-sm font-normal text-foreground mb-2" style={{ fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>
               Select Time
             </label>
+            {selectedDate && availableTimeSlots.length === 0 && (
+              <p className="text-sm text-muted-foreground py-2">
+                No free slots on this date. Please choose another date.
+              </p>
+            )}
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {availableTimeSlots.map((time) => (
                 <button
