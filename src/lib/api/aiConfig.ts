@@ -61,10 +61,11 @@ export const AI_CONFIG = {
       // Set to true to use Netlify function instead of direct API calls
       // SECURITY: Secret key is only used server-side, never exposed to frontend
       useServerless: true, // Enabled: Uses serverless function with secret key (unlimited rate limits)
-      // Use API route by default; Netlify function when explicitly enabled
-      serverlessEndpoint: typeof window !== 'undefined' && import.meta.env.VITE_USE_NETLIFY_FUNCTIONS === 'true'
-        ? '/.netlify/functions/generate-image'
-        : '/api/generate-image',
+      // In local Vite dev, use the /api route; in production (Netlify), always use Netlify Functions path
+      serverlessEndpoint:
+        typeof window !== 'undefined'
+          ? (import.meta.env.DEV ? '/api/generate-image' : '/.netlify/functions/generate-image')
+          : '/.netlify/functions/generate-image',
       params: {
         // NOTE: Only basic parameters are supported in new API
         // enhance, nologo, seed may cause 400 errors - not including them
