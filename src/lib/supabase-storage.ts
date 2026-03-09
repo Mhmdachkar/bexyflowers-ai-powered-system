@@ -33,7 +33,7 @@ async function ensureWebpFile(file: File): Promise<File> {
   return new File([blob], newName, { type: 'image/webp', lastModified: Date.now() });
 }
 
-export type StorageBucket = 'product-images' | 'flower-images' | 'accessory-images' | 'wedding-creations';
+export type StorageBucket = 'product-images' | 'flower-images' | 'accessory-images' | 'wedding-creations' | 'zodiac-images';
 
 /**
  * Upload an image file to Supabase Storage

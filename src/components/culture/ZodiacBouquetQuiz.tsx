@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight, Gift } from 'lucide-react';
+import { Sparkles, ArrowRight, Gift, Loader2, Wand2, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -23,6 +23,10 @@ import {
   ZodiacBouquet 
 } from '@/data/zodiac';
 import { getProductImageAlt } from '@/lib/imageAltUtils';
+import { generateBouquetImage as generateImage } from '@/lib/api/imageGeneration';
+import { useCartWithToast } from '@/hooks/useCartWithToast';
+import { findCachedZodiacImage, cacheZodiacImage } from '@/lib/api/zodiac-image-cache';
+import { toast } from 'sonner';
 
 // Luxury Gold Accent Component
 const GoldAccent = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
@@ -36,10 +40,12 @@ const ZodiacBouquetQuiz = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [userInfo, setUserInfo] = useState({
     name: '',
+    gender: '' as '' | 'female' | 'male',
     month: '',
     day: '',
     email: ''
   });
+  const [birthError, setBirthError] = useState<string | null>(null);
   const [selectedSign, setSelectedSign] = useState<ZodiacSign | null>(null);
   const [selectedBouquet, setSelectedBouquet] = useState<ZodiacBouquet | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -51,14 +57,50 @@ const ZodiacBouquetQuiz = () => {
     { title: 'Perfect Match', description: 'Your ideal bouquet' }
   ];
 
+  const handleUserInfoChange = (patch: Partial<typeof userInfo>) => {
+    setUserInfo(prev => ({ ...prev, ...patch }));
+    // Clear birth validation error as soon as the user changes their inputs
+    if (birthError) {
+      setBirthError(null);
+    }
+  };
+
   const handleNext = () => {
     if (currentStep === 1) {
-      const month = parseInt(userInfo.month);
-      const day = parseInt(userInfo.day);
-      const sign = getZodiacSign(month, day);
-      if (sign) {
-        setSelectedSign(sign);
+      // Validate birth date before moving on
+      if (!userInfo.month || !userInfo.day) {
+        setBirthError('Please select both your birth month and day.');
+        return;
       }
+
+      const month = Number(userInfo.month);
+      const day = Number(userInfo.day);
+
+      if (!Number.isInteger(month) || month < 1 || month > 12) {
+        setBirthError('Please enter a valid birth month (1-12).');
+        return;
+      }
+
+      if (!Number.isInteger(day) || day < 1 || day > 31) {
+        setBirthError('Please enter a valid birth day.');
+        return;
+      }
+
+      // Check max days for the selected month (using a non-leap reference year)
+      const daysInMonth = new Date(2001, month, 0).getDate();
+      if (day > daysInMonth) {
+        setBirthError('This day does not exist for the selected month. Please double-check.');
+        return;
+      }
+
+      const sign = getZodiacSign(month, day);
+      if (!sign) {
+        setBirthError('We could not determine your zodiac sign from this date. Please check your birth date.');
+        return;
+      }
+
+      setSelectedSign(sign);
+      setBirthError(null);
     }
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
@@ -79,13 +121,24 @@ const ZodiacBouquetQuiz = () => {
 
   const handleRestart = () => {
     setCurrentStep(0);
-    setUserInfo({ name: '', month: '', day: '', email: '' });
+    setUserInfo({ name: '', gender: '', month: '', day: '', email: '' });
+    setBirthError(null);
     setSelectedSign(null);
     setSelectedBouquet(null);
     setShowResult(false);
   };
 
   const progress = ((currentStep + 1) / steps.length) * 100;
+
+  // When entering the final step, auto-select the first recommended bouquet
+  useEffect(() => {
+    if (currentStep === 3 && selectedSign && !selectedBouquet) {
+      const first = selectedSign.recommendedBouquets?.[0];
+      if (first) {
+        setSelectedBouquet(first);
+      }
+    }
+  }, [currentStep, selectedSign, selectedBouquet]);
 
   if (showResult && selectedSign && selectedBouquet) {
     return (
@@ -191,7 +244,7 @@ const ZodiacBouquetQuiz = () => {
             {steps.map((step, index) => (
               <div key={index} className="relative group cursor-default flex flex-col items-center">
                 <motion.div
-                  className={`w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold transition-all duration-500 relative z-10 ${
+                  className={`w-10 h-10 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-sm sm:text-lg font-bold transition-all duration-500 relative z-10 ${
                     index <= currentStep
                       ? 'bg-[#C79E48] text-white shadow-md shadow-[#C79E48]/30 scale-110'
                       : 'bg-white border-2 border-gray-200 text-gray-300'
@@ -210,7 +263,7 @@ const ZodiacBouquetQuiz = () => {
                     />
                   )}
                 </motion.div>
-                <span className={`absolute -bottom-8 text-xs font-bold tracking-wider whitespace-nowrap transition-colors duration-300 uppercase ${
+                <span className={`absolute -bottom-7 sm:-bottom-8 text-[10px] sm:text-xs font-bold tracking-wider whitespace-nowrap transition-colors duration-300 uppercase hidden sm:block ${
                   index <= currentStep ? 'text-[#C79E48]' : 'text-gray-300'
                 }`}>
                   {step.title}
@@ -233,14 +286,15 @@ const ZodiacBouquetQuiz = () => {
               {currentStep === 0 && (
                 <WelcomeStep 
                   userInfo={userInfo}
-                  setUserInfo={setUserInfo}
+                  onChangeUserInfo={handleUserInfoChange}
                 />
               )}
               
               {currentStep === 1 && (
                 <BirthDetailsStep 
                   userInfo={userInfo}
-                  setUserInfo={setUserInfo}
+                  onChangeUserInfo={handleUserInfoChange}
+                  error={birthError}
                 />
               )}
               
@@ -270,7 +324,7 @@ const ZodiacBouquetQuiz = () => {
                 variant="outline"
                 onClick={handlePrevious}
                 disabled={currentStep === 0}
-                className="flex items-center gap-2 bg-white border-2 border-[#C79E48] text-[#C79E48] hover:bg-[#F5F1E8] disabled:opacity-50 disabled:cursor-not-allowed px-8 py-3 rounded-xl font-semibold"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white border-2 border-[#C79E48] text-[#C79E48] hover:bg-[#F5F1E8] disabled:opacity-50 disabled:cursor-not-allowed px-8 py-3 rounded-xl font-semibold"
               >
                 Previous
               </Button>
@@ -283,11 +337,11 @@ const ZodiacBouquetQuiz = () => {
               <Button
                 onClick={handleNext}
                 disabled={
-                  (currentStep === 0 && !userInfo.name) ||
+                  (currentStep === 0 && (!userInfo.name || !userInfo.gender)) ||
                   (currentStep === 1 && (!userInfo.month || !userInfo.day)) ||
                   (currentStep === 3 && !selectedBouquet)
                 }
-                className="flex items-center gap-3 bg-gradient-to-r from-[#C79E48] to-[#C79E48] hover:from-[#C79E48] hover:to-[#C79E48] text-white shadow-lg shadow-[#C79E48]/40 disabled:opacity-50 disabled:cursor-not-allowed px-8 py-3 rounded-xl font-semibold text-lg"
+                className="w-full sm:w-auto flex items-center justify-center gap-3 bg-gradient-to-r from-[#C79E48] to-[#C79E48] hover:from-[#C79E48] hover:to-[#C79E48] text-white shadow-lg shadow-[#C79E48]/40 disabled:opacity-50 disabled:cursor-not-allowed px-8 py-3 rounded-xl font-semibold text-lg"
               >
                 {currentStep === steps.length - 1 ? 'Find My Bouquet' : 'Next'}
                 <motion.div
@@ -309,15 +363,15 @@ const ZodiacBouquetQuiz = () => {
 // Step Components
 const WelcomeStep = ({ 
   userInfo, 
-  setUserInfo 
+  onChangeUserInfo,
 }: { 
   userInfo: any; 
-  setUserInfo: (info: any) => void; 
+  onChangeUserInfo: (patch: Partial<any>) => void; 
 }) => (
       <div className="text-center space-y-8 sm:space-y-10">
     
     <motion.h3 
-      className="text-4xl font-bold text-gray-900 mb-6 tracking-wide"
+      className="text-2xl sm:text-4xl font-bold text-gray-900 mb-4 sm:mb-6 tracking-wide"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.4 }}
@@ -329,7 +383,7 @@ const WelcomeStep = ({
     </motion.h3>
     
     <motion.p 
-      className="text-gray-600 text-xl mb-10 leading-relaxed font-light max-w-2xl mx-auto"
+      className="text-gray-600 text-base sm:text-xl mb-6 sm:mb-10 leading-relaxed font-light max-w-2xl mx-auto"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.5 }}
@@ -338,31 +392,63 @@ const WelcomeStep = ({
     </motion.p>
     
     <motion.div 
-      className="max-w-md mx-auto"
+      className="max-w-md mx-auto space-y-8"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.6 }}
     >
-      <Label htmlFor="name" className="text-gray-800 font-semibold text-xl mb-4 block tracking-wide">
-        What should we call you?
-      </Label>
-      <Input
-        id="name"
-        placeholder="Enter your name"
-        value={userInfo.name}
-        onChange={(e) => setUserInfo({ ...userInfo, name: e.target.value })}
-        className="bg-white border-2 border-[#D4A85A] focus:border-[#C79E48] focus:ring-[#C79E48]/20 h-14 text-lg rounded-xl px-6 shadow-lg text-gray-900 placeholder:text-gray-500"
-      />
+      <div>
+        <Label htmlFor="name" className="text-gray-800 font-semibold text-xl mb-4 block tracking-wide">
+          What should we call you?
+        </Label>
+        <Input
+          id="name"
+          placeholder="Enter your name"
+          value={userInfo.name}
+          onChange={(e) => onChangeUserInfo({ name: e.target.value })}
+          className="bg-white border-2 border-[#D4A85A] focus:border-[#C79E48] focus:ring-[#C79E48]/20 h-14 text-lg rounded-xl px-6 shadow-lg text-gray-900 placeholder:text-gray-500"
+        />
+      </div>
+
+      <div>
+        <Label className="text-gray-800 font-semibold text-xl mb-4 block tracking-wide">
+          Who is this bouquet for?
+        </Label>
+        <div className="grid grid-cols-2 gap-4">
+          {([
+            { value: 'female' as const, label: 'Her', icon: '🌸' },
+            { value: 'male' as const, label: 'Him', icon: '🌿' },
+          ]).map((opt) => (
+            <motion.button
+              key={opt.value}
+              type="button"
+              onClick={() => onChangeUserInfo({ gender: opt.value })}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
+              className={`flex items-center justify-center gap-3 h-14 rounded-xl text-lg font-semibold transition-all duration-300 border-2 shadow-lg ${
+                userInfo.gender === opt.value
+                  ? 'border-[#C79E48] bg-[#F5F1E8] text-[#8B6F3A] ring-2 ring-[#C79E48]/30'
+                  : 'border-[#D4A85A] bg-white text-gray-700 hover:border-[#C79E48] hover:bg-[#F5F1E8]/50'
+              }`}
+            >
+              <span className="text-2xl">{opt.icon}</span>
+              {opt.label}
+            </motion.button>
+          ))}
+        </div>
+      </div>
     </motion.div>
   </div>
 );
 
 const BirthDetailsStep = ({ 
   userInfo, 
-  setUserInfo 
+  onChangeUserInfo,
+  error,
 }: { 
   userInfo: any; 
-  setUserInfo: (info: any) => void; 
+  onChangeUserInfo: (patch: Partial<any>) => void;
+  error?: string | null;
 }) => (
   <div className="space-y-10">
     <motion.div 
@@ -371,10 +457,10 @@ const BirthDetailsStep = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
     >
-      <h3 className="text-4xl font-bold text-gray-900 mb-4 tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
+      <h3 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
         Your Birth Details
       </h3>
-      <p className="text-gray-600 text-xl font-light">
+      <p className="text-gray-600 text-base sm:text-xl font-light">
         Enter your birth month and day to discover your zodiac sign
       </p>
     </motion.div>
@@ -389,7 +475,7 @@ const BirthDetailsStep = ({
         <Label htmlFor="month" className="text-gray-800 font-semibold text-xl mb-4 block tracking-wide">Birth Month</Label>
         <Select
           value={userInfo.month}
-          onValueChange={(value) => setUserInfo({ ...userInfo, month: value })}
+          onValueChange={(value) => onChangeUserInfo({ month: value })}
         >
           <SelectTrigger className="bg-white border-2 border-[#D4A85A] focus:border-[#C79E48] h-14 text-lg rounded-xl px-6 shadow-lg text-gray-900">
             <SelectValue placeholder="Select month" />
@@ -413,11 +499,20 @@ const BirthDetailsStep = ({
           max="31"
           placeholder="Day"
           value={userInfo.day}
-          onChange={(e) => setUserInfo({ ...userInfo, day: e.target.value })}
+          onChange={(e) => onChangeUserInfo({ day: e.target.value })}
           className="bg-white border-2 border-[#D4A85A] focus:border-[#C79E48] focus:ring-[#C79E48]/20 h-14 text-lg rounded-xl px-6 shadow-lg text-gray-900 placeholder:text-gray-500"
         />
       </div>
     </motion.div>
+    {error && (
+      <motion.p
+        className="text-center text-sm text-red-600 mt-2"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        {error}
+      </motion.p>
+    )}
   </div>
 );
 
@@ -446,7 +541,7 @@ const ZodiacProfileStep = ({ sign }: { sign: ZodiacSign }) => (
       </motion.div>
       
       <motion.h3 
-        className="text-4xl font-bold text-gray-900 mb-2 tracking-wide"
+        className="text-2xl sm:text-4xl font-bold text-gray-900 mb-2 tracking-wide"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
@@ -562,10 +657,10 @@ const BouquetSelectionStep = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
     >
-      <h3 className="text-4xl font-bold text-gray-900 mb-4 tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
+      <h3 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
         Your Perfect Match
       </h3>
-      <p className="text-gray-600 text-xl font-light">
+      <p className="text-gray-600 text-base sm:text-xl font-light">
         Choose the bouquet that speaks to your {sign.name} soul
       </p>
     </motion.div>
@@ -640,7 +735,7 @@ const BouquetSelectionStep = ({
   </div>
 );
 
-// Result Component
+// Result Component (with AI image generation)
 const ZodiacResult = ({ 
   userInfo, 
   sign, 
@@ -651,7 +746,108 @@ const ZodiacResult = ({
   sign: ZodiacSign; 
   bouquet: ZodiacBouquet; 
   onRestart: () => void; 
-}) => (
+}) => {
+  const { addToCart } = useCartWithToast();
+  const [aiImage, setAiImage] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoadingCache, setIsLoadingCache] = useState(true);
+  const gender = (userInfo.gender as 'female' | 'male' | '') || '';
+
+  const handleAddToCart = () => {
+    addToCart({
+      id: bouquet.id,
+      title: bouquet.name,
+      price: bouquet.price,
+      image: aiImage || bouquet.image,
+      description: `${sign.name} Zodiac Bouquet${gender === 'male' ? ' (For Him)' : gender === 'female' ? ' (For Her)' : ''} — ${bouquet.occasion}`,
+    });
+  };
+
+  // On mount, check if a cached image already exists for this combo
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const cached = await findCachedZodiacImage(gender, sign.id, bouquet.id);
+        if (!cancelled && cached) {
+          setAiImage(cached);
+        }
+      } catch { /* ignore */ } finally {
+        if (!cancelled) setIsLoadingCache(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [gender, sign.id, bouquet.id]);
+
+  const buildZodiacPrompt = () => {
+    const flowerList = bouquet.flowers.join(', ');
+    const colorList = bouquet.colors.join(', ');
+
+    const genderStyle =
+      gender === 'male'
+        ? 'Masculine presentation: structured geometric arrangement, bold upright stems, ' +
+          'deep rich tones (burgundy, navy, forest green, charcoal, copper), ' +
+          'minimal foliage with architectural greenery (eucalyptus, thistle, protea accents), ' +
+          'wrapped in matte dark paper or kraft with leather ribbon. ' +
+          'No pastel colors, no lace, no overly round or soft shapes.'
+        : gender === 'female'
+          ? 'Feminine presentation: soft flowing romantic arrangement, ' +
+            'lush rounded silhouette with cascading elements, ' +
+            'delicate pastel and blush tones mixed with vibrant pops, ' +
+            'wrapped in elegant satin ribbon with tissue paper. ' +
+            'Soft and luxurious feel with peonies, garden roses, or ranunculus highlights.'
+          : '';
+
+    return (
+      `A professional studio photograph of a luxury flower bouquet arrangement on a clean white background. ` +
+      `The bouquet contains: ${flowerList}. ` +
+      `Color palette: ${colorList}. ` +
+      `Style: ${sign.bouquetStyle}. ` +
+      (genderStyle ? `${genderStyle} ` : '') +
+      `The arrangement evokes ${bouquet.meaning}. ` +
+      `Soft natural lighting, elegant presentation, high-end floral photography, 8K detail.`
+    );
+  };
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    try {
+      toast.loading('Generating your cosmic bouquet preview...', { id: 'zodiac-ai' });
+      const prompt = buildZodiacPrompt();
+      const result = await generateImage(prompt, {
+        width: 768,
+        height: 768,
+        enhancePrompt: true,
+        useCache: false,
+      });
+
+      if (aiImage && aiImage.startsWith('blob:')) {
+        URL.revokeObjectURL(aiImage);
+      }
+      setAiImage(result.imageUrl);
+      toast.success('AI preview generated!', { id: 'zodiac-ai' });
+
+      // Save to database so future visitors with the same combo skip generation
+      cacheZodiacImage(gender, sign.id, bouquet.id, result.imageUrl).then((storedUrl) => {
+        if (storedUrl) setAiImage(storedUrl);
+      });
+    } catch {
+      toast.error('Could not generate preview. Please try again.', { id: 'zodiac-ai' });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Cleanup blob URLs on unmount (Storage URLs don't need cleanup)
+  useEffect(() => {
+    return () => {
+      if (aiImage && aiImage.startsWith('blob:')) {
+        URL.revokeObjectURL(aiImage);
+      }
+    };
+  }, [aiImage]);
+
+  return (
   <div className="min-h-screen bg-white">
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
@@ -672,8 +868,8 @@ const ZodiacResult = ({
           transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
           className="relative mx-auto mb-8"
         >
-          <div className="w-48 h-48 bg-white border-4 border-[#C79E48] rounded-full flex items-center justify-center shadow-2xl shadow-[#C79E48]/30 relative">
-            <span className="text-9xl drop-shadow-lg">{sign.symbol}</span>
+          <div className="w-28 h-28 sm:w-40 sm:h-40 md:w-48 md:h-48 bg-white border-4 border-[#C79E48] rounded-full flex items-center justify-center shadow-2xl shadow-[#C79E48]/30 relative">
+            <span className="text-5xl sm:text-7xl md:text-9xl drop-shadow-lg">{sign.symbol}</span>
             <motion.div
               className="absolute inset-0 border-4 border-[#C79E48] rounded-full"
               animate={{ scale: [1, 1.05, 1], opacity: [0.3, 0.1, 0.3] }}
@@ -716,12 +912,41 @@ const ZodiacResult = ({
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 1 }}
+              className="space-y-4"
               >
-              <img
-                src={bouquet.image}
-                alt={getProductImageAlt(bouquet)}
-                className="w-full h-64 sm:h-80 md:h-96 object-cover rounded-3xl shadow-2xl border-2 border-[#E8D4A8]"
-              />
+              <div className="relative">
+                <img
+                  src={aiImage || bouquet.image}
+                  alt={getProductImageAlt(bouquet)}
+                  className="w-full h-64 sm:h-80 md:h-96 object-cover rounded-3xl shadow-2xl border-2 border-[#E8D4A8]"
+                />
+                {(isGenerating || isLoadingCache) && (
+                  <div className="absolute inset-0 bg-black/40 rounded-3xl flex flex-col items-center justify-center gap-3">
+                    <Loader2 className="w-10 h-10 text-white animate-spin" />
+                    <span className="text-white text-sm font-medium">
+                      {isGenerating ? 'Creating your cosmic bouquet…' : 'Loading…'}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <Button
+                  onClick={handleGenerate}
+                  disabled={isGenerating || isLoadingCache}
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#C79E48] to-[#D4A85A] hover:from-[#b8903c] hover:to-[#c9a04f] text-white shadow-lg shadow-[#C79E48]/30 h-12 rounded-xl font-semibold"
+                >
+                  {isGenerating ? (
+                    <><Loader2 className="w-5 h-5 animate-spin" /> Generating…</>
+                  ) : aiImage ? (
+                    <><RefreshCw className="w-5 h-5" /> Regenerate AI Preview</>
+                  ) : (
+                    <><Wand2 className="w-5 h-5" /> Generate AI Preview</>
+                  )}
+                </Button>
+              </motion.div>
             </motion.div>
             
             <div className="space-y-8 sm:space-y-10">
@@ -747,7 +972,7 @@ const ZodiacResult = ({
                 transition={{ duration: 0.8, delay: 1.4 }}
                 className="bg-white rounded-2xl p-6 sm:p-8 border-2 border-[#E8D4A8] shadow-lg"
               >
-                <h4 className="font-bold text-gray-900 text-2xl mb-6 tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
+                <h4 className="font-bold text-gray-900 text-lg sm:text-2xl mb-4 sm:mb-6 tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
                   Why This Bouquet?
                 </h4>
                 <p className="text-gray-800 mb-6 sm:mb-8 leading-relaxed text-base sm:text-lg">
@@ -776,13 +1001,13 @@ const ZodiacResult = ({
                 transition={{ duration: 0.8, delay: 1.8 }}
               >
                 <motion.div whileHover={{ scale: 1.05, y: -3 }} whileTap={{ scale: 0.95 }} className="flex-1">
-                  <Button size="lg" className="w-full bg-gradient-to-r from-[#C79E48] to-[#C79E48] hover:from-[#C79E48] hover:to-[#C79E48] text-white shadow-lg shadow-[#C79E48]/40 h-14 sm:h-16 text-lg sm:text-xl font-semibold rounded-xl">
+                  <Button size="lg" onClick={handleAddToCart} className="w-full bg-gradient-to-r from-[#C79E48] to-[#C79E48] hover:from-[#C79E48] hover:to-[#C79E48] text-white shadow-lg shadow-[#C79E48]/40 h-14 sm:h-16 text-lg sm:text-xl font-semibold rounded-xl">
                     <Gift className="w-6 h-6 mr-3" />
                     Add to Cart
                   </Button>
                 </motion.div>
-                <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant="outline" size="lg" onClick={onRestart} className="bg-white border-2 border-[#C79E48] text-[#C79E48] hover:bg-[#F5F1E8] h-14 sm:h-16 text-lg sm:text-xl px-6 sm:px-8 rounded-xl font-semibold">
+                <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.95 }} className="sm:flex-none">
+                  <Button variant="outline" size="lg" onClick={onRestart} className="w-full sm:w-auto bg-white border-2 border-[#C79E48] text-[#C79E48] hover:bg-[#F5F1E8] h-14 sm:h-16 text-lg sm:text-xl px-6 sm:px-8 rounded-xl font-semibold">
                     Try Again
                   </Button>
                 </motion.div>
@@ -799,44 +1024,45 @@ const ZodiacResult = ({
         transition={{ duration: 0.8, delay: 2 }}
       >
         <Card className="p-6 sm:p-8 md:p-10 bg-gradient-to-r from-[#F5F1E8] to-white border-2 border-[#D4A85A] shadow-xl shadow-[#C79E48]/10 rounded-3xl">
-          <h3 className="font-bold text-gray-900 text-3xl mb-12 text-center tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
+          <h3 className="font-bold text-gray-900 text-xl sm:text-3xl mb-6 sm:mb-12 text-center tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
             Your Zodiac Insights
           </h3>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-3 gap-3 sm:gap-8">
             <motion.div 
-              className="text-center bg-white rounded-2xl p-8 border-2 border-[#E8D4A8] shadow-lg"
+              className="text-center bg-white rounded-xl sm:rounded-2xl p-3 sm:p-8 border-2 border-[#E8D4A8] shadow-lg"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 2.2 }}
             >
-              <h4 className="font-bold text-gray-900 text-xl mb-4 tracking-wide">Element</h4>
-              <span className="inline-block border-2 border-[#C79E48] text-[#8B6F3A] bg-[#F5F1E8] rounded-full px-6 py-3 text-lg font-semibold">
+              <h4 className="font-bold text-gray-900 text-sm sm:text-xl mb-2 sm:mb-4 tracking-wide">Element</h4>
+              <span className="inline-block border-2 border-[#C79E48] text-[#8B6F3A] bg-[#F5F1E8] rounded-full px-3 py-1.5 sm:px-6 sm:py-3 text-xs sm:text-lg font-semibold">
                 {sign.element}
               </span>
             </motion.div>
             <motion.div 
-              className="text-center bg-white rounded-2xl p-8 border-2 border-[#E8D4A8] shadow-lg"
+              className="text-center bg-white rounded-xl sm:rounded-2xl p-3 sm:p-8 border-2 border-[#E8D4A8] shadow-lg"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 2.4 }}
             >
-              <h4 className="font-bold text-gray-900 text-xl mb-4 tracking-wide">Ruling Planet</h4>
-              <span className="text-gray-800 text-xl font-semibold">{sign.rulingPlanet}</span>
+              <h4 className="font-bold text-gray-900 text-sm sm:text-xl mb-2 sm:mb-4 tracking-wide">Ruling Planet</h4>
+              <span className="text-gray-800 text-xs sm:text-xl font-semibold">{sign.rulingPlanet}</span>
             </motion.div>
             <motion.div 
-              className="text-center bg-white rounded-2xl p-8 border-2 border-[#E8D4A8] shadow-lg"
+              className="text-center bg-white rounded-xl sm:rounded-2xl p-3 sm:p-8 border-2 border-[#E8D4A8] shadow-lg"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 2.6 }}
             >
-              <h4 className="font-bold text-gray-900 text-xl mb-4 tracking-wide">Gemstone</h4>
-              <span className="text-gray-800 text-xl font-semibold">{sign.gemstone}</span>
+              <h4 className="font-bold text-gray-900 text-sm sm:text-xl mb-2 sm:mb-4 tracking-wide">Gemstone</h4>
+              <span className="text-gray-800 text-xs sm:text-xl font-semibold">{sign.gemstone}</span>
             </motion.div>
           </div>
         </Card>
       </motion.div>
     </motion.div>
   </div>
-);
+  );
+};
 
 export default ZodiacBouquetQuiz;

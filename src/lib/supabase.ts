@@ -404,6 +404,35 @@ export type Database = {
           created_at?: string;
         };
       };
+      zodiac_generated_images: {
+        Row: {
+          id: string;
+          gender: string;
+          zodiac_sign: string;
+          bouquet_id: string;
+          image_url: string;
+          storage_path: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          gender: string;
+          zodiac_sign: string;
+          bouquet_id: string;
+          image_url: string;
+          storage_path: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          gender?: string;
+          zodiac_sign?: string;
+          bouquet_id?: string;
+          image_url?: string;
+          storage_path?: string;
+          created_at?: string;
+        };
+      };
     };
   };
 };
