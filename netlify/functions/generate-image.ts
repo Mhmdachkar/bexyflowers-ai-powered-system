@@ -135,13 +135,15 @@ let globalDailyReset = Date.now();
 
 
 // Allowed origins (CORS)
+// Static list — extend with Netlify's own URLs dynamically below
 const ALLOWED_ORIGINS = [
   'https://bexyflowers.shop',
   'https://www.bexyflowers.shop',
-  'http://localhost:5173', // Dev only
+  'http://localhost:5173',  // Vite dev
+  'http://localhost:5174',  // Vite dev alt
+  'http://localhost:8888',  // Netlify dev
   'http://localhost:51635', // Netlify dev server
-  'http://localhost:52933', // Current Netlify dev server
-  'http://localhost:5174', // Dev only
+  'http://localhost:52933', // Netlify dev server alt
 ];
 
 // Allowed models (from Pollinations pricing table)
@@ -195,11 +197,39 @@ function generateFingerprint(event: HandlerEvent, ip: string): string {
 }
 
 /**
- * Check if origin is allowed
+ * Check if origin is allowed.
+ *
+ * In addition to the static whitelist we also accept:
+ *  1. The site's own Netlify URL (process.env.URL — e.g. https://bexyflowers.netlify.app)
+ *  2. Any Netlify deploy-preview URL for this site (process.env.DEPLOY_URL prefix)
+ *  3. Any *.netlify.app subdomain (covers branch deploys and previews)
+ *
+ * All three are set automatically by Netlify at build/function runtime, so we
+ * never have to hard-code a changing preview URL.
  */
 function isOriginAllowed(origin: string | null): boolean {
   if (!origin) return false;
-  return ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed));
+
+  // Static whitelist
+  if (ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed))) return true;
+
+  // Netlify auto-injected site URL  (e.g. https://bexyflowers.netlify.app)
+  const siteUrl = process.env.URL;
+  if (siteUrl && origin.startsWith(siteUrl)) return true;
+
+  // Netlify deploy-preview URL (e.g. https://deploy-preview-42--bexyflowers.netlify.app)
+  const deployUrl = process.env.DEPLOY_URL;
+  if (deployUrl && origin.startsWith(deployUrl)) return true;
+
+  // Any *.netlify.app subdomain (branch deploys, previews, etc.)
+  try {
+    const { hostname } = new URL(origin);
+    if (hostname.endsWith('.netlify.app')) return true;
+  } catch {
+    // invalid URL — fall through to deny
+  }
+
+  return false;
 }
 
 /**
