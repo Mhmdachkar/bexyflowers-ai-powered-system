@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SEO from '@/components/SEO';
 import { getProductImageAlt } from '@/lib/imageAltUtils';
 import { motion } from 'framer-motion';
@@ -36,7 +36,23 @@ const Checkout = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const redirectTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  React.useEffect(() => {
+  // Ensure any scroll locks from previous overlays (cart drawer, modals, mobile menu) are cleared on checkout
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const body = document.body;
+      const docEl = document.documentElement;
+
+      body.style.overflow = '';
+      body.style.position = '';
+      body.style.top = '';
+      body.style.width = '';
+      body.style.paddingRight = '';
+      docEl.style.overflow = '';
+      body.removeAttribute('data-scroll-y');
+    }
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
     };
