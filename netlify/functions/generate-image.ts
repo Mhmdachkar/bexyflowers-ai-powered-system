@@ -811,9 +811,8 @@ export const handler: Handler = async (
     // Generate random seed to force fresh generation (prevents caching/fallback)
     const seed = Math.floor(Math.random() * 1000000000);
     // Use gen.pollinations.ai/image endpoint with API key for proper model selection
-    // Add key parameter for authentication (required for gptimage model)
-    const apiKey = secretKey || secretKey2 || '';
-    const pollinationsUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=${apiKey}`;
+    // NOTE: Use ONLY Bearer token authentication (not query param) - sending both can confuse the API
+    const pollinationsUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true`;
     
     // Log request details (without secret key)
     console.log('[Netlify Function] ========== IMAGE GENERATION REQUEST ==========');
@@ -823,8 +822,10 @@ export const handler: Handler = async (
     console.log('[Netlify Function] Resolution:', `${width}x${height}`);
     console.log('[Netlify Function] Prompt length:', prompt.length);
     console.log('[Netlify Function] Seed:', seed);
-    console.log('[Netlify Function] API Key present:', !!apiKey);
-    console.log('[Netlify Function] Full URL (without prompt/key):', `https://gen.pollinations.ai/image/[PROMPT]?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=[HIDDEN]`);
+    console.log('[Netlify Function] Primary API Key present:', !!secretKey);
+    console.log('[Netlify Function] Secondary API Key present:', !!secretKey2);
+    console.log('[Netlify Function] Using Bearer token auth (not URL param)');
+    console.log('[Netlify Function] Full URL:', `https://gen.pollinations.ai/image/[PROMPT]?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true`);
     console.log('[Netlify Function] ===============================================');
     
     // Try primary key first, fallback to secondary key if it fails
@@ -861,7 +862,7 @@ export const handler: Handler = async (
     };
     
     // Helper function to attempt fetch with retries for transient errors (502, 503, 504)
-    const fetchWithRetry = async (url: string, keyLabel: string): Promise<Response> => {
+    const fetchWithRetry = async (url: string, keyLabel: string, apiKey: string | undefined): Promise<Response> => {
       let lastError: Error | null = null;
       let lastResponse: Response | null = null;
       
@@ -873,8 +874,8 @@ export const handler: Handler = async (
             await new Promise(resolve => setTimeout(resolve, delay));
           }
           
-          // Use Bearer token authentication with the secret key for better rate limits
-          const resp = await fetchWithAuth(url, secretKey || secretKey2);
+          // Use Bearer token authentication with the provided API key
+          const resp = await fetchWithAuth(url, apiKey);
           
           // If transient error (502, 503, 504), retry
           if (!resp.ok && (resp.status === 502 || resp.status === 503 || resp.status === 504)) {
@@ -899,16 +900,14 @@ export const handler: Handler = async (
       console.log('[Netlify Function] Trying primary API key');
       
       try {
-        response = await fetchWithRetry(pollinationsUrl, 'Primary');
+        response = await fetchWithRetry(pollinationsUrl, 'Primary', secretKey);
         
         // If primary key fails with rate limit (429), auth errors (401/403), try secondary key
         if (!response.ok && secretKey2 && (response.status === 429 || response.status === 401 || response.status === 403)) {
           console.warn('[Netlify Function] Primary key failed with status:', response.status);
           console.log('[Netlify Function] Falling back to secondary API key');
           
-          const pollinationsUrl2 = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=${secretKey2}`;
-          
-          response = await fetchWithRetry(pollinationsUrl2, 'Secondary');
+          response = await fetchWithRetry(pollinationsUrl, 'Secondary', secretKey2);
           usedKey = 'secondary';
         }
       } catch (fetchError) {
@@ -918,9 +917,7 @@ export const handler: Handler = async (
           console.log('[Netlify Function] Falling back to secondary API key');
           
           try {
-            const pollinationsUrl2 = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=${secretKey2}`;
-            
-            response = await fetchWithRetry(pollinationsUrl2, 'Secondary');
+            response = await fetchWithRetry(pollinationsUrl, 'Secondary', secretKey2);
             usedKey = 'secondary';
           } catch (secondaryError) {
             // Both keys failed
@@ -933,9 +930,7 @@ export const handler: Handler = async (
     } else if (secretKey2) {
       // If primary key is not set, use secondary key directly
       console.log('[Netlify Function] Primary key not set, using secondary API key');
-      const pollinationsUrl2 = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=${secretKey2}`;
-      
-      response = await fetchWithRetry(pollinationsUrl2, 'Secondary');
+      response = await fetchWithRetry(pollinationsUrl, 'Secondary', secretKey2);
       usedKey = 'secondary';
     } else {
       throw new Error('No valid API key available');
@@ -949,14 +944,26 @@ export const handler: Handler = async (
       
       // Provide more specific error messages for common issues
       let userMessage = `Pollinations API error: ${response.status}`;
-      if (response.status === 502) {
+      let isRetryable = false;
+      
+      if (response.status === 403 && errorText.includes('temporarily blocked')) {
+        userMessage = 'AI image service is temporarily unavailable due to high demand. Please try again in a few hours.';
+        isRetryable = false; // Don't retry immediately - need to wait
+      } else if (response.status === 403) {
+        userMessage = 'AI service access denied. Please try again later.';
+        isRetryable = false;
+      } else if (response.status === 502) {
         userMessage = 'AI service gateway error. The service may be temporarily overloaded. Please try again.';
+        isRetryable = true;
       } else if (response.status === 504) {
         userMessage = 'AI service is busy right now. Please try again in a moment.';
+        isRetryable = true;
       } else if (response.status === 429) {
         userMessage = 'Rate limit exceeded. Please wait a moment before trying again.';
+        isRetryable = true;
       } else if (response.status === 503) {
         userMessage = 'AI service temporarily unavailable. Please try again shortly.';
+        isRetryable = true;
       }
       
       return {
@@ -965,7 +972,7 @@ export const handler: Handler = async (
         body: JSON.stringify({
           error: userMessage,
           details: errorText.substring(0, 200),
-          retryable: response.status === 504 || response.status === 503 || response.status === 429,
+          retryable: isRetryable,
         }),
       };
     }
