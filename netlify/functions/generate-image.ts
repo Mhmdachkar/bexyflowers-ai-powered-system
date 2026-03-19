@@ -752,22 +752,21 @@ export const handler: Handler = async (
   }
   
   try {
-    // Get secret keys from environment variables (with fallback support)
+    // Get secret key from environment variable (single key, no fallback)
     const secretKey = process.env.POLLINATIONS_SECRET_KEY;
-    const secretKey2 = process.env.POLLINATIONS_SECRET_KEY2;
     
-    if (!secretKey && !secretKey2) {
-      console.error('[Netlify Function] Missing POLLINATIONS_SECRET_KEY and POLLINATIONS_SECRET_KEY2 environment variables');
+    if (!secretKey) {
+      console.error('[Netlify Function] Missing POLLINATIONS_SECRET_KEY environment variable');
       const responseTime = Date.now() - startTime;
       logSecurityEvent('error', 'critical', event.path, ip, {
-        reason: 'Missing both POLLINATIONS_SECRET_KEY and POLLINATIONS_SECRET_KEY2',
+        reason: 'Missing POLLINATIONS_SECRET_KEY',
       });
-      logRequest(event, ip, responseTime, false, 500, 'Missing API keys');
+      logRequest(event, ip, responseTime, false, 500, 'Missing API key');
       return {
         statusCode: 500,
         headers: corsHeaders,
         body: JSON.stringify({
-          error: 'Server configuration error: API keys not configured',
+          error: 'Server configuration error: API key not configured',
         }),
       };
     }
@@ -812,24 +811,21 @@ export const handler: Handler = async (
     const seed = Math.floor(Math.random() * 1000000000);
     // Use gen.pollinations.ai/image endpoint with API key for proper model selection
     // Add key parameter for authentication (required for gptimage model)
-    const apiKey = secretKey || secretKey2 || '';
-    const pollinationsUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=${apiKey}`;
+    const pollinationsUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=${secretKey}`;
     
     // Log request details (without secret key)
     console.log('[Netlify Function] ========== IMAGE GENERATION REQUEST ==========');
     console.log('[Netlify Function] IP:', ip);
     console.log('[Netlify Function] Model: gptimage (ENFORCED)');
-    console.log('[Netlify Function] Actual model param:', model);
     console.log('[Netlify Function] Resolution:', `${width}x${height}`);
     console.log('[Netlify Function] Prompt length:', prompt.length);
     console.log('[Netlify Function] Seed:', seed);
-    console.log('[Netlify Function] API Key present:', !!apiKey);
+    console.log('[Netlify Function] API Key prefix:', secretKey.substring(0, 8) + '...');
     console.log('[Netlify Function] Full URL (without prompt/key):', `https://gen.pollinations.ai/image/[PROMPT]?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=[HIDDEN]`);
     console.log('[Netlify Function] ===============================================');
     
-    // Try primary key first, fallback to secondary key if it fails
+    // Single request - no retries or fallbacks
     let response: Response;
-    let usedKey: 'primary' | 'secondary' = 'primary';
     
     // NO INTERNAL TIMEOUT - Let Netlify's 60-second function timeout handle it
     // GPT image model can take 30-50+ seconds for high-quality generation
@@ -860,90 +856,21 @@ export const handler: Handler = async (
       });
     };
     
-    // Helper function to attempt fetch with retries for transient errors (502, 503, 504)
-    const fetchWithRetry = async (url: string, keyLabel: string): Promise<Response> => {
-      let lastError: Error | null = null;
-      let lastResponse: Response | null = null;
-      
-      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-        try {
-          if (attempt > 0) {
-            const delay = RETRY_DELAYS[attempt - 1] || 2000;
-            console.log(`[Netlify Function] Retry ${attempt}/${MAX_RETRIES} after ${delay}ms delay...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-          }
-          
-          // Use Bearer token authentication with the secret key for better rate limits
-          const resp = await fetchWithAuth(url, secretKey || secretKey2);
-          
-          // If transient error (502, 503, 504), retry
-          if (!resp.ok && (resp.status === 502 || resp.status === 503 || resp.status === 504)) {
-            console.warn(`[Netlify Function] ${keyLabel} key got ${resp.status}, will retry...`);
-            lastResponse = resp;
-            continue;
-          }
-          
-          return resp;
-        } catch (err) {
-          lastError = err instanceof Error ? err : new Error(String(err));
-          console.warn(`[Netlify Function] ${keyLabel} key fetch error:`, lastError.message);
-        }
-      }
-      
-      // All retries exhausted
-      if (lastResponse) return lastResponse;
-      throw lastError || new Error('All retries exhausted');
-    };
+    // Simple fetch - no retries needed for gptimage model (takes 20-40+ seconds)
+    // Netlify has 60-second timeout, so we can only make ONE request
+    console.log('[Netlify Function] Fetching image from Pollinations API...');
     
-    if (secretKey) {
-      console.log('[Netlify Function] Trying primary API key');
-      
-      try {
-        response = await fetchWithRetry(pollinationsUrl, 'Primary');
-        
-        // If primary key fails with rate limit (429), auth errors (401/403), try secondary key
-        if (!response.ok && secretKey2 && (response.status === 429 || response.status === 401 || response.status === 403)) {
-          console.warn('[Netlify Function] Primary key failed with status:', response.status);
-          console.log('[Netlify Function] Falling back to secondary API key');
-          
-          const pollinationsUrl2 = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=${secretKey2}`;
-          
-          response = await fetchWithRetry(pollinationsUrl2, 'Secondary');
-          usedKey = 'secondary';
-        }
-      } catch (fetchError) {
-        // If primary key fetch fails, try secondary key
-        if (secretKey2) {
-          console.warn('[Netlify Function] Primary key request failed');
-          console.log('[Netlify Function] Falling back to secondary API key');
-          
-          try {
-            const pollinationsUrl2 = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=${secretKey2}`;
-            
-            response = await fetchWithRetry(pollinationsUrl2, 'Secondary');
-            usedKey = 'secondary';
-          } catch (secondaryError) {
-            // Both keys failed
-            throw fetchError; // Throw original error
-          }
-        } else {
-          throw fetchError;
-        }
-      }
-    } else if (secretKey2) {
-      // If primary key is not set, use secondary key directly
-      console.log('[Netlify Function] Primary key not set, using secondary API key');
-      const pollinationsUrl2 = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=${secretKey2}`;
-      
-      response = await fetchWithRetry(pollinationsUrl2, 'Secondary');
-      usedKey = 'secondary';
-    } else {
-      throw new Error('No valid API key available');
+    try {
+      // Use Bearer token authentication with the secret key
+      response = await fetchWithAuth(pollinationsUrl, secretKey);
+    } catch (fetchError) {
+      console.error('[Netlify Function] Fetch error:', fetchError);
+      throw fetchError;
     }
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[Netlify Function] Pollinations API error (${usedKey} key):`, response.status, errorText.substring(0, 200));
+      console.error('[Netlify Function] Pollinations API error:', response.status, errorText.substring(0, 200));
       const responseTime = Date.now() - startTime;
       logRequest(event, ip, responseTime, false, response.status, errorText.substring(0, 200));
       
@@ -982,7 +909,7 @@ export const handler: Handler = async (
       };
     }
     
-    console.log(`[Netlify Function] ✅ Success using ${usedKey} API key`);
+    console.log('[Netlify Function] ✅ Image generated successfully');
     
     // Get image as buffer
     const imageBuffer = await response.arrayBuffer();
@@ -996,14 +923,14 @@ export const handler: Handler = async (
     console.log('[Netlify Function] ✅ Image generated successfully');
     console.log('[Netlify Function] Image size:', imageBuffer.byteLength, 'bytes');
     console.log('[Netlify Function] Response time:', responseTime, 'ms');
-    console.log('[Netlify Function] API key used:', usedKey);
+    console.log('[Netlify Function] API key used: primary');
     
     // Log performance metric
     logPerformanceMetric(event.path, responseTime, 200);
     logSecurityEvent('success', 'info', event.path, ip, {
       responseTime,
       imageSize: imageBuffer.byteLength,
-      apiKeyUsed: usedKey,
+      apiKeyUsed: 'primary',
     });
     logRequest(event, ip, responseTime, true, 200);
     
@@ -1020,7 +947,7 @@ export const handler: Handler = async (
         height,
         model,
         size: imageBuffer.byteLength,
-        apiKeyUsed: usedKey,
+        apiKeyUsed: 'primary',
       }),
     };
   } catch (error) {
@@ -1036,7 +963,6 @@ export const handler: Handler = async (
       responseTime,
       ip,
       hasSecretKey: !!process.env.POLLINATIONS_SECRET_KEY,
-      hasSecretKey2: !!process.env.POLLINATIONS_SECRET_KEY2,
     });
     
     // Log error event
@@ -1044,10 +970,7 @@ export const handler: Handler = async (
       error: errorMessage,
       errorType: error instanceof Error ? error.constructor.name : typeof error,
       responseTime,
-      hasKeys: {
-        primary: !!process.env.POLLINATIONS_SECRET_KEY,
-        secondary: !!process.env.POLLINATIONS_SECRET_KEY2,
-      },
+      hasKey: !!process.env.POLLINATIONS_SECRET_KEY,
     });
     logPerformanceMetric(event.path, responseTime, 500);
     logRequest(event, ip, responseTime, false, 500, errorMessage);
