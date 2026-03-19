@@ -133,21 +133,10 @@ const ScrollToTop = () => {
 
   // Handle initial page load and page refresh
   useEffect(() => {
-    // Scroll to top on initial mount
+    // Scroll to top on initial mount only
     resetScrollPosition();
-    
-    // Also handle visibility change (tab switch back)
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        resetScrollPosition();
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
+    // Note: visibilitychange is intentionally NOT handled here — scrolling users
+    // back to the top whenever they return to the tab is a disruptive UX pattern.
   }, [resetScrollPosition]);
 
   return null;

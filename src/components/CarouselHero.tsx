@@ -108,14 +108,15 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
   // Homepage desktop: 1 slide, Homepage mobile: all slides, Collection: all slides
   const slides = slidesToShow || (isHomepage && !isMobile ? homepageSlides : allSlides);
 
-  // Memoize to prevent new array every render (useImagePreloader effect thrash → page freeze)
-  const allSlideImages = useMemo(
-    () => slides.map((slide) => slide.productImage),
-    [slides]
+  // ⚡ MOBILE PERFORMANCE: Only preload the first (visible) image on mobile.
+  // Preloading all slides immediately competes with the LCP image and API calls.
+  // On desktop, preload all because bandwidth is larger.
+  const imagesToPreload = useMemo(
+    () => isMobile ? slides.slice(0, 1).map((s) => s.productImage) : slides.map((s) => s.productImage),
+    [slides, isMobile]
   );
 
-  // Preload all images
-  useImagePreloader(allSlideImages);
+  useImagePreloader(imagesToPreload);
 
   // Note: First image is preloaded in index.html for optimal LCP
   // Other images are preloaded via useImagePreloader hook
@@ -138,16 +139,24 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
     return () => clearTimeout(timer);
   }, []);
 
-  // Delay video source on mobile to prioritize LCP
+  // ⚡ VIDEO: WebM is not supported on iOS Safari at all.
+  // Detect iOS and skip the video entirely — the poster image already covers the background.
+  // On Android (WebM supported), reduce the delay from 3 s → 1.5 s so the video
+  // appears faster without competing with the LCP image download.
+  const isIOSDevice = useMemo(() => {
+    if (typeof navigator === 'undefined') return false;
+    return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }, []);
+
   useEffect(() => {
-    if (!isMobile) return;
-    const timer = setTimeout(() => setVideoReady(true), 3000);
+    if (!isMobile || isIOSDevice) return; // iOS: skip video entirely
+    const timer = setTimeout(() => setVideoReady(true), 1500); // was 3000 ms
     return () => clearTimeout(timer);
-  }, [isMobile]);
+  }, [isMobile, isIOSDevice]);
 
   // Intersection Observer: load/play video when visible, pause when not
   useEffect(() => {
-    if (!isMobile) return;
+    if (!isMobile || isIOSDevice) return; // iOS: no WebM support, skip observer
     const targetElement = containerRef.current || videoRef.current;
     if (!targetElement) return;
 
@@ -188,7 +197,7 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
 
   // Load and play video when visible
   useEffect(() => {
-    if (!isMobile || !videoRef.current || !shouldLoadVideo) return;
+    if (!isMobile || isIOSDevice || !videoRef.current || !shouldLoadVideo) return;
     const videoElement = videoRef.current;
     if (needsOptimizations) {
       videoElement.playbackRate = 0.85;
@@ -218,7 +227,7 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
 
   // Resize handler for video full width
   useEffect(() => {
-    if (!isMobile || !videoRef.current) return;
+    if (!isMobile || isIOSDevice || !videoRef.current) return;
     let resizeTimer: NodeJS.Timeout | null = null;
     let initialTimeoutId: NodeJS.Timeout | null = null;
     const handleResize = () => {
@@ -260,7 +269,8 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
 
   return (
     <div className="carousel-hero-container" ref={containerRef}>
-      {isMobile && (
+      {/* ⚡ iOS: WebM not supported by Safari — skip video entirely, poster image covers the bg */}
+      {isMobile && !isIOSDevice && (
         <video
           ref={videoRef}
           className="absolute left-0 right-0 w-full object-cover object-center z-0 pointer-events-none"

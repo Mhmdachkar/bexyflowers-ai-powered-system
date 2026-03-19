@@ -108,23 +108,56 @@ const isMobileDevice = () => {
   return window.innerWidth < 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 };
 
+// ⚡ Desktop-only heavy performance hooks — isolated into a child component so that
+// hooks are ALWAYS called in the same order (no conditional hook calls = no Rules-of-Hooks violation)
+const DesktopPerformanceHooks = () => {
+  useNavigationPredictor();
+  useComponentPrefetch();
+  usePerformanceMonitor();
+  return null;
+};
+
+// ⚡ MOBILE: Lightweight idle-time prefetch for the two most-visited routes.
+// Runs once after the page load event + requestIdleCallback so it never competes
+// with the LCP or the signature-collection API call.
+const MobilePrefetch = () => {
+  useEffect(() => {
+    const prefetch = () => {
+      // Only import the chunk — no data prefetch on mobile (saves bandwidth)
+      import('./views/Index').catch(() => {});
+      import('./views/Collection').catch(() => {});
+    };
+
+    const onLoad = () => {
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(prefetch, { timeout: 4000 });
+      } else {
+        setTimeout(prefetch, 4000);
+      }
+    };
+
+    if (document.readyState === 'complete') {
+      onLoad();
+    } else {
+      window.addEventListener('load', onLoad, { once: true });
+    }
+
+    return () => window.removeEventListener('load', onLoad);
+  }, []);
+
+  return null;
+};
+
 // Component that contains router-dependent logic
 const AppRouter = () => {
-  // CRITICAL FIX: Disable heavy performance hooks on mobile AND in development
-  // These hooks do prefetching, pattern learning, and monitoring which can overload mobile devices
   const isProduction = import.meta.env.PROD;
   const isMobile = isMobileDevice();
-  
-  // ⚡ PERFORMANCE: Only enable these hooks on desktop in production
-  // Mobile devices struggle with the constant localStorage reads, prefetching, and monitoring
-  if (isProduction && !isMobile) {
-    useNavigationPredictor();
-    useComponentPrefetch();
-    usePerformanceMonitor();
-  }
 
   return (
     <RouteStateProvider>
+      {/* Performance hooks — each rendered only when applicable, no conditional hook calls */}
+      {isProduction && !isMobile && <DesktopPerformanceHooks />}
+      {isProduction && isMobile && <MobilePrefetch />}
       <ScrollToTop />
       <Suspense fallback={<RouteLoader />}>
         <Routes>

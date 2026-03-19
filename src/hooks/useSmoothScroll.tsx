@@ -26,7 +26,6 @@ export const useSmoothScroll = () => {
     // ⚡ PERFORMANCE: Skip Lenis on mobile devices - native scroll is more performant
     // Lenis runs a constant RAF loop that drains CPU/battery on mobile
     if (isMobileDevice()) {
-      console.log('[SmoothScroll] Disabled on mobile for performance');
       return;
     }
 

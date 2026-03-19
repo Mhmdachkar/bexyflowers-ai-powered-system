@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getSignatureCollections,
+  getActiveSignatureCollections,
   addToSignatureCollection,
   removeFromSignatureCollection,
   updateSignatureCollection
@@ -17,7 +18,9 @@ export const signatureQueryKeys = {
 };
 
 /**
- * React Query hook for fetching signature collection with advanced caching
+ * React Query hook for fetching signature collection with advanced caching.
+ * ⚡ Frontend always fetches only ACTIVE items (smaller payload, faster parse).
+ *    The admin panel can import getSignatureCollections() directly when it needs all items.
  */
 export const useSignatureCollection = (filters?: {
   category?: string;
@@ -26,13 +29,14 @@ export const useSignatureCollection = (filters?: {
 }) => {
   return useQuery({
     queryKey: signatureQueryKeys.list(filters),
-    queryFn: () => getSignatureCollections(),
-    // ⚡ PERFORMANCE: Increased cache times to reduce API calls and improve mobile loading
-    staleTime: 10 * 60 * 1000, // 10 minutes - signature collection rarely changes
-    gcTime: 15 * 60 * 1000, // 15 minutes - keep in cache longer
-    refetchOnWindowFocus: false, // PERFORMANCE: Disabled - prevents refetch on tab switches
-    refetchOnMount: false, // ⚡ CHANGED: Use cached data if available - prevents duplicate API calls
-    refetchOnReconnect: false, // Don't refetch on network reconnect
+    // ⚡ Use active-only endpoint on the frontend — filters out inactive items server-side,
+    //    reducing payload size and parse time on mobile.
+    queryFn: () => getActiveSignatureCollections(),
+    staleTime: 10 * 60 * 1000, // 10 minutes — signature collection rarely changes
+    gcTime: 15 * 60 * 1000,    // 15 minutes — keep in cache longer
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,      // Use cached data if available
+    refetchOnReconnect: false,
   });
 };
 

@@ -47,8 +47,14 @@ const weddingFlowersImages = [
 
 const WeddingHero = () => {
   const isMobile = useIsMobile();
-  const { isOldIOS, needsMobileOptimizations } = useIOSPerformance();
+  const { needsMobileOptimizations } = useIOSPerformance();
   const heroRef = useRef<HTMLElement>(null);
+
+  // iOS does not support WebM — skip video entirely on iPhone/iPad/iPod
+  const isIOSDevice = useMemo(() => {
+    if (typeof navigator === 'undefined') return false;
+    return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }, []);
   const imageRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLDivElement>(null);
@@ -140,7 +146,7 @@ const WeddingHero = () => {
   // PERFORMANCE FIX: Keep observer active to pause/resume video
   // iOS 18 OPTIMIZATION: More aggressive optimizations for older iOS
   useEffect(() => {
-    if (!isMobile) return;
+    if (!isMobile || isIOSDevice) return; // iOS: no WebM support; skip
 
     const targetElement = heroRef.current || videoRef.current;
     if (!targetElement) return;
@@ -191,7 +197,7 @@ const WeddingHero = () => {
   // Load and play video when it becomes visible
   // iOS 18 OPTIMIZATION: Optimize video settings for older iOS devices
   useEffect(() => {
-    if (!isMobile || !videoRef.current || !shouldLoadVideo) return;
+    if (!isMobile || isIOSDevice || !videoRef.current || !shouldLoadVideo) return;
 
     const videoElement = videoRef.current;
     
@@ -233,7 +239,7 @@ const WeddingHero = () => {
 
   // Handle window resize to ensure video stays full width
   useEffect(() => {
-    if (!isMobile || !videoRef.current) return;
+    if (!isMobile || isIOSDevice || !videoRef.current) return;
 
     const handleResize = () => {
       if (videoRef.current) {
@@ -257,8 +263,8 @@ const WeddingHero = () => {
 
   return (
     <section ref={heroRef} className={`relative ${isMobile ? 'h-screen' : 'min-h-screen'} flex items-center justify-center overflow-hidden ${isMobile ? 'bg-transparent' : 'bg-gradient-to-b from-[#fafafa] to-white'}`} style={isMobile ? { marginTop: '-80px', paddingTop: '80px' } : { marginTop: '-12.3rem', paddingTop: '50' }}>
-      {/* Video background for mobile view - Absolute within hero section, extends behind header */}
-      {isMobile && (
+      {/* Video background for mobile view — skipped on iOS (no WebM support) */}
+      {isMobile && !isIOSDevice && (
         <video
           ref={videoRef}
           className="absolute left-0 right-0 w-full object-cover object-center z-0 pointer-events-none"

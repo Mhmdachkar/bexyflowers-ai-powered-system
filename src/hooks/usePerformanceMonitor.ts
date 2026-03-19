@@ -88,9 +88,6 @@ export const usePerformanceMonitor = () => {
       .slice(0, MAX_METRICS);
 
     saveMetrics(recentMetrics);
-
-    // Log performance for development
-    console.log(`🚀 Navigation to ${route}: ${loadTime}ms (${prefetchEffective ? 'prefetched' : 'not prefetched'})`);
   }, [loadMetrics, saveMetrics]);
 
   /**

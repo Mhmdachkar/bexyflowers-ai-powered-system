@@ -1,6 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart } from 'lucide-react';
 
+// ⚡ On mobile: skip sparkle particles entirely (they require blur compositing + many GPU layers)
+const isMobileEnv = typeof navigator !== 'undefined' &&
+  /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
 interface FlyingHeartConfig {
   startX: number;
   startY: number;
@@ -48,41 +52,31 @@ const FlyingHeartAnimation = ({ config, onComplete }: FlyingHeartAnimationProps)
     >
       <Heart className="w-6 h-6 fill-[#dc267f] text-[#dc267f]" strokeWidth={2.5} />
       
-      {/* Sparkle trail effect */}
-      {[...Array(8)].map((_, i) => (
+      {/* ⚡ Sparkle trail — skipped on mobile (blur compositing = expensive GPU layers) */}
+      {!isMobileEnv && [...Array(4)].map((_, i) => (
         <motion.div
           key={i}
           className="absolute w-1.5 h-1.5 rounded-full bg-[#dc267f]"
-          initial={{
-            x: 0,
-            y: 0,
-            opacity: 1,
-            scale: 1
-          }}
+          initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
           animate={{
-            x: (Math.random() - 0.5) * 60,
-            y: (Math.random() - 0.5) * 60,
+            x: (Math.random() - 0.5) * 50,
+            y: (Math.random() - 0.5) * 50,
             opacity: 0,
             scale: 0
           }}
-          transition={{
-            duration: 0.8,
-            delay: i * 0.05,
-            ease: "easeOut"
-          }}
-          style={{
-            filter: 'blur(2px)'
-          }}
+          transition={{ duration: 0.7, delay: i * 0.06, ease: "easeOut" }}
         />
       ))}
       
-      {/* Glow effect */}
-      <motion.div
-        className="absolute inset-0 rounded-full bg-[#dc267f] blur-md"
-        initial={{ opacity: 0.6, scale: 1 }}
-        animate={{ opacity: [0.6, 0.9, 0], scale: [1, 1.5, 2] }}
-        transition={{ duration: 0.8 }}
-      />
+      {/* Glow effect — desktop only */}
+      {!isMobileEnv && (
+        <motion.div
+          className="absolute inset-0 rounded-full bg-[#dc267f] blur-md"
+          initial={{ opacity: 0.6, scale: 1 }}
+          animate={{ opacity: [0.6, 0.9, 0], scale: [1, 1.5, 2] }}
+          transition={{ duration: 0.8 }}
+        />
+      )}
     </motion.div>
   );
 };

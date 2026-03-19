@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, memo, useEffect, useState } from "react";
+import { useRef, memo, useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIOSPerformance } from "@/hooks/use-ios-performance";
@@ -14,10 +14,16 @@ const CollectionHeroComponent = () => {
   const { needsMobileOptimizations } = useIOSPerformance();
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
 
+  // iOS does not support WebM — skip video entirely on iPhone/iPad/iPod
+  const isIOSDevice = useMemo(() => {
+    if (typeof navigator === 'undefined') return false;
+    return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }, []);
+
   // Intersection Observer for lazy loading video only when visible (mobile only)
   // iOS 18 OPTIMIZATION: More aggressive optimizations for older iOS
   useEffect(() => {
-    if (!isMobile || shouldLoadVideo) return; // Early return if already loading
+    if (!isMobile || isIOSDevice || shouldLoadVideo) return; // iOS: no WebM support; skip
 
     const targetElement = heroRef.current || videoRef.current;
     if (!targetElement) return;
@@ -50,7 +56,7 @@ const CollectionHeroComponent = () => {
   // Load and play video when it becomes visible
   // iOS 18 OPTIMIZATION: Optimize video settings for older iOS devices
   useEffect(() => {
-    if (!isMobile || !videoRef.current || !shouldLoadVideo) return;
+    if (!isMobile || isIOSDevice || !videoRef.current || !shouldLoadVideo) return;
 
     const videoElement = videoRef.current;
     
@@ -78,8 +84,8 @@ const CollectionHeroComponent = () => {
       className={`relative ${isMobile ? 'h-screen' : 'min-h-[50vh] sm:min-h-[60vh] md:min-h-[70vh]'} flex items-center justify-center overflow-hidden ${isMobile ? 'bg-transparent' : 'bg-gradient-to-b from-[#FAF8F3] to-white'}`}
       style={isMobile ? { marginTop: '-80px', paddingTop: '80px' } : { marginTop: '-12.3rem', paddingTop: '50' }}
     >
-      {/* Video background for mobile view - Absolute within hero section, extends behind header */}
-      {isMobile && (
+      {/* Video background for mobile view — skipped on iOS (no WebM support) */}
+      {isMobile && !isIOSDevice && (
         <video
           ref={videoRef}
           className="absolute left-0 right-0 w-full object-cover object-center z-0 pointer-events-none"

@@ -219,16 +219,7 @@ const UltraFeaturedBouquets = () => {
     };
   }, [loading, bouquets.length]);
 
-  // 🚨 CRITICAL FIX: Disable auto-scroll IntersectionObserver
-  // This was creating unnecessary observers that could accumulate over time
-  useEffect(() => {
-    // DISABLED: Auto-scroll observer completely removed for stability
-    console.log('✅ Auto-scroll observer DISABLED for performance');
-    
-    return () => {
-      // No cleanup needed since we're not creating any observers
-    };
-  }, []);
+  // Auto-scroll IntersectionObserver is intentionally disabled — was causing observer accumulation
 
   return (
     <>

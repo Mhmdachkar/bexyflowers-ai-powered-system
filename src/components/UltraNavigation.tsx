@@ -127,6 +127,11 @@ const navigationItems: NavigationItem[] = [
 
 const GOLD_COLOR = "rgb(199, 158, 72)";
 
+// ⚡ Module-level flag: set to true after UltraNavigation mounts for the first time.
+// On subsequent page-navigations (re-mounts) we skip all entry animations so the nav
+// is immediately visible and tappable — no more 0.8–1.4 s delay between page loads.
+let _navHasRenderedOnce = false;
+
 const UltraNavigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -144,6 +149,11 @@ const UltraNavigation = () => {
   const { handleLinkHover, handleLinkFocus } = useNavigationPrefetch();
   const isMobile = useIsMobile();
   const shouldReduceMotion = useReducedMotion();
+
+  // ⚡ Skip entry animations on all but the very first render.
+  // On mobile we always skip them (immediate visibility is more important than aesthetics).
+  const skipEntryAnimation = _navHasRenderedOnce || isMobile || shouldReduceMotion;
+  useEffect(() => { _navHasRenderedOnce = true; }, []);
 
   // Detect Android device once on mount for Android-specific UI optimizations
   useEffect(() => {
@@ -345,9 +355,9 @@ const UltraNavigation = () => {
                     return (
                       <motion.div
                         key={item.name}
-                        initial={{ opacity: 0, y: -20 }}
+                        initial={skipEntryAnimation ? false : { opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.8 + index * 0.1, duration: 0.6 }}
+                        transition={skipEntryAnimation ? { duration: 0 } : { delay: 0.8 + index * 0.1, duration: 0.6 }}
                       >
                         <Button
                           variant="ghost"
@@ -412,9 +422,9 @@ const UltraNavigation = () => {
                 <div className="flex items-center ml-auto gap-2">
                   {/* Favorites Icon - Desktop (next to cart) */}
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
+                    initial={skipEntryAnimation ? false : { opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 1.3, duration: 0.6 }}
+                    transition={skipEntryAnimation ? { duration: 0 } : { delay: 1.3, duration: 0.6 }}
                     className="hidden lg:block"
                   >
                     <Button
@@ -467,9 +477,9 @@ const UltraNavigation = () => {
 
                   {/* Cart with Simplified Hover Effects - Mobile Optimized */}
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
+                    initial={skipEntryAnimation ? false : { opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 1.2, duration: 0.6 }}
+                    transition={skipEntryAnimation ? { duration: 0 } : { delay: 1.2, duration: 0.6 }}
                   >
                     <Button
                       variant="ghost"
@@ -508,39 +518,21 @@ const UltraNavigation = () => {
                         transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
                       />
 
-                      {/* Cart Badge with Enhanced Animation */}
+                      {/* Cart Badge */}
                       {cartItems > 0 && (
                         <motion.div
                           className="absolute -top-3 -right-0 -left-3 w-4 h-4 sm:w-4 sm:h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs shadow-gold cart-pulse relative z-20"
                           initial={{ scale: 0, rotate: -180 }}
                           animate={{ scale: 1, rotate: 0 }}
-                          transition={{ delay: 1.5, type: "spring", stiffness: 500 }}
-                          whileHover={{
+                          transition={{ delay: skipEntryAnimation ? 0 : 1.5, type: "spring", stiffness: 500 }}
+                          whileHover={!isMobile ? {
                             scale: 1.1,
                             rotate: 360,
                             boxShadow: "0 0 10px rgba(196,166,105,0.8)"
-                          }}
+                          } : {}}
                         >
-                          <motion.span
-                            animate={{ scale: [1, 1.2, 1] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                          >
-                            {cartItems}
-                          </motion.span>
-
-                          {/* Badge Glow */}
-                          <motion.div
-                            className="absolute inset-0 bg-primary/50 rounded-full blur-md"
-                            animate={{
-                              scale: [1, 1.5, 1],
-                              opacity: [0.5, 0.8, 0.5]
-                            }}
-                            transition={{
-                              duration: 2,
-                              repeat: Infinity,
-                              ease: "easeInOut"
-                            }}
-                          />
+                          {/* ⚡ No infinite animation on mobile — saves continuous CPU/battery */}
+                          <span>{cartItems}</span>
                         </motion.div>
                       )}
                     </Button>
@@ -548,9 +540,9 @@ const UltraNavigation = () => {
 
                   {/* Favorites Icon - Mobile (shows on mobile when cart is shown) - Touch-Friendly */}
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
+                    initial={skipEntryAnimation ? false : { opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 1.3, duration: 0.6 }}
+                    transition={skipEntryAnimation ? { duration: 0 } : { delay: 1.3, duration: 0.6 }}
                     className="lg:hidden mr-2"
                   >
                     <Button
@@ -601,9 +593,9 @@ const UltraNavigation = () => {
 
                   {/* Mobile Menu Button - Touch-Friendly */}
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
+                    initial={skipEntryAnimation ? false : { opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 1.4, duration: 0.6 }}
+                    transition={skipEntryAnimation ? { duration: 0 } : { delay: 1.4, duration: 0.6 }}
                     className="lg:hidden"
                   >
                     <Button
@@ -665,9 +657,11 @@ const UltraNavigation = () => {
               <AnimatePresence>
                 {isMenuOpen && (
                   <>
-                  {/* Backdrop - Full Screen on Mobile */}
+                  {/* Backdrop - Full Screen on Mobile
+                      ⚡ No backdrop-blur: GPU compositing on a full-screen fixed element
+                         causes severe scroll jank and battery drain on iOS/Android. */}
                   <motion.div
-                    className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-md"
+                    className="lg:hidden fixed inset-0 bg-black/70"
                     style={{
                       zIndex: 99999,
                       top: 'env(safe-area-inset-top, 0)',
@@ -676,12 +670,12 @@ const UltraNavigation = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
+                    transition={{ duration: 0.25 }}
                     onClick={() => setIsMenuOpen(false)}
                   />
                   <motion.div
                     ref={menuRef}
-                    className="lg:hidden fixed inset-0 bg-background/98 backdrop-blur-xl shadow-luxury overflow-y-auto"
+                    className="lg:hidden fixed inset-0 bg-background/98 shadow-luxury overflow-y-auto"
                     style={{
                       zIndex: 100000,
                       backgroundColor: 'rgba(229, 228, 226, 0.98)',

@@ -18,6 +18,19 @@
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
+/* ⚡ Skeleton shimmer — used by SectionSkeletons (pure CSS, no framer-motion) */
+@keyframes skeleton-shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+/* Respect reduced-motion for skeleton animations */
+@media (prefers-reduced-motion: reduce) {
+  [style*="skeleton-shimmer"] {
+    animation: none !important;
+  }
+}
+
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);

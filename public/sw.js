@@ -1,5 +1,5 @@
 // Service Worker for Bexy Flowers - Advanced Caching Strategy
-const CACHE_VERSION = 'bexy-flowers-v1.0.0';
+const CACHE_VERSION = 'bexy-flowers-v1.1.0';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -126,30 +126,39 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Strategy 2: Network First for API calls (with cache fallback)
+  // Strategy 2: Stale-While-Revalidate for API calls
+  // ⚡ On mobile, serve the cached response IMMEDIATELY (zero wait) while refreshing in background.
+  // This makes the signature-collection, products, etc. feel instant on repeat visits.
+  // On the very first visit there is no cache entry, so it falls back to network-first.
   if (url.pathname.includes('/.netlify/functions/') || url.pathname.includes('/api/')) {
     event.respondWith(
-      caches.open(API_CACHE).then((cache) => {
-        return fetch(request).then((networkResponse) => {
+      caches.open(API_CACHE).then(async (cache) => {
+        const cachedResponse = await cache.match(request);
+
+        // Background revalidation — always fetch fresh data and update cache
+        const networkFetch = fetch(request).then(async (networkResponse) => {
           if (networkResponse.ok && networkResponse.status === 200) {
-            return addTimestampToResponse(networkResponse).then((responseWithTimestamp) => {
-              cache.put(request, responseWithTimestamp.clone());
-              return networkResponse;
-            });
+            const responseWithTimestamp = await addTimestampToResponse(networkResponse);
+            cache.put(request, responseWithTimestamp.clone());
           }
           return networkResponse;
-        }).catch(() => {
-          // Fallback to cache if network fails
-          return cache.match(request).then((cachedResponse) => {
-            if (cachedResponse) {
-              console.log('[SW] Using cached API response (offline)');
-              return cachedResponse;
-            }
-            return new Response(JSON.stringify({ error: 'Network unavailable' }), {
-              status: 503,
-              headers: { 'Content-Type': 'application/json' },
-            });
-          });
+        }).catch(() => null);
+
+        if (cachedResponse && !isCacheExpired(cachedResponse, CACHE_DURATION.api)) {
+          // Serve stale-while-revalidate: return cached instantly, revalidate in background
+          return cachedResponse;
+        }
+
+        // No valid cache: wait for network
+        const networkResponse = await networkFetch;
+        if (networkResponse) return networkResponse;
+
+        // Offline fallback: serve even expired cache rather than an error
+        if (cachedResponse) return cachedResponse;
+
+        return new Response(JSON.stringify({ error: 'Network unavailable' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' },
         });
       })
     );

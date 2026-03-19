@@ -26,15 +26,11 @@ import { PriceDisplay } from '@/components/PriceDisplay';
 import type { Bouquet } from '@/types/bouquet';
 import { encodeImageUrl, toImageSrc } from '@/lib/imageUtils';
 
-// Import real images from assets
+// Minimal fallback images (used only when product API returns null)
+// bouquet4-6, aboutImage, heroBg were imported but never referenced — removed to reduce chunk size
 import bouquet1 from '@/assets/bouquet-1.jpg';
 import bouquet2 from '@/assets/bouquet-2.jpg';
 import bouquet3 from '@/assets/bouquet-3.jpg';
-import bouquet4 from '@/assets/bouquet-4.jpg';
-import bouquet5 from '@/assets/bouquet-5.jpg';
-import bouquet6 from '@/assets/bouquet-6.jpg';
-import aboutImage from '@/assets/about-image.jpg';
-import heroBg from '@/assets/hero-bg.jpg';
 
 // Types for product data
 interface ProductData {
@@ -235,8 +231,6 @@ const ProductDetailPage = () => {
     if (product) {
       // Check if this product has signature collection custom overrides
       if (signatureItem) {
-        console.log('[ProductDetailPage] Using signature collection custom data:', signatureItem);
-        
         // Use custom fields from signature_collections, fallback to product fields
         const customImages = signatureItem.custom_image_urls && signatureItem.custom_image_urls.length > 0
           ? signatureItem.custom_image_urls
@@ -301,14 +295,6 @@ const ProductDetailPage = () => {
     ? basePrice * (1 - discountPercentage / 100)
     : basePrice;
   
-  console.log('[ProductDetailPage] Price calculation:', { 
-    basePrice, 
-    discountPercentage, 
-    currentPrice,
-    signatureDiscount: signatureItem?.discount_percentage,
-    productDiscount: product?.discount_percentage 
-  });
-
   // Smart recommendation logic using React Query data
   const recommendedBouquets = useMemo((): Bouquet[] => {
     if (!allProducts || !product) return [];
