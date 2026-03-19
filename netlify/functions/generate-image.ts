@@ -811,8 +811,9 @@ export const handler: Handler = async (
     // Generate random seed to force fresh generation (prevents caching/fallback)
     const seed = Math.floor(Math.random() * 1000000000);
     // Use gen.pollinations.ai/image endpoint with API key for proper model selection
-    // NOTE: Use ONLY Bearer token authentication (not query param) - sending both can confuse the API
-    const pollinationsUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true`;
+    // NOTE: Using query parameter authentication (?key=) - this is the reliable method
+    // Build base URL without key - key will be added per-request based on which key we're trying
+    const basePollinationsUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true`;
     
     // Log request details (without secret key)
     console.log('[Netlify Function] ========== IMAGE GENERATION REQUEST ==========');
@@ -823,9 +824,11 @@ export const handler: Handler = async (
     console.log('[Netlify Function] Prompt length:', prompt.length);
     console.log('[Netlify Function] Seed:', seed);
     console.log('[Netlify Function] Primary API Key present:', !!secretKey);
+    console.log('[Netlify Function] Primary API Key prefix:', secretKey ? secretKey.substring(0, 5) + '...' : 'N/A');
     console.log('[Netlify Function] Secondary API Key present:', !!secretKey2);
-    console.log('[Netlify Function] Using Bearer token auth (not URL param)');
-    console.log('[Netlify Function] Full URL:', `https://gen.pollinations.ai/image/[PROMPT]?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true`);
+    console.log('[Netlify Function] Secondary API Key prefix:', secretKey2 ? secretKey2.substring(0, 5) + '...' : 'N/A');
+    console.log('[Netlify Function] Using URL query param auth (?key=)');
+    console.log('[Netlify Function] Base URL:', `https://gen.pollinations.ai/image/[PROMPT]?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=[HIDDEN]`);
     console.log('[Netlify Function] ===============================================');
     
     // Try primary key first, fallback to secondary key if it fails
@@ -842,18 +845,16 @@ export const handler: Handler = async (
     const MAX_RETRIES = 0; // NO RETRIES - single request only
     const RETRY_DELAYS: number[] = []; // Empty - no delays needed
     
-    // Helper function to fetch with Bearer token authentication
-    // Using the secret key as Bearer token for better rate limits
-    const fetchWithAuth = async (url: string, token?: string): Promise<Response> => {
+    // Helper function to fetch with API key in URL query parameter
+    // Using ?key= parameter as this is the documented and reliable method
+    const fetchWithAuth = async (baseUrl: string, apiKey?: string): Promise<Response> => {
       const headers: Record<string, string> = {
         'Accept': 'image/*',
         'User-Agent': 'BexyFlowers/1.0 (https://bexyflowers.shop)',
       };
       
-      // Add Bearer token if available for better rate limits
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      // Add API key to URL if available
+      const url = apiKey ? `${baseUrl}&key=${apiKey}` : baseUrl;
       
       return fetch(url, {
         method: 'GET',
@@ -900,14 +901,16 @@ export const handler: Handler = async (
       console.log('[Netlify Function] Trying primary API key');
       
       try {
-        response = await fetchWithRetry(pollinationsUrl, 'Primary', secretKey);
+        response = await fetchWithRetry(basePollinationsUrl, 'Primary', secretKey);
         
-        // If primary key fails with rate limit (429), auth errors (401/403), try secondary key
-        if (!response.ok && secretKey2 && (response.status === 429 || response.status === 401 || response.status === 403)) {
-          console.warn('[Netlify Function] Primary key failed with status:', response.status);
+        // If primary key fails with rate limit (429), auth errors (401/403), or payment required (402), try secondary key
+        if (!response.ok && secretKey2 && (response.status === 429 || response.status === 401 || response.status === 403 || response.status === 402)) {
+          // Log the error response for debugging
+          const errorText = await response.text().catch(() => 'Could not read error');
+          console.warn('[Netlify Function] Primary key failed with status:', response.status, '- Error:', errorText.substring(0, 200));
           console.log('[Netlify Function] Falling back to secondary API key');
           
-          response = await fetchWithRetry(pollinationsUrl, 'Secondary', secretKey2);
+          response = await fetchWithRetry(basePollinationsUrl, 'Secondary', secretKey2);
           usedKey = 'secondary';
         }
       } catch (fetchError) {
@@ -917,7 +920,7 @@ export const handler: Handler = async (
           console.log('[Netlify Function] Falling back to secondary API key');
           
           try {
-            response = await fetchWithRetry(pollinationsUrl, 'Secondary', secretKey2);
+            response = await fetchWithRetry(basePollinationsUrl, 'Secondary', secretKey2);
             usedKey = 'secondary';
           } catch (secondaryError) {
             // Both keys failed
@@ -930,7 +933,7 @@ export const handler: Handler = async (
     } else if (secretKey2) {
       // If primary key is not set, use secondary key directly
       console.log('[Netlify Function] Primary key not set, using secondary API key');
-      response = await fetchWithRetry(pollinationsUrl, 'Secondary', secretKey2);
+      response = await fetchWithRetry(basePollinationsUrl, 'Secondary', secretKey2);
       usedKey = 'secondary';
     } else {
       throw new Error('No valid API key available');
