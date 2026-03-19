@@ -197,6 +197,20 @@ function generateFingerprint(event: HandlerEvent, ip: string): string {
 }
 
 /**
+ * Extract just the origin (protocol + host) from a URL or origin header.
+ * Handles both "https://example.com" (origin header) and 
+ * "https://example.com/path/page" (referer header).
+ */
+function extractOrigin(urlOrOrigin: string): string {
+  try {
+    const parsed = new URL(urlOrOrigin);
+    return parsed.origin; // e.g. "https://bexyflowers.shop"
+  } catch {
+    return urlOrOrigin; // fallback to raw value
+  }
+}
+
+/**
  * Check if origin is allowed.
  *
  * In addition to the static whitelist we also accept:
@@ -207,19 +221,38 @@ function generateFingerprint(event: HandlerEvent, ip: string): string {
  * All three are set automatically by Netlify at build/function runtime, so we
  * never have to hard-code a changing preview URL.
  */
-function isOriginAllowed(origin: string | null): boolean {
-  if (!origin) return false;
+function isOriginAllowed(rawOrigin: string | null): boolean {
+  if (!rawOrigin) return false;
 
-  // Static whitelist
-  if (ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed))) return true;
+  // Normalize: extract just the origin part (strips path if referer was used)
+  const origin = extractOrigin(rawOrigin);
 
-  // Netlify auto-injected site URL  (e.g. https://bexyflowers.netlify.app)
+  // Debug logging (will appear in Netlify function logs)
+  console.log('[Origin Check]', { 
+    raw: rawOrigin, 
+    normalized: origin,
+    envURL: process.env.URL,
+    envDeployURL: process.env.DEPLOY_URL,
+  });
+
+  // Static whitelist — exact match or startsWith for flexibility
+  for (const allowed of ALLOWED_ORIGINS) {
+    if (origin === allowed || origin.startsWith(allowed)) return true;
+  }
+
+  // Netlify auto-injected site URL (e.g. https://bexyflowers.netlify.app)
   const siteUrl = process.env.URL;
-  if (siteUrl && origin.startsWith(siteUrl)) return true;
+  if (siteUrl) {
+    const normalizedSiteUrl = extractOrigin(siteUrl);
+    if (origin === normalizedSiteUrl) return true;
+  }
 
   // Netlify deploy-preview URL (e.g. https://deploy-preview-42--bexyflowers.netlify.app)
   const deployUrl = process.env.DEPLOY_URL;
-  if (deployUrl && origin.startsWith(deployUrl)) return true;
+  if (deployUrl) {
+    const normalizedDeployUrl = extractOrigin(deployUrl);
+    if (origin === normalizedDeployUrl) return true;
+  }
 
   // Any *.netlify.app subdomain (branch deploys, previews, etc.)
   try {
