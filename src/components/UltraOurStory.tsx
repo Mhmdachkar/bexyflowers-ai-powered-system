@@ -5,6 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Sphere, Box } from '@react-three/drei';
 import * as THREE from 'three';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   Heart, 
   Award, 
@@ -140,6 +141,7 @@ const UltraOurStory = () => {
   const logoRef = useRef<HTMLDivElement>(null);
   const [threeJSError, setThreeJSError] = useState<Error | null>(null);
   const webgl = useWebGL();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -286,18 +288,21 @@ const UltraOurStory = () => {
                 alt="Bexy Flowers Logo"
                 className="w-full h-full object-contain"
               />
-              <motion.div
-                className="absolute inset-0 bg-primary/20 rounded-full blur-md"
-                animate={{
-                  scale: [1, 1.1, 1],
-                  opacity: [0.3, 0.5, 0.3]
-                }}
-                transition={{
-                  duration: 6,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-              />
+              {/* Glow pulse — skipped on mobile to save CPU/battery */}
+              {!isMobile && (
+                <motion.div
+                  className="absolute inset-0 bg-primary/20 rounded-full blur-md"
+                  animate={{
+                    scale: [1, 1.1, 1],
+                    opacity: [0.3, 0.5, 0.3]
+                  }}
+                  transition={{
+                    duration: 6,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                />
+              )}
             </motion.div>
           </div>
 
@@ -345,10 +350,10 @@ const UltraOurStory = () => {
               {/* Overlay with logo */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
               
-              {/* Floating logo overlay */}
+              {/* Floating logo overlay — static on mobile to save CPU/battery */}
               <motion.div
                 className="absolute top-6 right-6 w-16 h-16 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-luxury"
-                animate={{
+                animate={isMobile ? {} : {
                   y: [0, -8, 0],
                   rotate: [0, 3, 0]
                 }}
@@ -368,8 +373,8 @@ const UltraOurStory = () => {
               {/* Decorative elements */}
               <div className="absolute -inset-4 border-4 border-primary/30 rounded-lg -z-10" />
               
-              {/* Floating particles around image - Optimized */}
-              {[...Array(4)].map((_, i) => (
+              {/* Floating particles around image — skipped on mobile to save CPU/battery */}
+              {!isMobile && [...Array(4)].map((_, i) => (
                 <motion.div
                   key={i}
                   className="absolute w-2 h-2 bg-primary/60 rounded-full"

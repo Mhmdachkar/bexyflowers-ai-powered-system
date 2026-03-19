@@ -25,7 +25,6 @@ export function useWebGL() {
     // ⚡ PERFORMANCE: Skip WebGL on mobile devices entirely
     // Three.js is extremely heavy on mobile (CPU, GPU, memory, battery)
     if (isMobileDevice()) {
-      console.log('[WebGL] Disabled on mobile for performance');
       setStatus(prev => ({ 
         ...prev, 
         supported: false, 
@@ -70,7 +69,6 @@ export function useWebGL() {
 
   const handleContextRestore = useCallback(() => {
     setStatus(prev => ({ ...prev, contextLost: false }));
-    console.log('WebGL context restored');
   }, []);
 
   const setupContextLossHandling = useCallback((canvas: HTMLCanvasElement) => {

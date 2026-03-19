@@ -210,6 +210,12 @@ const Customize: React.FC = () => {
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // iOS does not support WebM — skip video entirely on iPhone/iPad/iPod
+  const isIOSDevice = useMemo(() => {
+    if (typeof navigator === 'undefined') return false;
+    return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }, []);
+
   // State
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [selectedBoxShape, setSelectedBoxShape] = useState<BoxShape | null>(null);
@@ -296,7 +302,7 @@ const Customize: React.FC = () => {
   // Intersection Observer for lazy loading video only when visible (mobile only)
   // iOS 18 OPTIMIZATION: More aggressive optimizations for older iOS
   useEffect(() => {
-    if (!isMobile) return;
+    if (!isMobile || isIOSDevice) return; // iOS: no WebM support; skip
 
     const targetElement = containerRef.current || videoRef.current;
     if (!targetElement) return;
@@ -327,7 +333,7 @@ const Customize: React.FC = () => {
   // Load and play video when it becomes visible
   // iOS 18 OPTIMIZATION: Optimize video settings for older iOS devices
   useEffect(() => {
-    if (!isMobile || !videoRef.current || !shouldLoadVideo) return;
+    if (!isMobile || isIOSDevice || !videoRef.current || !shouldLoadVideo) return;
 
     const videoElement = videoRef.current;
     
@@ -369,7 +375,7 @@ const Customize: React.FC = () => {
 
   // Handle window resize to ensure video stays full width
   useEffect(() => {
-    if (!isMobile || !videoRef.current) return;
+    if (!isMobile || isIOSDevice || !videoRef.current) return;
 
     let resizeTimer: NodeJS.Timeout | null = null;
     
@@ -1198,8 +1204,8 @@ const Customize: React.FC = () => {
         paddingBottom: isMobile ? '4rem' : undefined
       }}
     >
-      {/* Video background for mobile view - Absolute within hero section, extends behind header */}
-      {isMobile && (
+      {/* Video background for mobile view — skipped on iOS (no WebM support) */}
+      {isMobile && !isIOSDevice && (
         <video
           ref={videoRef}
           className="absolute left-0 right-0 w-full object-cover object-center pointer-events-none z-0"
