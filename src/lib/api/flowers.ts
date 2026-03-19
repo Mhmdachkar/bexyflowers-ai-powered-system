@@ -1,5 +1,11 @@
+/**
+ * Flowers API
+ * 
+ * SECURITY: All database access goes through the secure backend proxy (db client)
+ * No direct Supabase access from frontend - prevents SQL injection
+ */
+
 import { db } from './database-client';
-import { supabase } from '../supabase';
 import { uploadImage, deleteImage, extractPathFromUrl } from '../supabase-storage';
 import type { Database } from '../supabase';
 
@@ -34,15 +40,9 @@ export interface FlowerTypeCategory {
  * Get all flower type categories
  */
 export async function getFlowerTypeCategories(): Promise<FlowerTypeCategory[]> {
-  const { data, error } = await supabase
-    .from('flower_type_categories')
-    .select('*')
-    .order('display_order', { ascending: true });
-
-  if (error) {
-    throw new Error(`Failed to fetch flower type categories: ${error.message}`);
-  }
-
+  const data = await db.select<FlowerTypeCategory>('flower_type_categories', {
+    orderBy: { column: 'display_order', ascending: true },
+  });
   return data || [];
 }
 
@@ -50,16 +50,10 @@ export async function getFlowerTypeCategories(): Promise<FlowerTypeCategory[]> {
  * Get active flower type categories
  */
 export async function getActiveFlowerTypeCategories(): Promise<FlowerTypeCategory[]> {
-  const { data, error } = await supabase
-    .from('flower_type_categories')
-    .select('*')
-    .eq('is_active', true)
-    .order('display_order', { ascending: true });
-
-  if (error) {
-    throw new Error(`Failed to fetch active flower type categories: ${error.message}`);
-  }
-
+  const data = await db.select<FlowerTypeCategory>('flower_type_categories', {
+    filters: { is_active: true },
+    orderBy: { column: 'display_order', ascending: true },
+  });
   return data || [];
 }
 
@@ -69,16 +63,10 @@ export async function getActiveFlowerTypeCategories(): Promise<FlowerTypeCategor
 export async function createFlowerTypeCategory(
   category: Omit<FlowerTypeCategory, 'id' | 'created_at' | 'updated_at'>
 ): Promise<FlowerTypeCategory> {
-  const { data, error } = await supabase
-    .from('flower_type_categories')
-    .insert(category)
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(`Failed to create flower type category: ${error.message}`);
+  const data = await db.insert<FlowerTypeCategory>('flower_type_categories', category);
+  if (!data) {
+    throw new Error('Failed to create flower type category');
   }
-
   return data;
 }
 
@@ -89,32 +77,22 @@ export async function updateFlowerTypeCategory(
   id: string,
   updates: Partial<Omit<FlowerTypeCategory, 'id' | 'created_at' | 'updated_at'>>
 ): Promise<FlowerTypeCategory> {
-  const { data, error } = await supabase
-    .from('flower_type_categories')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(`Failed to update flower type category: ${error.message}`);
+  const data = await db.update<FlowerTypeCategory>(
+    'flower_type_categories',
+    { id },
+    { ...updates, updated_at: new Date().toISOString() }
+  );
+  if (!data || data.length === 0) {
+    throw new Error('Failed to update flower type category');
   }
-
-  return data;
+  return data[0];
 }
 
 /**
  * Delete a flower type category
  */
 export async function deleteFlowerTypeCategory(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('flower_type_categories')
-    .delete()
-    .eq('id', id);
-
-  if (error) {
-    throw new Error(`Failed to delete flower type category: ${error.message}`);
-  }
+  await db.delete('flower_type_categories', { id });
 }
 
 // ==================== Flower Types ====================
@@ -123,33 +101,20 @@ export async function deleteFlowerTypeCategory(id: string): Promise<void> {
  * Get all flower types
  */
 export async function getFlowerTypes(): Promise<FlowerType[]> {
-  const { data, error } = await supabase
-    .from('flower_types')
-    .select('*')
-    .order('name', { ascending: true });
-
-  if (error) {
-    throw new Error(`Failed to fetch flower types: ${error.message}`);
-  }
-
-  return data;
+  const data = await db.select<FlowerType>('flower_types', {
+    orderBy: { column: 'name', ascending: true },
+  });
+  return data || [];
 }
 
 /**
  * Get flower types by category
  */
 export async function getFlowerTypesByCategory(categoryId: string): Promise<FlowerType[]> {
-  const { data, error } = await supabase
-    .from('flower_types')
-    .select('*')
-    .eq('category_id', categoryId)
-    .eq('is_active', true)
-    .order('name', { ascending: true });
-
-  if (error) {
-    throw new Error(`Failed to fetch flower types by category: ${error.message}`);
-  }
-
+  const data = await db.select<FlowerType>('flower_types', {
+    filters: { category_id: categoryId, is_active: true },
+    orderBy: { column: 'name', ascending: true },
+  });
   return data || [];
 }
 
@@ -157,28 +122,16 @@ export async function getFlowerTypesByCategory(categoryId: string): Promise<Flow
  * Get flower type with colors
  */
 export async function getFlowerTypeWithColors(id: string): Promise<FlowerTypeWithColors | null> {
-  const { data: flower, error: flowerError } = await supabase
-    .from('flower_types')
-    .select('*')
-    .eq('id', id)
-    .single();
-
-  if (flowerError) {
-    if (flowerError.code === 'PGRST116') {
-      return null;
-    }
-    throw new Error(`Failed to fetch flower type: ${flowerError.message}`);
+  const flower = await db.selectOne<FlowerType>('flower_types', { id });
+  
+  if (!flower) {
+    return null;
   }
 
-  const { data: colors, error: colorsError } = await supabase
-    .from('flower_colors')
-    .select('*')
-    .eq('flower_id', id)
-    .order('name', { ascending: true });
-
-  if (colorsError) {
-    throw new Error(`Failed to fetch flower colors: ${colorsError.message}`);
-  }
+  const colors = await db.select<FlowerColor>('flower_colors', {
+    filters: { flower_id: id },
+    orderBy: { column: 'name', ascending: true },
+  });
 
   return {
     ...flower,
@@ -195,7 +148,7 @@ export async function createFlowerType(
 ): Promise<FlowerType> {
   let imageUrl: string | null = null;
 
-  // Upload image if provided
+  // Upload image if provided (storage is separate from DB proxy)
   if (image) {
     try {
       const result = await uploadImage('flower-images', image);
@@ -205,17 +158,13 @@ export async function createFlowerType(
     }
   }
 
-  const { data, error } = await supabase
-    .from('flower_types')
-    .insert({
-      ...flower,
-      image_url: imageUrl,
-    })
-    .select()
-    .single();
+  const data = await db.insert<FlowerType>('flower_types', {
+    ...flower,
+    image_url: imageUrl,
+  });
 
-  if (error) {
-    throw new Error(`Failed to create flower type: ${error.message}`);
+  if (!data) {
+    throw new Error('Failed to create flower type');
   }
 
   return data;
@@ -254,21 +203,17 @@ export async function updateFlowerType(
     }
   }
 
-  const { data, error } = await supabase
-    .from('flower_types')
-    .update({
-      ...updates,
-      image_url: imageUrl,
-    })
-    .eq('id', id)
-    .select()
-    .single();
+  const data = await db.update<FlowerType>(
+    'flower_types',
+    { id },
+    { ...updates, image_url: imageUrl }
+  );
 
-  if (error) {
-    throw new Error(`Failed to update flower type: ${error.message}`);
+  if (!data || data.length === 0) {
+    throw new Error('Failed to update flower type');
   }
 
-  return data;
+  return data[0];
 }
 
 /**
@@ -286,14 +231,7 @@ export async function deleteFlowerType(id: string): Promise<void> {
     }
   }
 
-  const { error } = await supabase
-    .from('flower_types')
-    .delete()
-    .eq('id', id);
-
-  if (error) {
-    throw new Error(`Failed to delete flower type: ${error.message}`);
-  }
+  await db.delete('flower_types', { id });
 }
 
 // ==================== Flower Colors ====================
@@ -302,16 +240,10 @@ export async function deleteFlowerType(id: string): Promise<void> {
  * Get colors for a flower type
  */
 export async function getFlowerColors(flowerId: string): Promise<FlowerColor[]> {
-  const { data, error } = await supabase
-    .from('flower_colors')
-    .select('*')
-    .eq('flower_id', flowerId)
-    .order('name', { ascending: true });
-
-  if (error) {
-    throw new Error(`Failed to fetch flower colors: ${error.message}`);
-  }
-
+  const data = await db.select<FlowerColor>('flower_colors', {
+    filters: { flower_id: flowerId },
+    orderBy: { column: 'name', ascending: true },
+  });
   return data || [];
 }
 
@@ -397,64 +329,62 @@ const SEASON_MAPPING: Record<string, string[]> = {
 export async function getFlowersForCustomize(): Promise<CustomizeFlower[]> {
   // Fetch all active flower types with quantity > 0, including category information
   // Each flower_type now represents an individual flower variant
-  // BACKWARD COMPATIBLE: Handles cases where new columns don't exist yet
-  const { data: flowerTypes, error: typesError } = await supabase
-    .from('flower_types')
-    .select(`
-      id,
-      name,
-      title,
-      price_per_stem,
-      image_url,
-      quantity,
-      is_active,
-      availability_mode,
-      category_id,
-      filter_categories,
-      flower_type_categories (
+  try {
+    // First try with all fields including category join
+    const flowerTypes = await db.select<any>('flower_types', {
+      select: `
         id,
         name,
-        display_name,
-        icon
-      )
-    `)
-    .eq('is_active', true)
-    .gt('quantity', 0)
-    .order('name', { ascending: true });
+        title,
+        price_per_stem,
+        image_url,
+        quantity,
+        is_active,
+        availability_mode,
+        category_id,
+        filter_categories,
+        flower_type_categories (
+          id,
+          name,
+          display_name,
+          icon
+        )
+      `,
+      filters: { is_active: true },
+      orderBy: { column: 'name', ascending: true },
+    });
 
-  if (typesError) {
+    // Filter for quantity > 0 in JS (db proxy may not support gt operator in all cases)
+    const filtered = (flowerTypes || []).filter((f: any) => f.quantity > 0);
+    
+    if (filtered.length === 0) {
+      return [];
+    }
+    
+    return mapFlowerTypesToCustomizeFlowers(filtered, false);
+  } catch (error) {
     // BACKWARD COMPATIBLE: If error is due to missing columns, try without them
-    if (typesError.message.includes('column') || typesError.message.includes('does not exist')) {
-      console.warn('[getFlowersForCustomize] New columns not available, using basic query:', typesError.message);
+    console.warn('[getFlowersForCustomize] Full query failed, trying basic query:', error);
+    
+    try {
+      const fallbackFlowerTypes = await db.select<any>('flower_types', {
+        select: 'id, name, title, price_per_stem, image_url, quantity, is_active',
+        filters: { is_active: true },
+        orderBy: { column: 'name', ascending: true },
+      });
       
-      // Fallback query without new columns
-      const { data: fallbackFlowerTypes, error: fallbackError } = await supabase
-        .from('flower_types')
-        .select('id, name, title, price_per_stem, image_url, quantity, is_active')
-        .eq('is_active', true)
-        .gt('quantity', 0)
-        .order('name', { ascending: true });
+      const filtered = (fallbackFlowerTypes || []).filter((f: any) => f.quantity > 0);
       
-      if (fallbackError) {
-        throw new Error(`Failed to fetch flower types: ${fallbackError.message}`);
-      }
-      
-      if (!fallbackFlowerTypes || fallbackFlowerTypes.length === 0) {
+      if (filtered.length === 0) {
         return [];
       }
       
-      // Map fallback data without new fields
-      return mapFlowerTypesToCustomizeFlowers(fallbackFlowerTypes, true);
+      return mapFlowerTypesToCustomizeFlowers(filtered, true);
+    } catch (fallbackError) {
+      console.error('[getFlowersForCustomize] Fallback query also failed:', fallbackError);
+      throw fallbackError;
     }
-    
-    throw new Error(`Failed to fetch flower types: ${typesError.message}`);
   }
-
-  if (!flowerTypes || flowerTypes.length === 0) {
-    return [];
-  }
-  
-  return mapFlowerTypesToCustomizeFlowers(flowerTypes, false);
 }
 
 /**

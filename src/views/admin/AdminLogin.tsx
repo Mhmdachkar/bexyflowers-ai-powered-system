@@ -10,27 +10,21 @@ import { useToast } from "@/hooks/use-toast";
 
 const GOLD_COLOR = "rgb(199, 158, 72)";
 
-// Admin credentials from environment variables (secure) with fallback to hardcoded defaults
+// Admin credentials from environment variables ONLY (no insecure defaults)
+// SECURITY: Never use hardcoded credentials — require env vars in production
 const getAdminAccounts = () => {
   const accounts = [];
   
-  // Primary admin account
+  // Primary admin account — REQUIRED
   if (import.meta.env.VITE_ADMIN_USERNAME && import.meta.env.VITE_ADMIN_PASSWORD) {
     accounts.push({
       username: import.meta.env.VITE_ADMIN_USERNAME,
       password: import.meta.env.VITE_ADMIN_PASSWORD,
       displayName: import.meta.env.VITE_ADMIN_DISPLAY_NAME || "Admin"
     });
-  } else {
-    // Fallback to default admin credentials
-    accounts.push({
-      username: "admin",
-      password: "admin",
-      displayName: "Admin"
-    });
   }
   
-  // Secondary admin account
+  // Secondary admin account — OPTIONAL
   if (import.meta.env.VITE_ADMIN2_USERNAME && import.meta.env.VITE_ADMIN2_PASSWORD) {
     accounts.push({
       username: import.meta.env.VITE_ADMIN2_USERNAME,
@@ -62,6 +56,17 @@ const AdminLogin = () => {
     const account = adminAccounts.find(
       (acc) => acc.username === username && acc.password === password
     );
+
+    // SECURITY: If no admin accounts configured, deny all logins
+    if (adminAccounts.length === 0) {
+      setIsLoading(false);
+      toast({
+        title: "Configuration Error",
+        description: "Admin credentials not configured. Please contact the administrator.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (account) {
       setTimeout(() => {

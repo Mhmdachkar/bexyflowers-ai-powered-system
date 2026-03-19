@@ -1,10 +1,11 @@
 /**
  * Migration utility to import signature collection products into Supabase
  * 
+ * SECURITY: Uses the secure db proxy client, not direct Supabase access.
  * This migrates the 6 hardcoded products from UltraFeaturedBouquets.tsx
  */
 
-import { supabase } from './supabase';
+import { db } from './api/database-client';
 import type { Database } from './supabase';
 
 type CollectionProductInsert = Database['public']['Tables']['collection_products']['Insert'];
@@ -120,11 +121,9 @@ export async function migrateSignatureCollection(): Promise<{
     const bouquet = SIGNATURE_BOUQUETS[i];
     try {
       // Step 1: Check if product exists in collection_products
-      const { data: existingProduct } = await supabase
-        .from('collection_products')
-        .select('id')
-        .eq('title', bouquet.name)
-        .single();
+      const existingProduct = await db.selectOne<{ id: string }>('collection_products', {
+        title: bouquet.name,
+      });
 
       let productId: string;
 
@@ -138,7 +137,7 @@ export async function migrateSignatureCollection(): Promise<{
         const price = parsePrice(bouquet.price);
         const normalizedImage = normalizeImagePath(bouquet.image);
 
-        const productData: CollectionProductInsert = {
+        const productData: Omit<CollectionProductInsert, 'id' | 'created_at' | 'updated_at'> = {
           title: bouquet.name,
           description: bouquet.description,
           price: price,
@@ -150,14 +149,10 @@ export async function migrateSignatureCollection(): Promise<{
           is_active: true,
         };
 
-        const { data: newProduct, error: productError } = await supabase
-          .from('collection_products')
-          .insert(productData)
-          .select()
-          .single();
+        const newProduct = await db.insert<{ id: string }>('collection_products', productData);
 
-        if (productError) {
-          throw new Error(`Failed to create product: ${productError.message}`);
+        if (!newProduct) {
+          throw new Error('Failed to create product: no data returned');
         }
 
         productId = newProduct.id;
@@ -165,11 +160,9 @@ export async function migrateSignatureCollection(): Promise<{
       }
 
       // Step 2: Check if already in signature_collections
-      const { data: existingSignature } = await supabase
-        .from('signature_collections')
-        .select('id')
-        .eq('product_id', productId)
-        .single();
+      const existingSignature = await db.selectOne<{ id: string }>('signature_collections', {
+        product_id: productId,
+      });
 
       if (existingSignature) {
         console.log(`  Product "${bouquet.name}" already in signature collection, skipping...`);
@@ -177,20 +170,16 @@ export async function migrateSignatureCollection(): Promise<{
       }
 
       // Step 3: Add to signature_collections with display_order
-      const signatureData: SignatureCollectionInsert = {
+      const signatureData: Omit<SignatureCollectionInsert, 'id' | 'created_at'> = {
         product_id: productId,
         display_order: i, // Use index as display order to maintain the same order
         is_active: true,
       };
 
-      const { data: signatureItem, error: signatureError } = await supabase
-        .from('signature_collections')
-        .insert(signatureData)
-        .select()
-        .single();
+      const signatureItem = await db.insert<{ id: string }>('signature_collections', signatureData);
 
-      if (signatureError) {
-        throw new Error(`Failed to add to signature collection: ${signatureError.message}`);
+      if (!signatureItem) {
+        throw new Error('Failed to add to signature collection: no data returned');
       }
 
       console.log(`✓ Migrated signature item: ${bouquet.name} (order: ${i})`);
@@ -223,4 +212,3 @@ export async function runSignatureCollectionMigration(): Promise<void> {
   console.log(message);
   alert(message);
 }
-

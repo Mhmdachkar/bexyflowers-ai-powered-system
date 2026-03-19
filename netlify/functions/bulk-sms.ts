@@ -1,12 +1,23 @@
 /**
  * Bulk SMS Function (Twilio)
+ * 
+ * SECURITY: Rate limited to prevent abuse and protect Twilio credits
  */
 import type { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
+import { checkDistributedRateLimit } from './utils/rateLimiter';
 
 declare const process: {
   env: {
     [key: string]: string | undefined;
   };
+};
+
+// SECURITY: Strict rate limits for SMS (expensive resource)
+const RATE_LIMITS = {
+  perMinute: 3,     // 3 bulk SMS batches per minute
+  perHour: 20,      // 20 batches per hour
+  perDay: 100,      // 100 batches per day
+  minDelay: 5000,   // 5 seconds minimum between requests
 };
 
 const ALLOWED_ORIGINS = [
@@ -110,6 +121,22 @@ export const handler: Handler = async (event: HandlerEvent, _context: HandlerCon
     };
   }
 
+  // SECURITY: Rate limiting to prevent abuse
+  const ip = event.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
+  const fingerprint = `bulk-sms-${ip}`;
+  const rateLimitCheck = await checkDistributedRateLimit(ip, fingerprint, RATE_LIMITS);
+  if (!rateLimitCheck.allowed) {
+    return {
+      statusCode: 429,
+      headers,
+      body: JSON.stringify({ 
+        error: 'Too many requests', 
+        message: rateLimitCheck.error,
+        retryAfter: rateLimitCheck.retryAfter 
+      }),
+    };
+  }
+
   try {
     const payload = JSON.parse(event.body || '{}') as {
       message?: string;
@@ -117,7 +144,17 @@ export const handler: Handler = async (event: HandlerEvent, _context: HandlerCon
     };
 
     const message = payload.message?.trim();
-    const recipients = Array.isArray(payload.recipients) ? payload.recipients.filter(Boolean) : [];
+    
+    // SECURITY: Validate phone numbers (E.164 format or common formats)
+    const isValidPhone = (phone: string): boolean => {
+      if (typeof phone !== 'string') return false;
+      const cleaned = phone.replace(/[\s\-\(\)]/g, '');
+      // E.164 format or starts with + followed by digits
+      return /^\+?[1-9]\d{6,14}$/.test(cleaned);
+    };
+    
+    const rawRecipients = Array.isArray(payload.recipients) ? payload.recipients.filter(Boolean) : [];
+    const recipients = rawRecipients.filter(isValidPhone);
 
     if (!message || recipients.length === 0) {
       return {

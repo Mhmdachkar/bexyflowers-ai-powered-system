@@ -167,6 +167,34 @@ function getSecurityHeaders(origin: string): Record<string, string> {
   return headers;
 }
 
+// SECURITY: Whitelist of allowed tables (prevents arbitrary table access)
+const ALLOWED_TABLES = [
+  'collection_products',
+  'signature_collections',
+  'flower_type_categories',
+  'flower_types',
+  'flower_colors',
+  'accessories',
+  'luxury_boxes',
+  'box_colors',
+  'box_sizes',
+  'wedding_creations',
+  'eternal_flowers',
+  'owner_availability',
+  'consultation_bookings',
+  'visitor_cart',
+  'visitor_favorites',
+  'zodiac_generated_images',
+  'checkout_orders',
+];
+
+// SECURITY: Whitelist of allowed RPC functions
+const ALLOWED_RPC_FUNCTIONS = [
+  'get_active_products',
+  'get_featured_products',
+  'search_products',
+];
+
 /**
  * Validate table name (prevent SQL injection)
  */
@@ -175,7 +203,26 @@ function isValidTableName(table: string | undefined): boolean {
     return false;
   }
   // Only allow alphanumeric, underscore, and hyphen
-  return /^[a-zA-Z0-9_-]+$/.test(table) && table.length < 100;
+  if (!/^[a-zA-Z0-9_-]+$/.test(table) || table.length >= 100) {
+    return false;
+  }
+  // SECURITY: Must be in whitelist
+  return ALLOWED_TABLES.includes(table);
+}
+
+/**
+ * Validate RPC function name
+ */
+function isValidRpcFunction(functionName: string | undefined): boolean {
+  if (!functionName || typeof functionName !== 'string') {
+    return false;
+  }
+  // Only allow alphanumeric and underscore
+  if (!/^[a-zA-Z0-9_]+$/.test(functionName) || functionName.length >= 100) {
+    return false;
+  }
+  // SECURITY: Must be in whitelist
+  return ALLOWED_RPC_FUNCTIONS.includes(functionName);
 }
 
 /**
@@ -540,9 +587,9 @@ async function executeOperation(request: DatabaseRequest): Promise<any> {
           throw new Error('RPC operation requires functionName');
         }
 
-        // Validate function name
-        if (!isValidTableName(functionName)) {
-          throw new Error('Invalid function name');
+        // SECURITY: Validate RPC function name against whitelist
+        if (!isValidRpcFunction(functionName)) {
+          throw new Error(`RPC function not allowed: ${functionName}`);
         }
         
         // SECURITY: Validate function parameters
@@ -746,7 +793,7 @@ export const handler: Handler = async (
       };
     }
 
-    // For RPC operations, validate functionName instead
+    // For RPC operations, validate functionName against whitelist
     if (request.operation === 'rpc') {
       if (!request.functionName) {
         logSecurityEvent('validation_error', 'warning', event.path, ip, {
@@ -758,15 +805,15 @@ export const handler: Handler = async (
           body: JSON.stringify({ error: 'RPC operation requires functionName' }),
         };
       }
-      if (!isValidTableName(request.functionName)) {
+      if (!isValidRpcFunction(request.functionName)) {
         logSecurityEvent('validation_error', 'warning', event.path, ip, {
-          reason: 'Invalid function name',
+          reason: 'RPC function not in whitelist',
           functionName: request.functionName,
         });
         return {
           statusCode: 400,
           headers,
-          body: JSON.stringify({ error: 'Invalid function name. Only alphanumeric characters, underscores, and hyphens are allowed.' }),
+          body: JSON.stringify({ error: 'RPC function not allowed' }),
         };
       }
     }

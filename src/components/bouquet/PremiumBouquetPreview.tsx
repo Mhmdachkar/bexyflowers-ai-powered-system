@@ -186,16 +186,13 @@ const PremiumBouquetPreview: React.FC<PremiumBouquetPreviewProps> = ({ selectedF
         
         {/* Flowers */}
         <Suspense fallback={null}>
-          {selectedFlowersArray.map((selectedFlower, index) => {
-            console.log('Rendering flower:', selectedFlower.flower.name, 'at position:', selectedFlower.position);
-            return (
-              <Flower3D
-                key={selectedFlower.flower.id}
-                flower={selectedFlower}
-                index={index}
-              />
-            );
-          })}
+          {selectedFlowersArray.map((selectedFlower, index) => (
+            <Flower3D
+              key={selectedFlower.flower.id}
+              flower={selectedFlower}
+              index={index}
+            />
+          ))}
         </Suspense>
       </Canvas>
 

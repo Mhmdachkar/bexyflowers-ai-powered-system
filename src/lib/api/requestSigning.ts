@@ -50,10 +50,22 @@ export async function signRequest(payload: Record<string, any>, secret: string):
 }
 
 /**
- * Create a signed request payload
+ * Create a request payload with timestamp and nonce for replay protection
+ * 
+ * SECURITY NOTE: Request signing (HMAC) has been removed from the frontend.
+ * Exposing the signing secret in the frontend bundle is a security vulnerability.
+ * 
+ * The backend now relies on:
+ * 1. API key authentication (X-API-Key header)
+ * 2. Timestamp freshness check (5 minute window)
+ * 3. Nonce uniqueness check (prevents replay attacks)
+ * 4. Rate limiting per IP
+ * 
+ * If HMAC signing is required, it should be done server-side only,
+ * using a different authentication flow (e.g., server-to-server).
  * 
  * @param data - Request data (prompt, width, height, model)
- * @returns Signed request payload with timestamp, nonce, and signature
+ * @returns Request payload with timestamp and nonce (no signature)
  */
 export async function createSignedRequest(data: {
   prompt: string;
@@ -69,38 +81,17 @@ export async function createSignedRequest(data: {
   nonce: string;
   signature: string;
 }> {
-  const secret = import.meta.env.VITE_FRONTEND_API_SECRET;
-  
-  if (!secret) {
-    console.warn('[Request Signing] VITE_FRONTEND_API_SECRET not set - sending unsigned request');
-    return {
-      ...data,
-      width: data.width || 768,
-      height: data.height || 768,
-      model: data.model || 'gptimage',
-      timestamp: Date.now(),
-      nonce: generateNonce(),
-      signature: '', // Empty signature - server will allow if signing not enforced
-    };
-  }
-  
   const timestamp = Date.now();
   const nonce = generateNonce();
   
-  const payload = {
+  return {
     prompt: data.prompt,
     width: data.width || 768,
     height: data.height || 768,
     model: data.model || 'gptimage',
     timestamp,
     nonce,
-  };
-  
-  const signature = await signRequest(payload, secret);
-  
-  return {
-    ...payload,
-    signature,
+    signature: '', // Signature removed - authentication via API key
   };
 }
 

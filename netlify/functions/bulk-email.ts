@@ -162,6 +162,22 @@ export const handler: Handler = async (event: HandlerEvent, _context: HandlerCon
     };
   }
 
+  // SECURITY: Apply rate limiting (was defined but never called!)
+  const ip = event.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
+  const fingerprint = `bulk-email-${ip}`;
+  const rateLimitCheck = await checkDistributedRateLimit(ip, fingerprint, RATE_LIMITS);
+  if (!rateLimitCheck.allowed) {
+    return {
+      statusCode: 429,
+      headers,
+      body: JSON.stringify({ 
+        error: 'Too many requests', 
+        message: rateLimitCheck.error,
+        retryAfter: rateLimitCheck.retryAfter 
+      }),
+    };
+  }
+
   try {
     const body = JSON.parse(event.body || '{}') as {
       subject?: string;
@@ -170,8 +186,13 @@ export const handler: Handler = async (event: HandlerEvent, _context: HandlerCon
     };
 
     const subject = body.subject?.trim();
-    const message = body.body?.trim();
-    const recipients = Array.isArray(body.recipients) ? body.recipients.filter(Boolean) : [];
+    const rawMessage = body.body?.trim() || '';
+    // SECURITY: Sanitize HTML content (function was defined but never called!)
+    const message = sanitizeHtml(rawMessage);
+    
+    // SECURITY: Validate email addresses (function was defined but never called!)
+    const rawRecipients = Array.isArray(body.recipients) ? body.recipients.filter(Boolean) : [];
+    const recipients = rawRecipients.filter(isValidEmail);
 
     if (!subject || !message || recipients.length === 0) {
       return {

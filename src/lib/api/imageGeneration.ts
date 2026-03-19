@@ -130,11 +130,6 @@ async function generateWithPollinationsServerless(
     const model = AI_CONFIG.apis.pollinations.params.model || 'gptimage';
     const serverlessEndpoint = AI_CONFIG.apis.pollinations.serverlessEndpoint || '/.netlify/functions/generate-image';
     
-    console.log('[ImageGen] 🚀 Using Pollinations via serverless function (unlimited rate limits)');
-    console.log('[ImageGen] Model:', model);
-    console.log('[ImageGen] Resolution:', `${width}x${height}`);
-    console.log('[ImageGen] Prompt length:', cleanedPrompt.length);
-    
     // Call Netlify serverless function
     // SECURITY: Include API key and signed request for authentication
     const frontendApiKey = import.meta.env.VITE_FRONTEND_API_KEY;
@@ -234,8 +229,6 @@ async function generateWithPollinationsServerless(
     // Create blob URL
     const localUrl = URL.createObjectURL(blob);
     
-    console.log('[ImageGen] ✅ Pollinations serverless successful, blob URL:', localUrl);
-    
     return { imageUrl: localUrl, source: 'pollinations' };
 }
 
@@ -294,23 +287,13 @@ async function generateWithPollinations(
         console.warn('[ImageGen] ⚠️ This may cause issues. Consider shortening the prompt.');
     }
     
-    // Log generation details for debugging
     const model = AI_CONFIG.apis.pollinations.params.model || 'gptimage';
-    console.log('[ImageGen] 🌸 Using Pollinations Flux model (direct API call)');
-    console.log('[ImageGen] Model:', model);
-    console.log('[ImageGen] Resolution:', `${width}x${height}`);
-    console.log('[ImageGen] Enhanced prompt:', shouldEnhance);
-    console.log('[ImageGen] Prompt length:', cleanedPrompt.length);
-    console.log('[ImageGen] URL length:', pollinationsUrl.length);
-    console.log('[ImageGen] URL (first 200 chars):', pollinationsUrl.substring(0, 200) + '...');
     
     // Pollinations doesn't use Authorization headers in browser (CORS blocked)
     // Their free tier works without API keys from browsers
     const headers: Record<string, string> = {
         'Accept': 'image/*',
     };
-    
-    console.log('[ImageGen] 🌸 Using Pollinations AI with IMG tag workaround (CORS bypass)');
     
     // WORKAROUND: Use Image() instead of fetch() to bypass CORS
     // Pollinations blocks fetch() but allows <img> tags
@@ -386,8 +369,6 @@ async function generateWithPollinations(
     // Create blob URL
     const localUrl = URL.createObjectURL(blob);
     
-    console.log('[ImageGen] ✅ Pollinations successful, blob URL:', localUrl);
-    
     // Return the blob URL - component will handle cleanup on unmount
     return { imageUrl: localUrl, source: 'pollinations' };
 }
@@ -402,8 +383,6 @@ async function generateWithHuggingFace(
     if (!isApiEnabled('huggingface')) {
         throw new Error('HuggingFace API is disabled in config');
     }
-    
-    console.log('[ImageGen] Attempting HuggingFace backup...');
     
     const cleanedPrompt = cleanPrompt(prompt);
     const apiConfig = AI_CONFIG.apis.huggingface;
@@ -472,8 +451,6 @@ async function generateWithHuggingFace(
         throw error;
     }
     
-    console.log('[ImageGen] ✅ HuggingFace successful, blob URL:', localUrl);
-    
     return { imageUrl: localUrl, source: 'huggingface' };
 }
 
@@ -503,18 +480,13 @@ export async function generateBouquetImage(
         }
     };
     
-    console.log('[ImageGen] Starting generation with prompt:', prompt.substring(0, 100) + '...');
-    console.log('[ImageGen] Config:', { width, height, enhancePrompt: shouldEnhance, useCache, hasNegative: !!negativePrompt });
-    
     // Step 1: Check cache if enabled
     if (useCache && cacheHash) {
         reportProgress('checking-cache');
-        console.log('[ImageGen] Checking cache for hash:', cacheHash);
         
         try {
             const cached = await getCachedImage(cacheHash);
             if (cached) {
-                console.log('[ImageGen] ✅ Cache HIT! Returning cached image');
                 reportProgress('complete');
                 return {
                     imageUrl: cached.imageUrl,
@@ -533,7 +505,6 @@ export async function generateBouquetImage(
     
     // Build negative prompt if not provided
     const finalNegativePrompt = negativePrompt || buildNegativePrompt();
-    console.log('[ImageGen] Using negative prompt:', finalNegativePrompt.substring(0, 50) + '...');
     
     reportProgress('connecting');
     
@@ -598,7 +569,6 @@ export async function generateBouquetImage(
                         height,
                         size: base64Image.length
                     });
-                    console.log('[ImageGen] ✅ Image cached successfully');
                 } catch (cacheError) {
                     console.warn('[ImageGen] Failed to cache image:', cacheError);
                 }
@@ -614,7 +584,6 @@ export async function generateBouquetImage(
                         imageUrl: result.imageUrl,
                         configuration
                     });
-                    console.log('[ImageGen] ✅ Added to history');
                 } catch (historyError) {
                     console.warn('[ImageGen] Failed to add to history:', historyError);
                 }

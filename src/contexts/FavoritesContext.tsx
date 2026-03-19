@@ -22,6 +22,8 @@ export const FavoritesProvider: React.FC<FavoritesProviderProps> = ({ children }
 
   // Load favorites - DEFERRED DB: Skip database calls for new visitors (empty favorites) to reduce load during traffic spikes
   useEffect(() => {
+    let isMounted = true; // SAFETY: Prevent state updates after unmount
+    
     const loadFavorites = async () => {
       try {
         let localFavorites: FavoriteProduct[] = [];
@@ -29,13 +31,15 @@ export const FavoritesProvider: React.FC<FavoritesProviderProps> = ({ children }
           const savedFavorites = localStorage.getItem(FAVORITES_STORAGE_KEY);
           if (savedFavorites) {
             localFavorites = JSON.parse(savedFavorites);
-            setFavorites(localFavorites);
+            if (isMounted) setFavorites(localFavorites);
           }
         } catch (error) {
           console.error('Error loading favorites from localStorage:', error);
         }
-        setIsLoading(false);
-        isInitialLoad.current = false;
+        if (isMounted) {
+          setIsLoading(false);
+          isInitialLoad.current = false;
+        }
 
         // TRAFFIC OPTIMIZATION: Only call database when we have local favorites (returning visitor)
         // New visitors with empty favorites skip DB entirely - saves ~3 function calls per passive visitor
@@ -46,6 +50,7 @@ export const FavoritesProvider: React.FC<FavoritesProviderProps> = ({ children }
         if (import.meta.env.PROD || import.meta.env.VITE_USE_NETLIFY_FUNCTIONS === 'true') {
           try {
             const dbFavorites = await getVisitorFavorites();
+            if (!isMounted) return; // SAFETY: Check before updating state
             if (dbFavorites.length > 0) {
               setFavorites(dbFavorites);
               localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(dbFavorites));
@@ -59,12 +64,18 @@ export const FavoritesProvider: React.FC<FavoritesProviderProps> = ({ children }
           }
         }
       } catch (error) {
-        setIsLoading(false);
-        isInitialLoad.current = false;
+        if (isMounted) {
+          setIsLoading(false);
+          isInitialLoad.current = false;
+        }
       }
     };
 
     loadFavorites();
+    
+    return () => {
+      isMounted = false; // Cleanup on unmount
+    };
   }, []);
 
   // Sync favorites to database whenever favorites changes (debounced)

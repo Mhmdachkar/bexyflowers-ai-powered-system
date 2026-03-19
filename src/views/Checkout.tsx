@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import SEO from '@/components/SEO';
 import { getProductImageAlt } from '@/lib/imageAltUtils';
 import { motion } from 'framer-motion';

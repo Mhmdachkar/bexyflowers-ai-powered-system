@@ -1,12 +1,12 @@
 /**
  * Migration utility to import existing products from generatedBouquets.ts into Supabase
  * 
+ * SECURITY: Uses the secure db proxy client, not direct Supabase access.
  * This can be run once to migrate all existing products to the database.
  * Run this from browser console or create a one-time migration page.
  */
 
 import { db } from './api/database-client';
-import { supabase } from './supabase';
 import type { Database } from './supabase';
 
 type CollectionProductInsert = Database['public']['Tables']['collection_products']['Insert'];
@@ -50,11 +50,9 @@ export async function migrateProductsToSupabase(bouquets: Bouquet[]): Promise<{
   for (const bouquet of bouquets) {
     try {
       // Check if product already exists (by checking if any product has the same title)
-      const { data: existing } = await supabase
-        .from('collection_products')
-        .select('id')
-        .eq('title', bouquet.name)
-        .single();
+      const existing = await db.selectOne<{ id: string }>('collection_products', {
+        title: bouquet.name,
+      });
 
       if (existing) {
         console.log(`Product "${bouquet.name}" already exists, skipping...`);
@@ -65,7 +63,7 @@ export async function migrateProductsToSupabase(bouquets: Bouquet[]): Promise<{
       // Normalize image path to handle spaces and special characters
       const normalizedImage = normalizeImagePath(bouquet.image);
       
-      const productData: CollectionProductInsert = {
+      const productData: Omit<CollectionProductInsert, 'id' | 'created_at' | 'updated_at'> = {
         title: bouquet.name,
         description: bouquet.description || '',
         price: bouquet.price,
@@ -77,15 +75,11 @@ export async function migrateProductsToSupabase(bouquets: Bouquet[]): Promise<{
         is_active: true,
       };
 
-      // Insert into Supabase
-      const { data, error } = await supabase
-        .from('collection_products')
-        .insert(productData)
-        .select()
-        .single();
+      // Insert into database via proxy
+      const data = await db.insert<{ id: string }>('collection_products', productData);
 
-      if (error) {
-        throw new Error(error.message);
+      if (!data) {
+        throw new Error('Insert returned no data');
       }
 
       console.log(`✓ Migrated: ${bouquet.name} (ID: ${data.id})`);
@@ -122,4 +116,3 @@ export async function runMigration(): Promise<void> {
   console.log(message);
   alert(message);
 }
-

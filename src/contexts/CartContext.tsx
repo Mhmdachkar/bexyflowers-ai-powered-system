@@ -23,6 +23,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   // Load cart - DEFERRED DB: Skip database calls for new visitors (empty cart) to reduce load during traffic spikes
   useEffect(() => {
+    let isMounted = true; // SAFETY: Prevent state updates after unmount
+    
     const loadCart = async () => {
       try {
         let localCart: CartItem[] = [];
@@ -30,13 +32,15 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           const savedCart = localStorage.getItem(CART_STORAGE_KEY);
           if (savedCart) {
             localCart = JSON.parse(savedCart);
-            setCartItems(localCart);
+            if (isMounted) setCartItems(localCart);
           }
         } catch (error) {
           console.error('Error loading cart from localStorage:', error);
         }
-        setIsLoading(false);
-        isInitialLoad.current = false;
+        if (isMounted) {
+          setIsLoading(false);
+          isInitialLoad.current = false;
+        }
 
         // TRAFFIC OPTIMIZATION: Only call database when we have local cart data (returning visitor)
         // New visitors with empty cart skip DB entirely - saves ~3 function calls per passive visitor
@@ -47,6 +51,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         if (import.meta.env.PROD || import.meta.env.VITE_USE_NETLIFY_FUNCTIONS === 'true') {
           try {
             const dbCart = await getVisitorCart();
+            if (!isMounted) return; // SAFETY: Check before updating state
             if (dbCart.length > 0) {
               setCartItems(dbCart);
               localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(dbCart));
@@ -60,12 +65,18 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           }
         }
       } catch (error) {
-        setIsLoading(false);
-        isInitialLoad.current = false;
+        if (isMounted) {
+          setIsLoading(false);
+          isInitialLoad.current = false;
+        }
       }
     };
 
     loadCart();
+    
+    return () => {
+      isMounted = false; // Cleanup on unmount
+    };
   }, []);
 
   // Sync cart to database whenever cartItems changes (debounced)

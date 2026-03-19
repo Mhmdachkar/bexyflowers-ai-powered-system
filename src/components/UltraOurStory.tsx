@@ -98,11 +98,16 @@ function AnimatedCounter({ end, duration = 2000, suffix = "" }: {
   const countRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
+    let rafId: number | null = null;
+    let isActive = true; // SAFETY: Prevent RAF loop from continuing after unmount
+
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting && isActive) {
           const startTime = Date.now();
           const animate = () => {
+            if (!isActive) return; // Stop if unmounted
+            
             const elapsed = Date.now() - startTime;
             const progress = Math.min(elapsed / duration, 1);
             const easeOut = 1 - Math.pow(1 - progress, 3);
@@ -111,7 +116,7 @@ function AnimatedCounter({ end, duration = 2000, suffix = "" }: {
             setCount(current);
             
             if (progress < 1) {
-              requestAnimationFrame(animate);
+              rafId = requestAnimationFrame(animate);
             }
           };
           animate();
@@ -124,7 +129,11 @@ function AnimatedCounter({ end, duration = 2000, suffix = "" }: {
       observer.observe(countRef.current);
     }
 
-    return () => observer.disconnect();
+    return () => {
+      isActive = false; // Stop animation loop
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      observer.disconnect();
+    };
   }, [end, duration]);
 
   return (
