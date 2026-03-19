@@ -176,19 +176,38 @@ const Footer = () => {
 
         {/* Bottom Section */}
         <motion.div
-          className="border-t border-background/20 pt-6 sm:pt-8 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0"
+          className="border-t border-background/20 pt-6 sm:pt-8"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.4 }}
           viewport={{ once: true }}
         >
-          <p className="font-body text-background/60 text-sm">
-            © 2024 Bexy Flowers. All rights reserved. Crafted with care and elegance.
-          </p>
-          <div className="flex gap-4 sm:gap-6 font-body text-xs sm:text-sm">
-            <a href="#" className="text-background/60 hover:text-primary transition-colors">Privacy Policy</a>
-            <a href="#" className="text-background/60 hover:text-primary transition-colors">Terms of Service</a>
-            <a href="#" className="text-background/60 hover:text-primary transition-colors">Cookies</a>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0 mb-4">
+            <p className="font-body text-background/60 text-sm">
+              © 2024 Bexy Flowers. All rights reserved. Crafted with care and elegance.
+            </p>
+            <div className="flex gap-4 sm:gap-6 font-body text-xs sm:text-sm">
+              <a href="#" className="text-background/60 hover:text-primary transition-colors">Privacy Policy</a>
+              <a href="#" className="text-background/60 hover:text-primary transition-colors">Terms of Service</a>
+              <a href="#" className="text-background/60 hover:text-primary transition-colors">Cookies</a>
+            </div>
+          </div>
+          
+          {/* Pollinations.ai Credit */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-background/10">
+            <span className="font-body text-background/50 text-xs">AI-powered bouquet previews by</span>
+            <a
+              href="https://pollinations.ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-background/10 hover:bg-background/20 rounded-full transition-all hover:scale-105"
+              aria-label="Pollinations.ai - AI Image Generation"
+            >
+              <svg className="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
+              <span className="font-body text-background/90 text-sm font-medium">pollinations.ai</span>
+            </a>
           </div>
         </motion.div>
       </div>

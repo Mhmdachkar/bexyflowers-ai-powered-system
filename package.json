@@ -1,7 +1,30 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "bexyflowers-ai-powered-system",
+  "version": "1.0.0",
+  "description": "AI-powered luxury floral e-commerce platform with bouquet visualization using pollinations.ai",
+  "author": "BexyFlowers Team",
+  "license": "MIT",
+  "keywords": [
+    "ecommerce",
+    "florist",
+    "ai",
+    "pollinations.ai",
+    "image-generation",
+    "react",
+    "typescript",
+    "supabase",
+    "netlify"
+  ],
+  "homepage": "https://bexyflowers.shop",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR-GITHUB-USERNAME/bexyflowers-ai-powered-system"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR-GITHUB-USERNAME/bexyflowers-ai-powered-system/issues",
+    "email": "mohammadashkar11@gmail.com"
+  },
   "private": true,
-  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

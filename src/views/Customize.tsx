@@ -2235,7 +2235,7 @@ const Customize: React.FC = () => {
                 <button
                   onClick={generateBouquetImage}
                   disabled={!step3Complete || isGenerating}
-                  className={`w-full py-3.5 rounded-xl font-normal text-sm transition-all mb-2 flex items-center justify-center gap-2 ${
+                  className={`w-full py-3.5 rounded-xl font-normal text-sm transition-all mb-1 flex items-center justify-center gap-2 ${
                     step3Complete && !isGenerating
                       ? 'bg-gradient-to-r from-[#C79E48] to-[#d4af4a] text-white hover:shadow-lg hover:scale-[1.02]'
                       : 'bg-gray-300 cursor-not-allowed'
@@ -2245,6 +2245,20 @@ const Customize: React.FC = () => {
                   {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
                   {isGenerating ? (generationProgress ? progressLabels[generationProgress] : "Generating...") : generatedImage ? "Regenerate" : "Generate Preview"}
                 </button>
+                
+                {/* Pollinations.ai Attribution */}
+                <div className="flex items-center justify-center gap-1.5 mb-2">
+                  <span className="text-[10px] text-gray-400" style={{ fontFamily: "'EB Garamond', serif" }}>Powered by</span>
+                  <a
+                    href="https://pollinations.ai"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-gray-500 hover:text-[#C79E48] transition-colors font-medium"
+                    style={{ fontFamily: "'EB Garamond', serif" }}
+                  >
+                    pollinations.ai
+                  </a>
+                </div>
 
                 {/* Variation Button */}
                 {generatedImage && !isGenerating && (
@@ -2392,7 +2406,7 @@ const Customize: React.FC = () => {
               <button
                 onClick={generateBouquetImage}
                 disabled={!step3Complete || isGenerating}
-                className={`w-full py-3.5 rounded-xl font-normal text-sm transition-all mb-2 flex items-center justify-center gap-2 ${
+                className={`w-full py-3.5 rounded-xl font-normal text-sm transition-all mb-1 flex items-center justify-center gap-2 ${
                   step3Complete && !isGenerating
                     ? 'bg-gradient-to-r from-[#C79E48] to-[#d4af4a] text-white hover:shadow-lg hover:scale-[1.02]'
                     : 'bg-gray-300 cursor-not-allowed'
@@ -2402,6 +2416,20 @@ const Customize: React.FC = () => {
                 {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
                 {isGenerating ? (generationProgress ? progressLabels[generationProgress] : "Generating...") : generatedImage ? "Regenerate" : "Generate Preview"}
               </button>
+              
+              {/* Pollinations.ai Attribution */}
+              <div className="flex items-center justify-center gap-1.5 mb-2">
+                <span className="text-[10px] text-gray-400" style={{ fontFamily: "'EB Garamond', serif" }}>Powered by</span>
+                <a
+                  href="https://pollinations.ai"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-gray-500 hover:text-[#C79E48] transition-colors font-medium"
+                  style={{ fontFamily: "'EB Garamond', serif" }}
+                >
+                  pollinations.ai
+                </a>
+              </div>
 
               {/* Edit Prompt Button */}
               {step3Complete && !isGenerating && (
