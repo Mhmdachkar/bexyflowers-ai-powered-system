@@ -435,6 +435,8 @@ export interface PromptBuilderOptions {
   template?: string;
   includeNegative?: boolean;
   seed?: number; // Random seed for generating variations - each seed produces different image
+  letterText?: string; // For letter-shaped bouquets
+  numberText?: string; // For number-shaped bouquets
   // New arrangement preferences for more accurate AI generation
   arrangementStyle?: 'dome' | 'flat' | 'cascading';
   densityPreference?: 'tight' | 'medium' | 'airy';
@@ -462,6 +464,8 @@ function generatePromptHash(options: PromptBuilderOptions): string {
     accessories: options.accessories.sort(),
     stylePreset: options.stylePreset,
     template: options.template,
+    letterText: options.letterText,
+    numberText: options.numberText,
     seed: options.seed // Include seed so different seeds = different hashes
   });
   
@@ -827,7 +831,15 @@ export function buildAdvancedPrompt(options: PromptBuilderOptions): BuiltPrompt 
       'crown': 'tiny golden crown accessory resting on flowers',
       'graduation-hat': 'small graduation cap accessory placed on arrangement',
       'bear': 'small plush bear toy placed beside the arrangement',
-      'chocolate': 'small chocolate box beside the flowers'
+      'chocolate': 'small chocolate box beside the flowers',
+      'balloons': 'colorful helium balloons tied to the arrangement',
+      'number-candles': 'decorative number candles placed among flowers',
+      'photo-frame': 'small decorative photo frame beside flowers',
+      'candles': 'elegant slim candles placed beside the arrangement',
+      'stickers': 'decorative custom stickers on the packaging',
+      'banner': 'small festive celebration banner',
+      'stars': 'scattered star-shaped confetti around the arrangement',
+      'ribbon-bow': 'large luxurious satin ribbon bow',
     };
     // Add accessories as a single grouped element to minimize prompt impact
     const accessoryTexts = accessories
@@ -945,6 +957,8 @@ function buildSimplifiedPrompt(
     accessories,
     includeNegative = true,
     seed = Date.now(),
+    letterText,
+    numberText,
     arrangementStyle = 'dome',
     densityPreference = 'tight',
     bloomStage = 'full',
@@ -975,20 +989,35 @@ function buildSimplifiedPrompt(
   
   let prompt = '';
   
+  // Color descriptions for richer prompts
+  const colorDescriptions: Record<string, string> = {
+    black: 'matte black',
+    white: 'pristine white',
+    gold: 'luxurious gold',
+    pink: 'soft blush pink',
+    blue: 'sky blue',
+    red: 'deep crimson red',
+    purple: 'rich purple',
+    green: 'forest green',
+    beige: 'warm beige',
+    burgundy: 'deep burgundy',
+  };
+  const colorDesc = colorDescriptions[color] || color;
+
   if (packageType === 'box') {
     const shape = boxShape || 'round';
     const shapeText = shape === 'round' ? 'round hatbox' : 
                       shape === 'heart' ? 'heart-shaped box' : 
-                      shape === 'square' ? 'square box' : 'rectangular box';
+                      shape === 'square' ? 'square box' :
+                      shape === 'rectangle' ? 'rectangular box' : 'round hatbox';
     
-    // Clean, simple prompt for box arrangements
-    prompt = `Professional product photo of a luxury ${color} ${shapeText} flower arrangement. `;
+    prompt = `Professional product photo of a luxury ${colorDesc} ${shapeText} flower arrangement. `;
     prompt += `Contains ${totalFlowers} ${bloomText} real fresh flowers: ${flowerList}. `;
     prompt += `Flowers arranged in ${styleText} formation, ${densityText}, filling the entire box. `;
     prompt += `Box has "BEXY FLOWERS" logo printed in gold on the front. `;
     
     if (withRibbon) {
-      prompt += `Elegant satin ribbon wrapped around the middle of the box with a bow on front. `;
+      prompt += `Elegant satin ribbon wrapped around the middle of the box with a decorative bow on front. `;
     }
     
     if (withGlitter) {
@@ -999,13 +1028,28 @@ function buildSimplifiedPrompt(
     prompt += `Real photograph, not 3D render, photorealistic.`;
     
   } else {
-    // Wrap/bouquet
-    const isHeartShape = boxShape === 'heart';
+    // Wrap/bouquet with extended shape support
+    const bouquetShapeText = 
+      boxShape === 'heart' ? 'heart-shaped' :
+      boxShape === 'letter' ? `letter-shaped (shaped like the letter "${letterText || 'A'}")` :
+      boxShape === 'number' ? `number-shaped (shaped like the number "${numberText || '18'}")` :
+      boxShape === 'cascade' ? 'cascading waterfall-style' :
+      boxShape === 'sunburst' ? 'sunburst star-shaped' :
+      'hand-tied';
+
+    const wrapStyle = boxShape === 'cascade' ? 'long cascading' :
+                      boxShape === 'sunburst' ? 'exploding starburst' :
+                      styleText;
     
-    prompt = `Professional product photo of a ${isHeartShape ? 'heart-shaped' : 'hand-tied'} flower bouquet. `;
+    prompt = `Professional product photo of a ${bouquetShapeText} flower bouquet. `;
     prompt += `Contains ${totalFlowers} ${bloomText} real fresh flowers: ${flowerList}. `;
-    prompt += `Wrapped in elegant ${color} paper${isHeartShape ? ' arranged in heart shape' : ''}. `;
-    prompt += `Flowers ${densityText} in ${styleText} arrangement. `;
+    if (boxShape === 'letter' && letterText) {
+      prompt += `Flowers meticulously arranged to form the letter "${letterText}" shape. `;
+    } else if (boxShape === 'number' && numberText) {
+      prompt += `Flowers meticulously arranged to form the number "${numberText}" shape. `;
+    }
+    prompt += `Wrapped in elegant ${colorDesc} paper. `;
+    prompt += `Flowers ${densityText} in ${wrapStyle} arrangement. `;
     prompt += `Small "BEXY" gold tag on ribbon. `;
     
     if (withGlitter) {
@@ -1017,12 +1061,24 @@ function buildSimplifiedPrompt(
   
   // Add accessory mention if selected
   if (accessories.length > 0) {
-    const accText = accessories.map(a => 
-      a === 'crown' ? 'small golden crown' : 
-      a === 'graduation-hat' ? 'tiny graduation cap' : 
-      a === 'bear' ? 'small teddy bear' : 'chocolate box'
-    ).join(', ');
-    prompt = prompt.replace('White', `With ${accText}. White`);
+    const accDescriptions: Record<string, string> = {
+      'crown': 'small golden crown placed on top of flowers',
+      'graduation-hat': 'tiny graduation cap accessory placed on arrangement',
+      'bear': 'small plush teddy bear nestled beside the flowers',
+      'chocolate': 'elegant small chocolate box beside the flowers',
+      'balloons': 'colorful helium balloons tied to the arrangement',
+      'number-candles': 'decorative number candles placed among the flowers',
+      'photo-frame': 'small decorative photo frame beside the flowers',
+      'candles': 'elegant slim taper candles placed beside the arrangement',
+      'stickers': 'decorative custom stickers on the packaging',
+      'banner': 'small festive celebration banner across the front',
+      'stars': 'scattered star-shaped confetti around the arrangement',
+      'ribbon-bow': 'large luxurious satin ribbon bow on the packaging',
+    };
+    const accTexts = accessories.map(a => accDescriptions[a]).filter(Boolean);
+    if (accTexts.length > 0) {
+      prompt = prompt.replace('White background', `Accessories: ${accTexts.join('; ')}. White background`);
+    }
   }
   
   // Simple negative prompt for GPT Image
@@ -1031,7 +1087,15 @@ function buildSimplifiedPrompt(
   
   // Build preview
   const flowerListSimple = flowers.map(f => `${f.quantity} ${f.flower.colorName} ${f.flower.family}`).join(', ');
-  const wrapShapeDisplay = packageType === 'wrap' && boxShape === 'heart' ? 'Heart-Shaped Bouquet' : 'Wrapped Bouquet';
+  const wrapShapeLabels: Record<string, string> = {
+    classic: 'Classic Bouquet', heart: 'Heart-Shaped Bouquet',
+    letter: letterText ? `Letter "${letterText}" Bouquet` : 'Letter-Shaped Bouquet',
+    number: numberText ? `Number "${numberText}" Bouquet` : 'Number-Shaped Bouquet',
+    cascade: 'Cascade Bouquet', sunburst: 'Sunburst Bouquet',
+  };
+  const wrapShapeDisplay = packageType === 'wrap'
+    ? (wrapShapeLabels[boxShape || 'classic'] || 'Wrapped Bouquet')
+    : 'Wrapped Bouquet';
   const boxDisplay = packageType === 'box' ? `${boxShape || 'Round'} Box${withRibbon ? ' with Ribbon' : ''}` : wrapShapeDisplay;
   const previewParts: string[] = [
     `📦 ${boxDisplay} (${size}, ${color})`,
@@ -1046,6 +1110,7 @@ function buildSimplifiedPrompt(
     packageType, boxShape, size, color,
     flowers: flowers.map(f => ({ id: f.flower.id, qty: f.quantity })),
     withGlitter, withRibbon, accessories: accessories.sort(),
+    letterText, numberText,
     arrangementStyle, densityPreference, bloomStage, flowerPositions, seed
   });
   let hash = 0;

@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import SEO from "@/components/SEO";
 import { breadcrumbSchema } from "@/lib/seo";
 import { motion, AnimatePresence } from "framer-motion";
-import { Box, Gift, Check, CheckCircle2, Wand2, Plus, Minus, X, Info, ChevronRight, Palette, ShoppingCart, Circle, Square, Heart, Download, MessageCircle, Sparkles, ArrowRight, Star, Crown, GraduationCap, Heart as HeartIcon, Candy, Eye, EyeOff, History, BookmarkPlus, Bookmark, RefreshCw, Loader2, Edit3 } from "lucide-react";
+import { Box, Gift, Check, CheckCircle2, Wand2, Plus, Minus, X, Info, ChevronRight, Palette, ShoppingCart, Circle, Square, Heart, Download, MessageCircle, Sparkles, ArrowRight, Star, Crown, GraduationCap, Heart as HeartIcon, Candy, Eye, EyeOff, History, BookmarkPlus, Bookmark, RefreshCw, Loader2, Edit3, Flame, Image, Hash, Wind, Type, AlignCenter, Layers } from "lucide-react";
 import UltraNavigation from "@/components/UltraNavigation";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
@@ -109,20 +109,43 @@ const colors: ColorOption[] = [
   { id: "gold", name: "Gold", hex: GOLD, gradient: `linear-gradient(135deg, ${GOLD} 0%, #a88b45 100%)` },
   { id: "pink", name: "Pink", hex: "#FFC0CB", gradient: "linear-gradient(135deg, #ffd1dc 0%, #ffb6c1 100%)" },
   { id: "blue", name: "Blue", hex: "#87CEEB", gradient: "linear-gradient(135deg, #87ceeb 0%, #5f9ea0 100%)" },
-  { id: "red", name: "Red", hex: "#DC143C", gradient: "linear-gradient(135deg, #dc143c 0%, #8b0000 100%)" }
+  { id: "red", name: "Red", hex: "#DC143C", gradient: "linear-gradient(135deg, #dc143c 0%, #8b0000 100%)" },
+  { id: "purple", name: "Purple", hex: "#9B59B6", gradient: "linear-gradient(135deg, #c39bd3 0%, #9b59b6 100%)" },
+  { id: "green", name: "Forest Green", hex: "#2ECC71", gradient: "linear-gradient(135deg, #82e0aa 0%, #2ecc71 100%)" },
+  { id: "beige", name: "Beige", hex: "#F5E6D3", gradient: "linear-gradient(135deg, #faf0e6 0%, #f5e6d3 100%)" },
+  { id: "burgundy", name: "Burgundy", hex: "#800020", gradient: "linear-gradient(135deg, #c0392b 0%, #800020 100%)" }
 ];
 
 const boxShapes: BoxShape[] = [
   { id: "round", name: "Round", icon: Circle },
   { id: "square", name: "Square", icon: Square },
-  { id: "heart", name: "Heart", icon: Heart }
+  { id: "heart", name: "Heart", icon: Heart },
+  { id: "rectangle", name: "Rectangle", icon: AlignCenter }
+];
+
+// Bouquet shape options for wrap arrangements
+const bouquetShapes = [
+  { id: "classic", name: "Classic Hand-Tied", icon: "💐", description: "Traditional round bouquet" },
+  { id: "heart", name: "Heart Shape", icon: "❤️", description: "Flowers arranged as a heart" },
+  { id: "letter", name: "Letter Shape", icon: "🔤", description: "Shaped as a custom letter" },
+  { id: "number", name: "Number Shape", icon: "🔢", description: "Shaped as a number (e.g. 18, 21, 30)" },
+  { id: "cascade", name: "Cascade", icon: "🌊", description: "Long flowing waterfall style" },
+  { id: "sunburst", name: "Sunburst", icon: "☀️", description: "Exploding star-burst arrangement" },
 ];
 
 const accessories: Accessory[] = [
   { id: "crown", name: "Crown", icon: Crown, price: 5 },
   { id: "graduation-hat", name: "Graduation Hat", icon: GraduationCap, price: 4 },
-  { id: "bear", name: "Bear", icon: HeartIcon, price: 6 },
-  { id: "chocolate", name: "Chocolate", icon: Candy, price: 3 }
+  { id: "bear", name: "Teddy Bear", icon: HeartIcon, price: 6 },
+  { id: "chocolate", name: "Chocolates", icon: Candy, price: 3 },
+  { id: "balloons", name: "Balloons", icon: Wind, price: 7 },
+  { id: "number-candles", name: "Number Candles", icon: Hash, price: 4 },
+  { id: "photo-frame", name: "Photo Frame", icon: Image, price: 8 },
+  { id: "candles", name: "Candles", icon: Flame, price: 5 },
+  { id: "stickers", name: "Custom Stickers", icon: Layers, price: 3 },
+  { id: "banner", name: "Mini Banner", icon: Type, price: 4 },
+  { id: "stars", name: "Star Confetti", icon: Sparkles, price: 2 },
+  { id: "ribbon-bow", name: "Luxury Ribbon", icon: Gift, price: 3 },
 ];
 
 // Arrangement style options for AI accuracy
@@ -227,6 +250,9 @@ const Customize: React.FC = () => {
   const [withGlitter, setWithGlitter] = useState<boolean>(false);
   const [withRibbon, setWithRibbon] = useState<boolean>(false);
   const [selectedAccessories, setSelectedAccessories] = useState<string[]>([]);
+  const [selectedBouquetShape, setSelectedBouquetShape] = useState<string>("classic");
+  const [letterText, setLetterText] = useState<string>("");
+  const [numberText, setNumberText] = useState<string>("");
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [flowerFilter, setFlowerFilter] = useState<"all" | "popular" | "romantic" | "minimal" | "luxury" | "seasonal">("all");
@@ -747,7 +773,9 @@ const Customize: React.FC = () => {
 
     const prompt = buildAdvancedPrompt({
       packageType: selectedPackage.type,
-      boxShape: selectedBoxShape?.name.toLowerCase(),
+      boxShape: selectedPackage.type === 'box' 
+        ? selectedBoxShape?.name.toLowerCase() 
+        : selectedBouquetShape,
       size: selectedSize.name.toLowerCase(),
       color: selectedColor.name.toLowerCase(),
       flowers: flowerData,
@@ -755,6 +783,8 @@ const Customize: React.FC = () => {
       withRibbon: selectedPackage.type === 'box' ? withRibbon : false,
       accessories: selectedAccessories,
       includeNegative: true,
+      letterText: letterText || undefined,
+      numberText: numberText || undefined,
       // New arrangement preferences for better AI accuracy
       arrangementStyle: arrangementStyle as 'dome' | 'flat' | 'cascading',
       densityPreference: densityPreference as 'tight' | 'medium' | 'airy',
@@ -763,7 +793,7 @@ const Customize: React.FC = () => {
     });
 
     return prompt;
-  }, [selectedPackage, selectedBoxShape, selectedSize, selectedColor, selectedFlowers, withGlitter, withRibbon, selectedAccessories, arrangementStyle, densityPreference, bloomStage, flowerPositions]);
+  }, [selectedPackage, selectedBoxShape, selectedBouquetShape, letterText, numberText, selectedSize, selectedColor, selectedFlowers, withGlitter, withRibbon, selectedAccessories, arrangementStyle, densityPreference, bloomStage, flowerPositions]);
 
   // Update prompt preview when selections change
   useEffect(() => {
@@ -807,7 +837,9 @@ const Customize: React.FC = () => {
       // Build prompt with unique seed for this generation
       const prompt = buildAdvancedPrompt({
         packageType: selectedPackage.type,
-        boxShape: selectedBoxShape?.name.toLowerCase(),
+        boxShape: selectedPackage.type === 'box'
+          ? selectedBoxShape?.name.toLowerCase()
+          : selectedBouquetShape,
         size: selectedSize.name.toLowerCase(),
         color: selectedColor.name.toLowerCase(),
         flowers: flowerData,
@@ -815,6 +847,8 @@ const Customize: React.FC = () => {
         withRibbon: selectedPackage.type === 'box' ? withRibbon : false,
         accessories: selectedAccessories,
         includeNegative: true,
+        letterText: letterText || undefined,
+        numberText: numberText || undefined,
         seed: generationSeed, // Unique seed ensures different image each time
         // Include arrangement preferences for better AI accuracy
         arrangementStyle: arrangementStyle as 'dome' | 'flat' | 'cascading',
@@ -1466,32 +1500,73 @@ const Customize: React.FC = () => {
                     className="mt-6 pt-6 border-t border-gray-200"
                   >
                     <h4 className="font-normal mb-4" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>Bouquet Shape</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        onClick={() => setSelectedBoxShape(null)}
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                          !selectedBoxShape || selectedBoxShape.id !== 'heart'
-                            ? 'border-[#C79E48] bg-[#C79E48]/5'
-                            : 'border-gray-200 hover:border-[#C79E48]/50'
-                        }`}
-                      >
-                        <Circle className={`w-6 h-6 mx-auto mb-2 ${!selectedBoxShape || selectedBoxShape.id !== 'heart' ? 'text-[#C79E48]' : 'text-gray-400'}`} />
-                        <span className="text-xs font-normal" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>Classic Round</span>
-                        <p className="text-[10px] mt-1" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>Traditional dome shape</p>
-                      </button>
-                      <button
-                        onClick={() => setSelectedBoxShape({ id: 'heart', name: 'Heart', icon: Heart })}
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                          selectedBoxShape?.id === 'heart'
-                            ? 'border-[#C79E48] bg-[#C79E48]/5'
-                            : 'border-gray-200 hover:border-[#C79E48]/50'
-                        }`}
-                      >
-                        <Heart className={`w-6 h-6 mx-auto mb-2 ${selectedBoxShape?.id === 'heart' ? 'text-[#C79E48]' : 'text-gray-400'}`} />
-                        <span className="text-xs font-normal" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>Heart Shape</span>
-                        <p className="text-[10px] mt-1" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>Romantic heart arrangement</p>
-                      </button>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {bouquetShapes.map(shape => (
+                        <button
+                          key={shape.id}
+                          onClick={() => setSelectedBouquetShape(shape.id)}
+                          className={`p-4 rounded-lg border-2 transition-all text-center ${
+                            selectedBouquetShape === shape.id
+                              ? 'border-[#C79E48] bg-[#C79E48]/5'
+                              : 'border-gray-200 hover:border-[#C79E48]/50'
+                          }`}
+                        >
+                          <div className="text-2xl mb-2">{shape.icon}</div>
+                          <span className="text-xs font-normal block" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>{shape.name}</span>
+                          <p className="text-[10px] mt-1" style={{ color: '#6b7280', fontFamily: "'EB Garamond', serif" }}>{shape.description}</p>
+                        </button>
+                      ))}
                     </div>
+
+                    {/* Letter input */}
+                    <AnimatePresence>
+                      {selectedBouquetShape === 'letter' && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="mt-4"
+                        >
+                          <label className="block text-xs font-normal mb-2" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>
+                            Which letter? (A–Z)
+                          </label>
+                          <input
+                            type="text"
+                            maxLength={2}
+                            value={letterText}
+                            onChange={e => setLetterText(e.target.value.toUpperCase().replace(/[^A-Z]/g, ''))}
+                            placeholder="e.g. R"
+                            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[#C79E48]"
+                            style={{ fontFamily: "'EB Garamond', serif" }}
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Number input */}
+                    <AnimatePresence>
+                      {selectedBouquetShape === 'number' && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="mt-4"
+                        >
+                          <label className="block text-xs font-normal mb-2" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>
+                            Which number? (e.g. 18, 21, 30, 50)
+                          </label>
+                          <input
+                            type="text"
+                            maxLength={3}
+                            value={numberText}
+                            onChange={e => setNumberText(e.target.value.replace(/[^0-9]/g, ''))}
+                            placeholder="e.g. 21"
+                            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[#C79E48]"
+                            style={{ fontFamily: "'EB Garamond', serif" }}
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -2141,7 +2216,7 @@ const Customize: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                   {accessories.map(accessory => {
                     const Icon = accessory.icon;
                     const isSelected = selectedAccessories.includes(accessory.id);
@@ -2155,14 +2230,14 @@ const Customize: React.FC = () => {
                               : [...prev, accessory.id]
                           );
                         }}
-                        className={`p-4 rounded-xl border-2 transition-all text-center ${
+                        className={`p-3 rounded-xl border-2 transition-all text-center ${
                           isSelected
                             ? 'border-[#C79E48] bg-[#C79E48]/5'
                             : 'border-gray-200 hover:border-[#C79E48]/50'
                         }`}
                       >
-                        <Icon className={`w-8 h-8 mx-auto mb-2 ${isSelected ? 'text-[#C79E48]' : 'text-gray-400'}`} />
-                        <div className="font-normal text-sm mb-1" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>{accessory.name}</div>
+                        <Icon className={`w-6 h-6 mx-auto mb-2 ${isSelected ? 'text-[#C79E48]' : 'text-gray-400'}`} />
+                        <div className="font-normal text-xs mb-1 leading-tight" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>{accessory.name}</div>
                         <div className="text-xs font-normal" style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>+${accessory.price}</div>
                       </button>
                     );
