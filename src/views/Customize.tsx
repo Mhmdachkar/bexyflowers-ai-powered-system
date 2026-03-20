@@ -2335,80 +2335,124 @@ const Customize: React.FC = () => {
                   </a>
                 </div>
 
-                {/* Variation Button */}
+                {/* Regenerate Variation - Secondary Action */}
                 {generatedImage && !isGenerating && (
                   <button
                     onClick={generateVariation}
-                    className="w-full py-2.5 rounded-xl font-normal text-sm transition-all mb-4 flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200"
-                    style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}
+                    className="w-full py-2 rounded-lg font-normal text-xs transition-all mb-3 flex items-center justify-center gap-2 border border-[#C79E48]/30 hover:border-[#C79E48] hover:bg-[#C79E48]/5"
+                    style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}
                   >
-                    <RefreshCw className="w-4 h-4" />
-                    Create Variation {variationIndex > 0 && `(${variationIndex})`}
+                    <RefreshCw className="w-3 h-3" />
+                    Try Another Variation {variationIndex > 0 && `(${variationIndex})`}
                   </button>
                 )}
 
-                {generatedImage && (
-                  <div className="flex gap-2 mb-4">
-                    <button
-                      onClick={handleDownloadImage}
-                      className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-normal transition-colors flex items-center justify-center gap-2"
-                      style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}
-                    >
-                      <Download className="w-4 h-4" />
-                      Download
-                    </button>
-                    <button
-                      onClick={handleDownloadAndShareWhatsApp}
-                      className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-normal transition-colors flex items-center justify-center gap-2"
-                      style={{ fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      WhatsApp
-                    </button>
+                {/* Order Summary - Mobile Luxury Style */}
+                <div className="bg-gradient-to-b from-[#faf8f5] to-white border border-[#e8e4dd] rounded-xl p-4 mb-3">
+                  <h4 className="text-xs font-medium tracking-wide uppercase mb-3 pb-2 border-b border-[#e8e4dd]" style={{ color: '#8a8578', fontFamily: "'EB Garamond', serif", letterSpacing: '0.1em' }}>
+                    Order Summary
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs">
+                      <span style={{ color: '#6b6560', fontFamily: "'EB Garamond', serif" }}>Package</span>
+                      <span className="font-medium" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>
+                        {selectedPackage?.name || '—'}
+                        {selectedBoxShape && ` (${selectedBoxShape.name})`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span style={{ color: '#6b6560', fontFamily: "'EB Garamond', serif" }}>Size & Color</span>
+                      <span className="font-medium" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>
+                        {selectedSize?.name && selectedColor?.name ? `${selectedSize.name} / ${selectedColor.name}` : '—'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span style={{ color: '#6b6560', fontFamily: "'EB Garamond', serif" }}>Flowers</span>
+                      <span className="font-medium text-right max-w-[55%]" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>
+                        {Object.values(selectedFlowers).length > 0
+                          ? Object.values(selectedFlowers).map(f => `${f.quantity}× ${f.flower.colorName}`).join(', ')
+                          : '—'}
+                      </span>
+                    </div>
+                    {selectedAccessories.length > 0 && (
+                      <div className="flex justify-between text-xs">
+                        <span style={{ color: '#6b6560', fontFamily: "'EB Garamond', serif" }}>Extras</span>
+                        <span className="font-medium text-right" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>
+                          {selectedAccessories.length} items
+                        </span>
+                      </div>
+                    )}
                   </div>
-                )}
-
-                {/* Summary */}
-                <div className="border-t border-gray-200 pt-4 space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>Base</span>
-                    <span className="font-normal" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>
-                      {selectedPackage?.name || <span style={{ color: '#2c2d2a' }}>—</span>}
-                      {selectedBoxShape && ` (${selectedBoxShape.name})`}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>Size & Color</span>
-                    <span className="font-normal" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>
-                      {selectedSize?.name && selectedColor?.name ? `${selectedSize.name} / ${selectedColor.name}` : <span style={{ color: '#2c2d2a' }}>—</span>}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>Flowers</span>
-                    <span className="font-normal text-right" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>
-                      {Object.values(selectedFlowers).length > 0
-                        ? Object.values(selectedFlowers).map(f => `${f.quantity}x ${f.flower.name}`).join(', ')
-                        : <span style={{ color: '#2c2d2a' }}>—</span>}
-                    </span>
-                  </div>
-                  <div className="pt-3 border-t border-gray-200">
+                  
+                  {/* Price - Prominent */}
+                  <div className="mt-3 pt-3 border-t border-[#e8e4dd]">
                     <div className="flex justify-between items-center">
-                      <span className="font-normal" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>Total</span>
-                      <span className="text-xl font-normal" style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>${displayPrice.toFixed(2)}</span>
+                      <span className="text-sm font-medium" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>Total</span>
+                      <span className="text-xl font-semibold" style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif" }}>${displayPrice.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Add to Cart */}
+                {/* PRIMARY CTA - Add to Cart */}
                 <button
                   onClick={handleAddToCart}
-                  disabled={!step3Complete}
-                  className="w-full mt-4 py-4 bg-[#C79E48] text-white rounded-xl font-normal hover:bg-[#b08d45] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  style={{ fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}
+                  disabled={!step3Complete || !generatedImage}
+                  className={`w-full py-4 rounded-xl font-medium text-base transition-all flex items-center justify-center gap-3 shadow-lg ${
+                    step3Complete && generatedImage
+                      ? 'bg-gradient-to-r from-[#C79E48] via-[#d4af4a] to-[#C79E48] text-white hover:shadow-xl active:scale-[0.98]'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                  style={{ fontFamily: "'EB Garamond', serif", letterSpacing: '0.02em' }}
                 >
                   <ShoppingCart className="w-5 h-5" />
-                  Add to Cart
+                  {!generatedImage ? 'Generate Preview First' : 'Add to Cart'}
                 </button>
+                
+                {/* Trust Badges - Mobile */}
+                <div className="mt-3 flex items-center justify-center gap-3 py-2">
+                  <div className="flex items-center gap-1 text-gray-500">
+                    <svg className="w-3.5 h-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-[9px]" style={{ fontFamily: "'EB Garamond', serif" }}>Free Delivery</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-gray-500">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-[9px]" style={{ fontFamily: "'EB Garamond', serif" }}>Same Day</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-gray-500">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    <span className="text-[9px]" style={{ fontFamily: "'EB Garamond', serif" }}>Secure</span>
+                  </div>
+                </div>
+
+                {/* Share Section - Mobile */}
+                {generatedImage && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleDownloadImage}
+                        className="flex-1 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs font-normal transition-colors flex items-center justify-center gap-1.5 border border-gray-200"
+                        style={{ color: '#6b6560', fontFamily: "'EB Garamond', serif" }}
+                      >
+                        <Download className="w-3 h-3" />
+                        Save
+                      </button>
+                      <button
+                        onClick={handleDownloadAndShareWhatsApp}
+                        className="flex-1 py-2 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-lg text-xs font-normal transition-colors flex items-center justify-center gap-1.5"
+                        style={{ fontFamily: "'EB Garamond', serif" }}
+                      >
+                        <MessageCircle className="w-3 h-3" />
+                        WhatsApp
+                      </button>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
 
@@ -2506,138 +2550,144 @@ const Customize: React.FC = () => {
                 </a>
               </div>
 
-              {/* Edit Prompt Button */}
-              {step3Complete && !isGenerating && (
-                <button
-                  onClick={openPromptEditor}
-                  className="w-full py-2.5 rounded-xl font-normal text-sm transition-all mb-2 flex items-center justify-center gap-2 border border-gray-300 hover:border-[#C79E48] hover:bg-[#C79E48]/5"
-                  style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}
-                >
-                  <Edit3 className="w-4 h-4" />
-                  Edit Prompt
-                </button>
-              )}
-
-              {/* Editable Prompt Panel */}
-              <AnimatePresence>
-                {isEditingPrompt && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="mb-4 overflow-hidden"
-                  >
-                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-normal text-sm" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>Custom Prompt</h4>
-                        <button
-                          onClick={() => setIsEditingPrompt(false)}
-                          style={{ color: '#2c2d2a' }}
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <textarea
-                        value={customPrompt}
-                        onChange={(e) => setCustomPrompt(e.target.value)}
-                        placeholder="Enter your custom prompt..."
-                        className="w-full h-32 p-3 text-xs rounded-lg border border-gray-300 focus:border-[#C79E48] focus:ring-1 focus:ring-[#C79E48] resize-none"
-                      />
-                      <div className="flex gap-2 mt-3">
-                        <button
-                          onClick={() => {
-                            if (currentPrompt) setCustomPrompt(currentPrompt.positive);
-                          }}
-                          className="flex-1 py-2 text-xs font-normal rounded-lg border border-gray-300 hover:bg-gray-100"
-                          style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}
-                        >
-                          Reset to Original
-                        </button>
-                        <button
-                          onClick={generateWithCustomPrompt}
-                          disabled={isGenerating || !customPrompt.trim()}
-                          className="flex-1 py-2 text-xs font-normal rounded-lg bg-[#C79E48] text-white hover:bg-[#b08d45] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
-                          style={{ fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}
-                        >
-                          <Wand2 className="w-3 h-3" />
-                          Generate
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Variation Button */}
+              {/* Regenerate Variation Button - Smaller, Secondary */}
               {generatedImage && !isGenerating && (
                 <button
                   onClick={generateVariation}
-                  className="w-full py-2.5 rounded-xl font-medium text-sm transition-all mb-4 flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700"
+                  className="w-full py-2 rounded-lg font-normal text-xs transition-all mb-3 flex items-center justify-center gap-2 border border-[#C79E48]/30 hover:border-[#C79E48] hover:bg-[#C79E48]/5"
+                  style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}
                 >
-                  <RefreshCw className="w-4 h-4" />
-                  Create Variation {variationIndex > 0 && `(${variationIndex})`}
+                  <RefreshCw className="w-3 h-3" />
+                  Try Another Variation {variationIndex > 0 && `(${variationIndex})`}
                 </button>
               )}
 
-              {generatedImage && (
-                <div className="flex gap-2 mb-4">
-                  <button
-                    onClick={handleDownloadImage}
-                    className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download
-                  </button>
-                  <button
-                    onClick={handleDownloadAndShareWhatsApp}
-                    className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    WhatsApp
-                  </button>
+              {/* Order Summary - Luxury Style */}
+              <div className="bg-gradient-to-b from-[#faf8f5] to-white border border-[#e8e4dd] rounded-2xl p-5 mb-4">
+                <h4 className="text-sm font-medium tracking-wide uppercase mb-4 pb-2 border-b border-[#e8e4dd]" style={{ color: '#8a8578', fontFamily: "'EB Garamond', serif", letterSpacing: '0.1em' }}>
+                  Order Summary
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span style={{ color: '#6b6560', fontFamily: "'EB Garamond', serif" }}>Package</span>
+                    <span className="font-medium" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>
+                      {selectedPackage?.name || '—'}
+                      {selectedBoxShape && ` (${selectedBoxShape.name})`}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span style={{ color: '#6b6560', fontFamily: "'EB Garamond', serif" }}>Size & Color</span>
+                    <span className="font-medium" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>
+                      {selectedSize?.name && selectedColor?.name ? `${selectedSize.name} / ${selectedColor.name}` : '—'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span style={{ color: '#6b6560', fontFamily: "'EB Garamond', serif" }}>Flowers</span>
+                    <span className="font-medium text-right max-w-[60%]" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>
+                      {Object.values(selectedFlowers).length > 0
+                        ? Object.values(selectedFlowers).map(f => `${f.quantity}× ${f.flower.colorName} ${f.flower.family}`).join(', ')
+                        : '—'}
+                    </span>
+                  </div>
+                  {selectedAccessories.length > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span style={{ color: '#6b6560', fontFamily: "'EB Garamond', serif" }}>Accessories</span>
+                      <span className="font-medium text-right" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>
+                        {selectedAccessories.map(id => accessories.find(a => a.id === id)?.name).join(', ')}
+                      </span>
+                    </div>
+                  )}
+                  {withGlitter && (
+                    <div className="flex justify-between text-sm">
+                      <span style={{ color: '#6b6560', fontFamily: "'EB Garamond', serif" }}>Glitter</span>
+                      <span className="font-medium" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>Yes ✨</span>
+                    </div>
+                  )}
                 </div>
-              )}
-
-              {/* Summary */}
-              <div className="border-t border-gray-200 pt-4 space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Base</span>
-                  <span className="font-medium text-gray-900">
-                    {selectedPackage?.name || <span className="text-gray-400">—</span>}
-                    {selectedBoxShape && ` (${selectedBoxShape.name})`}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Size & Color</span>
-                  <span className="font-medium text-gray-900">
-                    {selectedSize?.name && selectedColor?.name ? `${selectedSize.name} / ${selectedColor.name}` : <span className="text-gray-400">—</span>}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Flowers</span>
-                  <span className="font-medium text-gray-900 text-right">
-                    {Object.values(selectedFlowers).length > 0
-                      ? Object.values(selectedFlowers).map(f => `${f.quantity}x ${f.flower.name}`).join(', ')
-                      : <span className="text-gray-400">—</span>}
-                  </span>
-                </div>
-                <div className="pt-3 border-t border-gray-200">
+                
+                {/* Price Display - Prominent */}
+                <div className="mt-4 pt-4 border-t border-[#e8e4dd]">
                   <div className="flex justify-between items-center">
-                    <span className="font-bold text-gray-900">Total</span>
-                    <span className="text-xl font-bold text-[#C79E48]">${displayPrice.toFixed(2)}</span>
+                    <span className="text-base font-medium" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>Total</span>
+                    <div className="text-right">
+                      <span className="text-2xl font-semibold" style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif" }}>${displayPrice.toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Add to Cart */}
+              {/* PRIMARY CTA - Add to Cart - Large & Prominent */}
               <button
                 onClick={handleAddToCart}
-                disabled={!step3Complete}
-                className="w-full mt-4 py-4 bg-[#C79E48] text-white rounded-xl font-bold hover:bg-[#b08d45] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                disabled={!step3Complete || !generatedImage}
+                className={`w-full py-4 rounded-xl font-medium text-base transition-all flex items-center justify-center gap-3 shadow-lg ${
+                  step3Complete && generatedImage
+                    ? 'bg-gradient-to-r from-[#C79E48] via-[#d4af4a] to-[#C79E48] text-white hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+                style={{ fontFamily: "'EB Garamond', serif", letterSpacing: '0.02em' }}
               >
                 <ShoppingCart className="w-5 h-5" />
-                Add to Cart
+                {!generatedImage ? 'Generate Preview First' : 'Add to Cart'}
               </button>
+              
+              {/* Urgency & Trust Section */}
+              <div className="mt-4 space-y-3">
+                {/* Free Shipping Badge */}
+                <div className="flex items-center justify-center gap-2 py-2 px-3 bg-green-50 border border-green-200 rounded-lg">
+                  <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-xs font-medium text-green-700" style={{ fontFamily: "'EB Garamond', serif" }}>Free Delivery in Beirut</span>
+                </div>
+                
+                {/* Trust Badges */}
+                <div className="flex items-center justify-center gap-4 py-2">
+                  <div className="flex items-center gap-1.5 text-gray-500">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    <span className="text-[10px]" style={{ fontFamily: "'EB Garamond', serif" }}>Secure</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-gray-500">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-[10px]" style={{ fontFamily: "'EB Garamond', serif" }}>Same Day</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-gray-500">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                    <span className="text-[10px]" style={{ fontFamily: "'EB Garamond', serif" }}>Fresh</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Share/Download Section - Secondary Actions */}
+              {generatedImage && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <p className="text-[10px] text-center text-gray-400 mb-2" style={{ fontFamily: "'EB Garamond', serif" }}>Share your creation</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleDownloadImage}
+                      className="flex-1 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs font-normal transition-colors flex items-center justify-center gap-1.5 border border-gray-200"
+                      style={{ color: '#6b6560', fontFamily: "'EB Garamond', serif" }}
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Save
+                    </button>
+                    <button
+                      onClick={handleDownloadAndShareWhatsApp}
+                      className="flex-1 py-2 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-lg text-xs font-normal transition-colors flex items-center justify-center gap-1.5"
+                      style={{ fontFamily: "'EB Garamond', serif" }}
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      WhatsApp
+                    </button>
+                  </div>
+                </div>
+              )}
 
             </div>
           </div>
