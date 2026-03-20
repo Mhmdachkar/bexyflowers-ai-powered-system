@@ -151,6 +151,8 @@ const ALLOWED_ORIGINS = [
 const ALLOWED_MODELS = [
   // Flux variants (fast, affordable)
   'flux', 'flux-realism', 'flux-anime', 'flux-3d',
+  // FLUX.2 Klein 4B (ALPHA - high quality, free tier)
+  'klein',
   // SDXL/Turbo (good balance)
   'turbo', 'zimage',
   // GPT Image models (best photorealism, text/logo support)
@@ -785,13 +787,9 @@ export const handler: Handler = async (
     
     const prompt = promptValidation.sanitized || body.prompt || '';
     
-    // Get and validate parameters - gptimage model with smaller resolution for faster generation
-    // 512x512 with 'gptimage' generates in 20-40 seconds vs 60+ seconds at 768x768
     const width = body.width || 512;
     const height = body.height || 512;
-    // FORCE gptimage model - ignore any model sent from frontend
-    // This ensures we ALWAYS use gptimage regardless of what the request contains
-    const model = 'gptimage'; // HARDCODED - DO NOT CHANGE
+    const model = 'klein'; // FLUX.2 Klein 4B model
     
     const paramValidation = validateParameters(width, height, model);
     if (!paramValidation.valid) {
@@ -804,65 +802,27 @@ export const handler: Handler = async (
       };
     }
     
-    // Build Pollinations API URL using gen.pollinations.ai (authenticated endpoint)
-    // IMPORTANT: image.pollinations.ai ignores model parameter, gen.pollinations.ai respects it
     const encodedPrompt = encodeURIComponent(prompt);
-    // Generate random seed to force fresh generation (prevents caching/fallback)
     const seed = Math.floor(Math.random() * 1000000000);
-    // Use gen.pollinations.ai/image endpoint with API key for proper model selection
-    // Add key parameter for authentication (required for gptimage model)
-    const pollinationsUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=${secretKey}`;
     
-    // Log request details (without secret key)
+    // Log request details
     console.log('[Netlify Function] ========== IMAGE GENERATION REQUEST ==========');
     console.log('[Netlify Function] IP:', ip);
-    console.log('[Netlify Function] Model: gptimage (ENFORCED)');
+    console.log('[Netlify Function] Model:', model);
     console.log('[Netlify Function] Resolution:', `${width}x${height}`);
     console.log('[Netlify Function] Prompt length:', prompt.length);
     console.log('[Netlify Function] Seed:', seed);
     console.log('[Netlify Function] API Key prefix:', secretKey.substring(0, 8) + '...');
-    console.log('[Netlify Function] Full URL (without prompt/key):', `https://gen.pollinations.ai/image/[PROMPT]?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=[HIDDEN]`);
     console.log('[Netlify Function] ===============================================');
     
-    // Single request - no retries or fallbacks
     let response: Response;
+    const usedModel = model;
     
-    // NO INTERNAL TIMEOUT - Let Netlify's 60-second function timeout handle it
-    // GPT image model can take 30-50+ seconds for high-quality generation
-    // We don't want to abort early - let the API complete naturally
+    const pollinationsUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=${secretKey}`;
     
-    // NO RETRIES for gptimage model - it takes 20-40+ seconds to generate
-    // Netlify has a 60-second timeout, so we can only make ONE request
-    // Retrying would cause timeout (retry delays + API time > 60s)
-    const MAX_RETRIES = 0; // NO RETRIES - single request only
-    const RETRY_DELAYS: number[] = []; // Empty - no delays needed
-    
-    // Helper function to fetch with Bearer token authentication
-    // Using the secret key as Bearer token for better rate limits
-    const fetchWithAuth = async (url: string, token?: string): Promise<Response> => {
-      const headers: Record<string, string> = {
-        'Accept': 'image/*',
-        'User-Agent': 'BexyFlowers/1.0 (https://bexyflowers.shop)',
-      };
-      
-      // Add Bearer token if available for better rate limits
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      return fetch(url, {
-        method: 'GET',
-        headers,
-      });
-    };
-    
-    // Simple fetch - no retries needed for gptimage model (takes 20-40+ seconds)
-    // Netlify has 60-second timeout, so we can only make ONE request
-    console.log('[Netlify Function] Fetching image from Pollinations API...');
-    
+    console.log('[Netlify Function] Fetching image from Pollinations (klein)...');
     try {
-      // Use Bearer token authentication with the secret key
-      response = await fetchWithAuth(pollinationsUrl, secretKey);
+      response = await fetch(pollinationsUrl, { method: 'GET' });
     } catch (fetchError) {
       console.error('[Netlify Function] Fetch error:', fetchError);
       throw fetchError;
@@ -909,7 +869,7 @@ export const handler: Handler = async (
       };
     }
     
-    console.log('[Netlify Function] ✅ Image generated successfully');
+    console.log(`[Netlify Function] ✅ Image generated successfully with model: ${usedModel}`);
     
     // Get image as buffer
     const imageBuffer = await response.arrayBuffer();
@@ -920,17 +880,16 @@ export const handler: Handler = async (
     const dataUrl = `data:${contentType};base64,${imageBase64}`;
     
     const responseTime = Date.now() - startTime;
-    console.log('[Netlify Function] ✅ Image generated successfully');
     console.log('[Netlify Function] Image size:', imageBuffer.byteLength, 'bytes');
     console.log('[Netlify Function] Response time:', responseTime, 'ms');
-    console.log('[Netlify Function] API key used: primary');
+    console.log('[Netlify Function] Model used:', usedModel);
     
     // Log performance metric
     logPerformanceMetric(event.path, responseTime, 200);
     logSecurityEvent('success', 'info', event.path, ip, {
       responseTime,
       imageSize: imageBuffer.byteLength,
-      apiKeyUsed: 'primary',
+      modelUsed: usedModel,
     });
     logRequest(event, ip, responseTime, true, 200);
     
@@ -945,9 +904,8 @@ export const handler: Handler = async (
         imageUrl: dataUrl,
         width,
         height,
-        model,
+        model: usedModel,
         size: imageBuffer.byteLength,
-        apiKeyUsed: 'primary',
       }),
     };
   } catch (error) {
