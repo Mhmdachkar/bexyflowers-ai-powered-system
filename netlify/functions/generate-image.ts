@@ -789,7 +789,7 @@ export const handler: Handler = async (
     
     const width = body.width || 512;
     const height = body.height || 512;
-    const model = 'klein'; // FLUX.2 Klein 4B model
+    const model = 'gptimage'; // GPT Image 1 Mini - best photorealism
     
     const paramValidation = validateParameters(width, height, model);
     if (!paramValidation.valid) {
@@ -820,7 +820,7 @@ export const handler: Handler = async (
     
     const pollinationsUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=${secretKey}`;
     
-    console.log('[Netlify Function] Fetching image from Pollinations (klein)...');
+    console.log('[Netlify Function] Fetching image from Pollinations (gptimage)...');
     try {
       response = await fetch(pollinationsUrl, { method: 'GET' });
     } catch (fetchError) {
