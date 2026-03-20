@@ -824,29 +824,28 @@ export function buildAdvancedPrompt(options: PromptBuilderOptions): BuiltPrompt 
     parts.push(`subtle fine glitter dust sparkling on flower petals catching the light`);
   }
   
-  // Add accessories with MINIMAL descriptions to avoid affecting main flower arrangement
-  // Accessories should be subtle additions, not change the overall composition
+  // Add accessories PROMINENTLY - they must be visible in the final image
   if (accessories.length > 0) {
     const accDescriptions: Record<string, string> = {
-      'crown': 'tiny golden crown accessory resting on flowers',
-      'graduation-hat': 'small graduation cap accessory placed on arrangement',
-      'bear': 'small plush bear toy placed beside the arrangement',
-      'chocolate': 'small chocolate box beside the flowers',
-      'balloons': 'colorful helium balloons tied to the arrangement',
-      'number-candles': 'decorative number candles placed among flowers',
-      'photo-frame': 'small decorative photo frame beside flowers',
-      'candles': 'elegant slim candles placed beside the arrangement',
-      'stickers': 'decorative custom stickers on the packaging',
-      'banner': 'small festive celebration banner',
-      'stars': 'scattered star-shaped confetti around the arrangement',
-      'ribbon-bow': 'large luxurious satin ribbon bow',
+      'crown': 'a shiny golden crown sitting on top of the flowers',
+      'graduation-hat': 'a black graduation cap with gold tassel on the arrangement',
+      'bear': 'a cute plush teddy bear toy next to the flowers',
+      'chocolate': 'an elegant chocolate box beside the arrangement',
+      'balloons': 'colorful helium balloons (red, pink, gold) floating above tied with ribbons',
+      'number-candles': 'birthday number candles standing among the flowers',
+      'photo-frame': 'a small photo frame beside the flowers',
+      'candles': 'tall elegant taper candles in holders next to the arrangement',
+      'stickers': 'decorative celebration stickers on the wrapping',
+      'banner': 'a celebration banner draped across the front',
+      'stars': 'sparkly star confetti scattered around the base',
+      'ribbon-bow': 'a large luxurious satin ribbon bow on the front',
     };
-    // Add accessories as a single grouped element to minimize prompt impact
     const accessoryTexts = accessories
       .map(acc => accDescriptions[acc])
       .filter(Boolean);
     if (accessoryTexts.length > 0) {
-      parts.push(`optional small accessories: ${accessoryTexts.join(', ')}`);
+      // Add at beginning of parts for emphasis
+      parts.unshift(`MUST include these visible accessories: ${accessoryTexts.join(', ')}`);
     }
   }
   
@@ -1059,25 +1058,28 @@ function buildSimplifiedPrompt(
     prompt += `White background, professional florist photography, photorealistic.`;
   }
   
-  // Add accessory mention if selected
+  // Add accessories PROMINENTLY to ensure they appear in the generated image
+  // Accessories must be described clearly and placed at the START of the prompt for emphasis
   if (accessories.length > 0) {
     const accDescriptions: Record<string, string> = {
-      'crown': 'small golden crown placed on top of flowers',
-      'graduation-hat': 'tiny graduation cap accessory placed on arrangement',
-      'bear': 'small plush teddy bear nestled beside the flowers',
-      'chocolate': 'elegant small chocolate box beside the flowers',
-      'balloons': 'colorful helium balloons tied to the arrangement',
-      'number-candles': 'decorative number candles placed among the flowers',
-      'photo-frame': 'small decorative photo frame beside the flowers',
-      'candles': 'elegant slim taper candles placed beside the arrangement',
-      'stickers': 'decorative custom stickers on the packaging',
-      'banner': 'small festive celebration banner across the front',
-      'stars': 'scattered star-shaped confetti around the arrangement',
-      'ribbon-bow': 'large luxurious satin ribbon bow on the packaging',
+      'crown': 'a small shiny golden crown accessory sitting on top of the flowers',
+      'graduation-hat': 'a black graduation cap with gold tassel placed prominently on the flower arrangement',
+      'bear': 'a cute small plush teddy bear toy sitting next to the flower arrangement',
+      'chocolate': 'an elegant box of chocolates placed beside the flower arrangement',
+      'balloons': 'colorful helium balloons (red, pink, gold) floating above and tied to the flower arrangement with ribbons',
+      'number-candles': 'decorative birthday number candles standing upright among the flowers',
+      'photo-frame': 'a small elegant photo frame standing beside the flower arrangement',
+      'candles': 'tall elegant taper candles in holders placed next to the flower arrangement',
+      'stickers': 'decorative celebration stickers on the wrapping paper',
+      'banner': 'a small "Happy Birthday" or celebration banner draped across the front of the arrangement',
+      'stars': 'sparkly star-shaped confetti scattered around the base of the arrangement',
+      'ribbon-bow': 'a large luxurious satin ribbon bow prominently displayed on the front of the arrangement',
     };
     const accTexts = accessories.map(a => accDescriptions[a]).filter(Boolean);
     if (accTexts.length > 0) {
-      prompt = prompt.replace('White background', `Accessories: ${accTexts.join('; ')}. White background`);
+      // Insert accessories at the BEGINNING of the prompt for maximum emphasis
+      const accessoryPrompt = `IMPORTANT: The arrangement includes these accessories that MUST be visible in the image: ${accTexts.join('. ')}. `;
+      prompt = accessoryPrompt + prompt;
     }
   }
   
