@@ -2321,17 +2321,17 @@ const Customize: React.FC = () => {
                   {isGenerating ? (generationProgress ? progressLabels[generationProgress] : "Generating...") : generatedImage ? "Regenerate" : "Generate Preview"}
                 </button>
                 
-                {/* Pollinations.ai Attribution */}
+                {/* Next Mind Attribution */}
                 <div className="flex items-center justify-center gap-1.5 mb-2">
-                  <span className="text-[10px] text-gray-400" style={{ fontFamily: "'EB Garamond', serif" }}>Powered by</span>
+                  <span className="text-[10px] text-gray-400" style={{ fontFamily: "'EB Garamond', serif" }}>Developed by</span>
                   <a
-                    href="https://pollinations.ai"
+                    href="http://nextmindlb.com/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[10px] text-gray-500 hover:text-[#C79E48] transition-colors font-medium"
                     style={{ fontFamily: "'EB Garamond', serif" }}
                   >
-                    pollinations.ai
+                    Next Mind
                   </a>
                 </div>
 
@@ -2492,17 +2492,17 @@ const Customize: React.FC = () => {
                 {isGenerating ? (generationProgress ? progressLabels[generationProgress] : "Generating...") : generatedImage ? "Regenerate" : "Generate Preview"}
               </button>
               
-              {/* Pollinations.ai Attribution */}
+              {/* Next Mind Attribution */}
               <div className="flex items-center justify-center gap-1.5 mb-2">
-                <span className="text-[10px] text-gray-400" style={{ fontFamily: "'EB Garamond', serif" }}>Powered by</span>
+                <span className="text-[10px] text-gray-400" style={{ fontFamily: "'EB Garamond', serif" }}>Developed by</span>
                 <a
-                  href="https://pollinations.ai"
+                  href="http://nextmindlb.com/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[10px] text-gray-500 hover:text-[#C79E48] transition-colors font-medium"
                   style={{ fontFamily: "'EB Garamond', serif" }}
                 >
-                  pollinations.ai
+                  Next Mind
                 </a>
               </div>
 

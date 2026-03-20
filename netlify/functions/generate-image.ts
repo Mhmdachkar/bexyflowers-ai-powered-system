@@ -789,7 +789,13 @@ export const handler: Handler = async (
     
     const width = body.width || 512;
     const height = body.height || 512;
-    const model = 'gptimage'; // GPT Image 1 Mini - best photorealism
+    // Model selection: use klein as primary (reliable)
+    // NOTE: gptimage has been experiencing platform-wide 403 errors since March 4, 2026
+    // due to Azure OpenAI content policy issues. See: https://github.com/pollinations/pollinations/issues/9356
+    // Once Pollinations fixes gptimage, we can switch back to it as primary.
+    const PRIMARY_MODEL = 'klein'; // FLUX.2 Klein 4B - reliable, good quality
+    const BACKUP_MODEL = 'flux'; // Flux Schnell - fastest, most affordable
+    let model = PRIMARY_MODEL;
     
     const paramValidation = validateParameters(width, height, model);
     if (!paramValidation.valid) {
@@ -816,16 +822,37 @@ export const handler: Handler = async (
     console.log('[Netlify Function] ===============================================');
     
     let response: Response;
-    const usedModel = model;
+    let usedModel = model;
     
-    const pollinationsUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=${secretKey}`;
+    // Try preferred model first
+    let pollinationsUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=${secretKey}`;
     
-    console.log('[Netlify Function] Fetching image from Pollinations (gptimage)...');
+    console.log(`[Netlify Function] Trying ${model} model first...`);
     try {
       response = await fetch(pollinationsUrl, { method: 'GET' });
     } catch (fetchError) {
       console.error('[Netlify Function] Fetch error:', fetchError);
       throw fetchError;
+    }
+    
+    // If primary model fails, automatically try backup model
+    if ((response.status === 403 || response.status === 402 || response.status === 500) && model === PRIMARY_MODEL) {
+      console.warn(`[Netlify Function] ${PRIMARY_MODEL} returned ${response.status}, trying backup model ${BACKUP_MODEL}...`);
+      model = BACKUP_MODEL;
+      usedModel = BACKUP_MODEL;
+      
+      pollinationsUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=${secretKey}`;
+      
+      try {
+        response = await fetch(pollinationsUrl, { method: 'GET' });
+      } catch (fetchError) {
+        console.error('[Netlify Function] Fallback fetch error:', fetchError);
+        throw fetchError;
+      }
+      
+      if (response.ok) {
+        console.log(`[Netlify Function] Fallback to ${BACKUP_MODEL} succeeded!`);
+      }
     }
     
     if (!response.ok) {
@@ -840,9 +867,12 @@ export const handler: Handler = async (
       
       if (response.status === 403 && errorText.includes('temporarily blocked')) {
         userMessage = 'AI image service is temporarily unavailable due to high demand. Please try again in a few hours.';
-        isRetryable = false; // Don't retry immediately - need to wait
+        isRetryable = false;
       } else if (response.status === 403) {
         userMessage = 'AI service access denied. Please try again later.';
+        isRetryable = false;
+      } else if (response.status === 402) {
+        userMessage = 'Insufficient pollen balance. Please top up your account at pollinations.ai';
         isRetryable = false;
       } else if (response.status === 502) {
         userMessage = 'AI service gateway error. The service may be temporarily overloaded. Please try again.';
@@ -865,6 +895,7 @@ export const handler: Handler = async (
           error: userMessage,
           details: errorText.substring(0, 200),
           retryable: isRetryable,
+          modelAttempted: usedModel,
         }),
       };
     }
