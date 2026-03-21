@@ -1,5 +1,6 @@
 import React, { useCallback, memo, startTransition, useEffect } from "react";
 import { useNavigate, useLocation, Link } from '@/lib/navigation-compat';
+import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import {
   Home,
@@ -83,6 +84,8 @@ const AdminLayoutComponent: React.FC<AdminLayoutProps> = ({ children }) => {
   }, [location.pathname]);
 
   return (
+    <>
+    <SEO title="Admin" noIndex />
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 overflow-x-hidden">
       {/* Left Sidebar Navigation */}
       <aside className="hidden lg:flex flex-col w-20 bg-white border-r border-gray-200 shadow-sm fixed h-screen z-50 flex-shrink-0">
@@ -173,6 +176,7 @@ const AdminLayoutComponent: React.FC<AdminLayoutProps> = ({ children }) => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

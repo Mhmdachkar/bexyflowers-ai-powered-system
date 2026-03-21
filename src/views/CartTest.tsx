@@ -6,6 +6,7 @@ import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, Trash2, Plus, Minus } from 'lucide-react';
 import BackToTop from '@/components/BackToTop';
+import SEO from '@/components/SEO';
 
 const CartTest: React.FC = () => {
   const { cartItems, addToCart, removeFromCart, getTotalItems, getTotalPrice, clearCart } = useCart();
@@ -17,6 +18,8 @@ const CartTest: React.FC = () => {
   ];
 
   return (
+    <>
+    <SEO title="Cart Test" noIndex />
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/10 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
@@ -183,6 +186,7 @@ const CartTest: React.FC = () => {
       </div>
       <BackToTop />
     </div>
+    </>
   );
 };
 
