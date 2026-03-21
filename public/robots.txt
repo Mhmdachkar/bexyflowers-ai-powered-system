@@ -34,7 +34,9 @@ User-agent: Bingbot
 Allow: /
 Disallow: /admin/
 Disallow: /cart
+Disallow: /cart-test
 Disallow: /checkout
+Disallow: /favorites
 
 # Social media crawlers - full access for rich previews
 User-agent: Twitterbot
