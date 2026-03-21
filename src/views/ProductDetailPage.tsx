@@ -11,7 +11,14 @@ import {
   Heart,
   Plus,
   Minus,
-  ArrowLeft
+  ArrowLeft,
+  ChevronRight,
+  Truck,
+  Shield,
+  Leaf,
+  Sparkles,
+  Star,
+  Clock
 } from 'lucide-react';
 import { useCartWithToast } from '@/hooks/useCartWithToast';
 import { useFavorites } from '@/contexts/FavoritesContext';
@@ -26,13 +33,10 @@ import { PriceDisplay } from '@/components/PriceDisplay';
 import type { Bouquet } from '@/types/bouquet';
 import { encodeImageUrl, toImageSrc } from '@/lib/imageUtils';
 
-// Minimal fallback images (used only when product API returns null)
-// bouquet4-6, aboutImage, heroBg were imported but never referenced — removed to reduce chunk size
 import bouquet1 from '@/assets/bouquet-1.jpg';
 import bouquet2 from '@/assets/bouquet-2.jpg';
 import bouquet3 from '@/assets/bouquet-3.jpg';
 
-// Types for product data
 interface ProductData {
   id: string;
   title: string;
@@ -48,152 +52,95 @@ interface SizeOption {
   id: string;
   name: string;
   priceModifier: number;
+  description: string;
 }
 
-// Size options for customization
 const sizeOptions: SizeOption[] = [
-  { id: 'standard', name: 'Standard', priceModifier: 0 },
-  { id: 'deluxe', name: 'Deluxe', priceModifier: 50 },
-  { id: 'premium', name: 'Premium', priceModifier: 100 }
+  { id: 'standard', name: 'Standard', priceModifier: 0, description: '20–25 stems' },
+  { id: 'deluxe', name: 'Deluxe', priceModifier: 50, description: '35–40 stems' },
+  { id: 'premium', name: 'Premium', priceModifier: 100, description: '50+ stems' }
 ];
 
-
-
-
-// Quantity Selector Component
-const QuantitySelector = ({
-  quantity,
-  onQuantityChange
-}: {
-  quantity: number;
-  onQuantityChange: (qty: number) => void;
-}) => (
-  <div className="flex items-center gap-3">
-    <span className="text-sm font-normal" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>Quantity</span>
-    <div className="flex items-center border border-gray-300 rounded-md">
-      <button
-        className="p-2 hover:bg-gray-50 transition-colors disabled:opacity-50"
-        onClick={() => onQuantityChange(Math.max(1, quantity - 1))}
-        disabled={quantity <= 1}
-      >
-        <Minus className="w-4 h-4" />
-      </button>
-      <span className="px-4 py-2 text-base font-medium min-w-[3rem] text-center">
-        {quantity}
-      </span>
-      <button
-        className="p-2 hover:bg-gray-50 transition-colors"
-        onClick={() => onQuantityChange(quantity + 1)}
-      >
-        <Plus className="w-4 h-4" />
-      </button>
-    </div>
-  </div>
-);
-
-// Size Selector Component
-const SizeSelector = ({
-  selectedSize,
-  onSizeChange,
-  basePrice
-}: {
-  selectedSize: string;
-  onSizeChange: (size: string) => void;
-  basePrice: number;
-}) => (
-  <div className="space-y-3">
-    <span className="text-sm font-normal" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>Size</span>
-    <div className="grid grid-cols-3 gap-3">
-      {sizeOptions.map((option) => {
-        const isSelected = selectedSize === option.id;
-
-        return (
-          <button
-            key={option.id}
-            className={`p-3 rounded-md border-2 transition-all ${
-              isSelected
-                ? 'border-[#C79E48] bg-[#C79E48]/5 text-[#C79E48]'
-                : 'border-gray-300 hover:border-gray-400'
-            }`}
-            onClick={() => onSizeChange(option.id)}
-          >
-            <div className="text-center">
-              <div className="font-medium text-sm">{option.name}</div>
-              {option.priceModifier > 0 && (
-                <div className="text-xs" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>+€{option.priceModifier}</div>
-              )}
-            </div>
-          </button>
-        );
-      })}
-    </div>
-  </div>
-);
-
-// Image Gallery Component
+// ── Image Gallery ─────────────────────────────────────────────────────────────
 const ImageGallery = ({
   images,
   currentImageIndex,
   onImageChange,
   discountPercentage,
-  productName
+  productName,
+  isFav,
+  onToggleFav
 }: {
   images: string[];
   currentImageIndex: number;
   onImageChange: (index: number) => void;
   discountPercentage?: number | null;
   productName?: string;
+  isFav: boolean;
+  onToggleFav: () => void;
 }) => (
-  <div className="space-y-4">
+  <div className="flex flex-col gap-4">
     {/* Main Image */}
-    <div className="relative overflow-hidden rounded-lg bg-[#F5F5F5] aspect-[3/4]">
-      <img
-        src={encodeImageUrl(images[currentImageIndex])}
-        alt={productName ? `${productName} - premium floral bouquet from Bexy Flowers Lebanon` : 'Product detail'}
-        className="w-full h-full object-cover"
-      />
-      
-      {/* Discount Badge on Image */}
+    <div
+      className="relative overflow-hidden rounded-2xl bg-[#f8f5f0] aspect-[3/4] shadow-md"
+      style={{ boxShadow: '0 8px 40px rgba(199,158,72,0.10)' }}
+    >
+      <AnimatePresence mode="wait">
+        <motion.img
+          key={currentImageIndex}
+          src={encodeImageUrl(images[currentImageIndex])}
+          alt={productName ? `${productName} - luxury bouquet from Bexy Flowers Lebanon` : 'Product image'}
+          className="w-full h-full object-cover"
+          initial={{ opacity: 0, scale: 1.04 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.97 }}
+          transition={{ duration: 0.35 }}
+        />
+      </AnimatePresence>
+
+      {/* Gradient overlay at bottom */}
+      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/20 to-transparent pointer-events-none rounded-b-2xl" />
+
+      {/* Discount badge */}
       {discountPercentage && discountPercentage > 0 && (
         <div
-          style={{
-            position: 'absolute',
-            top: '1rem',
-            right: '1rem',
-            padding: '0.5rem 1rem',
-            fontSize: '0.875rem',
-            fontWeight: '700',
-            fontFamily: "'EB Garamond', serif",
-            color: '#fff',
-            background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-            borderRadius: '0.375rem',
-            boxShadow: '0 4px 12px rgba(239, 68, 68, 0.4)',
-            zIndex: 10,
-            letterSpacing: '0.05em',
-            textTransform: 'uppercase'
-          }}
+          className="absolute top-4 left-4 px-3 py-1.5 text-xs font-bold tracking-widest uppercase text-white rounded-full"
+          style={{ background: 'linear-gradient(135deg,#ef4444,#dc2626)', boxShadow: '0 4px 14px rgba(220,38,38,0.45)' }}
         >
           {discountPercentage}% OFF
         </div>
       )}
+
+      {/* Wishlist button on image */}
+      <button
+        onClick={onToggleFav}
+        className={`absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-md ${
+          isFav
+            ? 'bg-pink-500 text-white shadow-pink-300/50'
+            : 'bg-white/90 text-stone-400 hover:text-pink-500'
+        }`}
+        style={{ backdropFilter: 'blur(8px)' }}
+      >
+        <Heart className={`w-4.5 h-4.5 ${isFav ? 'fill-white' : ''}`} size={18} />
+      </button>
     </div>
 
-    {/* Thumbnail Gallery */}
+    {/* Thumbnails */}
     {images.length > 1 && (
-      <div className="flex gap-3">
+      <div className="flex gap-2.5 overflow-x-auto pb-1">
         {images.map((image, index) => (
           <button
             key={index}
-            className={`relative overflow-hidden rounded-md aspect-square w-20 border-2 transition-all ${
-              index === currentImageIndex
-                ? 'border-[#C79E48]'
-                : 'border-gray-300 hover:border-gray-400'
-            }`}
             onClick={() => onImageChange(index)}
+            className={`relative flex-shrink-0 w-[72px] h-[90px] rounded-xl overflow-hidden border-2 transition-all duration-200 ${
+              index === currentImageIndex
+                ? 'border-[#C79E48] shadow-[0_0_0_2px_rgba(199,158,72,0.25)]'
+                : 'border-transparent opacity-60 hover:opacity-90 hover:border-[#C79E48]/40'
+            }`}
           >
             <img
               src={encodeImageUrl(image)}
-              alt={productName ? `${productName} - view ${index + 1}` : `View ${index + 1}`}
+              alt={productName ? `${productName} – view ${index + 1}` : `View ${index + 1}`}
               className="w-full h-full object-cover"
             />
           </button>
@@ -203,7 +150,127 @@ const ImageGallery = ({
   </div>
 );
 
-// Main Product Detail Page Component
+// ── Size Selector ─────────────────────────────────────────────────────────────
+const SizeSelector = ({
+  selectedSize,
+  onSizeChange,
+}: {
+  selectedSize: string;
+  onSizeChange: (size: string) => void;
+}) => (
+  <div className="space-y-2.5">
+    <p className="text-xs uppercase tracking-widest text-stone-400" style={{ fontFamily: "'EB Garamond', serif" }}>
+      Select Size
+    </p>
+    <div className="grid grid-cols-3 gap-2.5">
+      {sizeOptions.map((option) => {
+        const isSelected = selectedSize === option.id;
+        return (
+          <button
+            key={option.id}
+            onClick={() => onSizeChange(option.id)}
+            className={`relative py-3 px-2 rounded-xl border-2 text-center transition-all duration-200 ${
+              isSelected
+                ? 'border-[#C79E48] bg-[#C79E48]/8 shadow-sm'
+                : 'border-stone-200 hover:border-[#C79E48]/50 bg-white'
+            }`}
+          >
+            <div
+              className="font-semibold text-sm"
+              style={{ color: isSelected ? '#C79E48' : '#2c2d2a', fontFamily: "'EB Garamond', serif" }}
+            >
+              {option.name}
+            </div>
+            <div className="text-[11px] text-stone-400 mt-0.5">{option.description}</div>
+            {option.priceModifier > 0 && (
+              <div
+                className="text-[11px] font-semibold mt-0.5"
+                style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif" }}
+              >
+                +${option.priceModifier}
+              </div>
+            )}
+            {isSelected && (
+              <motion.div
+                layoutId="sizeIndicator"
+                className="absolute inset-0 rounded-[10px] border-2 border-[#C79E48] pointer-events-none"
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  </div>
+);
+
+// ── Quantity Selector ─────────────────────────────────────────────────────────
+const QuantitySelector = ({
+  quantity,
+  onQuantityChange,
+}: {
+  quantity: number;
+  onQuantityChange: (qty: number) => void;
+}) => (
+  <div className="flex items-center justify-between">
+    <p className="text-xs uppercase tracking-widest text-stone-400" style={{ fontFamily: "'EB Garamond', serif" }}>
+      Quantity
+    </p>
+    <div
+      className="flex items-center gap-0 rounded-xl overflow-hidden border border-stone-200 bg-white"
+      style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+    >
+      <button
+        className="w-10 h-10 flex items-center justify-center text-stone-500 hover:text-[#C79E48] hover:bg-[#C79E48]/5 transition-colors disabled:opacity-30"
+        onClick={() => onQuantityChange(Math.max(1, quantity - 1))}
+        disabled={quantity <= 1}
+      >
+        <Minus size={14} />
+      </button>
+      <span
+        className="w-10 text-center text-sm font-semibold border-x border-stone-200 py-2"
+        style={{ fontFamily: "'EB Garamond', serif", color: '#2c2d2a' }}
+      >
+        {quantity}
+      </span>
+      <button
+        className="w-10 h-10 flex items-center justify-center text-stone-500 hover:text-[#C79E48] hover:bg-[#C79E48]/5 transition-colors"
+        onClick={() => onQuantityChange(quantity + 1)}
+      >
+        <Plus size={14} />
+      </button>
+    </div>
+  </div>
+);
+
+// ── Trust Badges ──────────────────────────────────────────────────────────────
+const TrustBadges = () => (
+  <div className="grid grid-cols-2 gap-3">
+    {[
+      { icon: Truck, label: 'Free Delivery', sub: 'Within Beirut' },
+      { icon: Leaf, label: 'Fresh Flowers', sub: 'Guaranteed' },
+      { icon: Sparkles, label: 'Handcrafted', sub: 'By Artisans' },
+      { icon: Shield, label: 'Secure Order', sub: '100% Safe' },
+    ].map(({ icon: Icon, label, sub }) => (
+      <div
+        key={label}
+        className="flex items-center gap-2.5 p-3 rounded-xl bg-[#faf8f5] border border-[#ede9e3]"
+      >
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#C79E48]/10 flex-shrink-0">
+          <Icon size={15} style={{ color: '#C79E48' }} />
+        </div>
+        <div>
+          <p className="text-xs font-semibold text-stone-700" style={{ fontFamily: "'EB Garamond', serif" }}>
+            {label}
+          </p>
+          <p className="text-[10px] text-stone-400">{sub}</p>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+// ── Main Component ────────────────────────────────────────────────────────────
 const ProductDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -212,30 +279,17 @@ const ProductDetailPage = () => {
   const { isFavorite, toggleFavorite } = useFavorites();
   const isMobile = useIsMobile();
 
-
-  // Fetch product data using React Query (single source of truth)
   const { data: product, isLoading: isLoadingProduct, error } = useCollectionProduct(id);
-
-  // Fetch signature collection data to check for custom overrides
   const { data: signatureCollections } = useSignatureCollection();
-
-  // Find signature collection item for this product (if exists)
   const signatureItem = signatureCollections?.find(item => item.product_id === id);
-
-  // Fetch all products for recommendations
   const { data: allProducts } = useCollectionProducts({ isActive: true });
 
-  // Transform product data to match component interface
-  // CRITICAL: If product is in signature collection, use custom fields
   const productData: ProductData = useMemo(() => {
     if (product) {
-      // Check if this product has signature collection custom overrides
       if (signatureItem) {
-        // Use custom fields from signature_collections, fallback to product fields
         const customImages = signatureItem.custom_image_urls && signatureItem.custom_image_urls.length > 0
           ? signatureItem.custom_image_urls
           : product.image_urls || [];
-        
         return {
           id: product.id,
           title: signatureItem.custom_title || product.title,
@@ -247,8 +301,6 @@ const ProductDetailPage = () => {
           inStock: !signatureItem.is_out_of_stock && !product.is_out_of_stock
         };
       }
-      
-      // Use regular product data if not in signature collection
       return {
         id: product.id,
         title: product.title,
@@ -260,50 +312,37 @@ const ProductDetailPage = () => {
         inStock: !product.is_out_of_stock
       };
     }
-    // Fallback to mock data if no product found
     return {
       id: id || 'ember-rose-symphony',
       title: 'Ember Rose Symphony',
       price: 125.00,
       description: 'A passionate arrangement of crimson Grand Prix roses and rich burgundy snapdragons, accented with delicate seeded eucalyptus. Each stem is carefully selected to create a dramatic, textural masterpiece that speaks of timeless romance and devotion. Handcrafted by our artisans in Sidon.',
       imageUrl: toImageSrc(bouquet1),
-      images: [
-        toImageSrc(bouquet1),
-        toImageSrc(bouquet2),
-        toImageSrc(bouquet3)
-      ],
+      images: [toImageSrc(bouquet1), toImageSrc(bouquet2), toImageSrc(bouquet3)],
       category: 'Premium Bouquets',
       inStock: true
     };
   }, [product, signatureItem, id]);
 
-  // Local state management
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState('standard');
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
 
-  // Calculate current price based on selected size
   const selectedSizeOption = sizeOptions.find(option => option.id === selectedSize);
   const basePrice = productData.price + (selectedSizeOption?.priceModifier || 0);
-  
-  // Get discount from signature collection (if exists) or product
   const discountPercentage = signatureItem?.discount_percentage ?? product?.discount_percentage ?? null;
-  
-  // Calculate final price with discount applied
   const currentPrice = discountPercentage && discountPercentage > 0
     ? basePrice * (1 - discountPercentage / 100)
     : basePrice;
-  
-  // Smart recommendation logic using React Query data
+
   const recommendedBouquets = useMemo((): Bouquet[] => {
     if (!allProducts || !product) return [];
-
     const currentCategory = productData.category;
     const currentId = productData.id;
-    const currentPrice = productData.price;
+    const currentPriceVal = productData.price;
 
-    // Transform products to Bouquet format
     const availableBouquets: Bouquet[] = allProducts
       .filter(p => p.id !== currentId)
       .map(p => ({
@@ -319,35 +358,12 @@ const ProductDetailPage = () => {
         discount_percentage: p.discount_percentage || null
       }));
 
-    // Find bouquets from the same or related categories
-    let sameCategoryBouquets = availableBouquets.filter(
-      b => b.displayCategory === currentCategory
-    );
-
-    // If not enough same category, find similar price range
-    if (sameCategoryBouquets.length < 4) {
-      const similarPriceBouquets = availableBouquets.filter(
-        b => Math.abs(b.price - currentPrice) <= 50
-      );
-      sameCategoryBouquets = [...sameCategoryBouquets, ...similarPriceBouquets];
-    }
-
-    // If still not enough, add featured bouquets
-    if (sameCategoryBouquets.length < 4) {
-      const featuredBouquets = availableBouquets.filter(b => b.featured);
-      sameCategoryBouquets = [...sameCategoryBouquets, ...featuredBouquets];
-    }
-
-    // Remove duplicates and take first 4
-    const uniqueBouquets = Array.from(
-      new Map(sameCategoryBouquets.map(b => [b.id, b])).values()
-    );
-
-    return uniqueBouquets.slice(0, 4);
+    let result = availableBouquets.filter(b => b.displayCategory === currentCategory);
+    if (result.length < 4) result = [...result, ...availableBouquets.filter(b => Math.abs(b.price - currentPriceVal) <= 50)];
+    if (result.length < 4) result = [...result, ...availableBouquets.filter(b => b.featured)];
+    return Array.from(new Map(result.map(b => [b.id, b])).values()).slice(0, 4);
   }, [allProducts, product, productData]);
 
-
-  // Prefetch recommended products for faster navigation
   useEffect(() => {
     recommendedBouquets.forEach((bouquet) => {
       queryClient.prefetchQuery({
@@ -361,14 +377,9 @@ const ProductDetailPage = () => {
     });
   }, [recommendedBouquets, queryClient]);
 
-
-  // Handle add to cart - includes quantity
   const handleAddToCart = async () => {
     if (isLoading) return;
-
     setIsLoading(true);
-
-    // Create cart items for the quantity selected
     const cartItems = Array.from({ length: quantity }, () => ({
       id: productData.id,
       title: productData.title,
@@ -376,20 +387,19 @@ const ProductDetailPage = () => {
       image: productData.imageUrl,
       size: selectedSizeOption?.name || 'Standard'
     }));
-
     try {
-      // Add all items to cart
       for (const item of cartItems) {
         await addToCart(item);
       }
-    } catch (error) {
-      console.error('Failed to add to cart:', error);
+      setAddedToCart(true);
+      setTimeout(() => setAddedToCart(false), 2500);
+    } catch (err) {
+      console.error('Failed to add to cart:', err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle favorite toggle
   const handleToggleFavorite = () => {
     toggleFavorite({
       id: productData.id,
@@ -404,16 +414,14 @@ const ProductDetailPage = () => {
     });
   };
 
-
   const productUrl = `${SITE_URL}/product/${productData.id}`;
   const ogImage = productData.images?.[0] || productData.imageUrl;
 
   const breadcrumbs = breadcrumbSchema([
-    { name: "Home", url: "/" },
-    { name: "Collection", url: "/collection" },
+    { name: 'Home', url: '/' },
+    { name: 'Collection', url: '/collection' },
     { name: productData.title, url: `/product/${productData.id}` }
   ]);
-
   const productSchemaData = productSchema({
     name: productData.title,
     description: productData.description || '',
@@ -423,16 +431,43 @@ const ProductDetailPage = () => {
     url: productUrl,
     inStock: productData.inStock,
     sku: productData.id,
-    brand: "Bexy Flowers"
+    brand: 'Bexy Flowers'
   });
 
+  // ── Loading skeleton ────────────────────────────────────────────────────────
+  if (isLoadingProduct) {
+    return (
+      <div className="min-h-screen bg-[#faf8f5]">
+        <UltraNavigation />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-16">
+          <div className="h-5 w-32 bg-stone-200 rounded-full animate-pulse mb-8" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
+            <div className="aspect-[3/4] rounded-2xl bg-stone-200 animate-pulse" />
+            <div className="space-y-5 pt-4">
+              <div className="h-3 w-24 bg-stone-200 rounded-full animate-pulse" />
+              <div className="h-9 w-3/4 bg-stone-200 rounded-full animate-pulse" />
+              <div className="h-7 w-28 bg-stone-200 rounded-full animate-pulse" />
+              <div className="space-y-2 pt-2">
+                <div className="h-3 w-full bg-stone-100 rounded animate-pulse" />
+                <div className="h-3 w-5/6 bg-stone-100 rounded animate-pulse" />
+                <div className="h-3 w-4/6 bg-stone-100 rounded animate-pulse" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Main render ─────────────────────────────────────────────────────────────
   return (
-    <motion.div 
-      className="min-h-screen bg-white"
+    <motion.div
+      className="min-h-screen"
+      style={{ background: 'linear-gradient(160deg, #faf8f5 0%, #ffffff 60%)' }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.35 }}
     >
       <SEO
         title={productData.title}
@@ -443,96 +478,145 @@ const ProductDetailPage = () => {
         keywords={`${productData.title}, ${productData.category}, luxury flowers Lebanon, premium bouquet, flower delivery Lebanon`}
         jsonLd={[breadcrumbs, productSchemaData]}
       />
-      {/* Navigation Bar */}
+
       <UltraNavigation />
 
-      {/* Back Button */}
-      <motion.div 
-        className="max-w-7xl mx-auto px-4 sm:px-6 py-6"
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
+      {/* ── Breadcrumb + Back ── */}
+      <motion.div
+        className="max-w-7xl mx-auto px-4 sm:px-6 pt-5 pb-2"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.05 }}
       >
-        <button
-          className="flex items-center gap-2 transition-colors hover:text-[#C79E48]"
-          style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Back</span>
-        </button>
+        <div className="flex items-center gap-1.5 text-xs text-stone-400" style={{ fontFamily: "'EB Garamond', serif" }}>
+          <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 hover:text-[#C79E48] transition-colors group">
+            <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+            <span>Back</span>
+          </button>
+          <ChevronRight size={12} className="opacity-40" />
+          <Link to="/collection" className="hover:text-[#C79E48] transition-colors">Collection</Link>
+          <ChevronRight size={12} className="opacity-40" />
+          <span className="text-stone-600 line-clamp-1 max-w-[180px]">{productData.title}</span>
+        </div>
       </motion.div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+      {/* ── Main Product Grid ── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.1fr] gap-10 lg:gap-16 items-start">
 
-          {/* Left Column - Image Gallery */}
-          <motion.div 
-            className="max-w-md mx-auto lg:mx-0"
-            initial={{ opacity: 0, x: -30 }}
+          {/* Left — Image Gallery */}
+          <motion.div
+            className="lg:sticky lg:top-24"
+            initial={{ opacity: 0, x: -24 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
           >
             <ImageGallery
-              images={productData.images || [productData.imageUrl]}
+              images={productData.images?.length ? productData.images : [productData.imageUrl]}
               currentImageIndex={currentImageIndex}
               onImageChange={setCurrentImageIndex}
               discountPercentage={discountPercentage}
               productName={productData.title}
+              isFav={isFavorite(productData.id)}
+              onToggleFav={handleToggleFavorite}
             />
           </motion.div>
 
-          {/* Right Column - Product Details */}
-          <motion.div 
-            className="space-y-6"
-            initial={{ opacity: 0, x: 30 }}
+          {/* Right — Product Info */}
+          <motion.div
+            className="space-y-6 pt-2"
+            initial={{ opacity: 0, x: 24 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
           >
-            {/* Product Header */}
-            <div className="space-y-4">
-              {productData.category && (
-                <p className="text-xs uppercase" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>
-                  {productData.category}
-                </p>
-              )}
 
-              <h1 className="font-luxury text-3xl lg:text-4xl font-normal text-foreground">
+            {/* Category + availability */}
+            <div className="flex items-center justify-between">
+              {productData.category && (
+                <span
+                  className="inline-block px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-full"
+                  style={{
+                    background: 'linear-gradient(135deg,rgba(199,158,72,0.12),rgba(199,158,72,0.06))',
+                    color: '#C79E48',
+                    border: '1px solid rgba(199,158,72,0.25)',
+                    fontFamily: "'EB Garamond', serif"
+                  }}
+                >
+                  {productData.category}
+                </span>
+              )}
+              <div className="flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full ${productData.inStock ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                <span
+                  className="text-xs"
+                  style={{
+                    color: productData.inStock ? '#10b981' : '#ef4444',
+                    fontFamily: "'EB Garamond', serif"
+                  }}
+                >
+                  {productData.inStock ? 'In Stock' : 'Out of Stock'}
+                </span>
+              </div>
+            </div>
+
+            {/* Title */}
+            <div>
+              <h1
+                className="text-3xl lg:text-[2.6rem] leading-tight font-normal"
+                style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#1c1a17' }}
+              >
                 {productData.title}
               </h1>
+            </div>
 
-              <PriceDisplay 
+            {/* Rating row (decorative) */}
+            <div className="flex items-center gap-2">
+              <div className="flex gap-0.5">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} size={13} className="fill-[#C79E48] text-[#C79E48]" />
+                ))}
+              </div>
+              <span className="text-xs text-stone-400" style={{ fontFamily: "'EB Garamond', serif" }}>
+                5.0 · Handcrafted in Lebanon
+              </span>
+            </div>
+
+            {/* Price */}
+            <div className="py-1">
+              <PriceDisplay
                 price={basePrice}
                 discountPercentage={discountPercentage}
                 size="lg"
               />
             </div>
 
-            {/* Description */}
-            <div>
-              <p className="leading-relaxed text-base" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>
-                {productData.description}
-              </p>
+            {/* Decorative divider */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-gradient-to-r from-[#C79E48]/30 to-transparent" />
+              <Sparkles size={12} style={{ color: '#C79E48', opacity: 0.5 }} />
+              <div className="flex-1 h-px bg-gradient-to-l from-[#C79E48]/30 to-transparent" />
             </div>
 
-            {/* Tags from Signature Collection */}
+            {/* Description */}
+            <p
+              className="text-base leading-relaxed text-stone-600"
+              style={{ fontFamily: "'EB Garamond', serif", fontSize: '1.05rem' }}
+            >
+              {productData.description}
+            </p>
+
+            {/* Tags */}
             {signatureItem?.tags && signatureItem.tags.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {signatureItem.tags.map((tag: string, index: number) => (
                   <span
                     key={index}
+                    className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wider rounded-full"
                     style={{
-                      textTransform: 'uppercase',
-                      background: '#f0f0f0',
+                      background: '#f5f0e8',
                       color: '#C79E48',
                       fontFamily: "'EB Garamond', serif",
-                      fontWeight: '600',
-                      fontSize: '0.75rem',
-                      padding: '0.25rem 0.75rem',
-                      borderRadius: '0.25rem',
-                      whiteSpace: 'nowrap',
-                      letterSpacing: '0.05em'
+                      border: '1px solid rgba(199,158,72,0.2)'
                     }}
                   >
                     {tag}
@@ -541,95 +625,240 @@ const ProductDetailPage = () => {
               </div>
             )}
 
-            {/* Customization Options */}
-            <div className="space-y-6 p-6 bg-gray-50 rounded-lg">
-              <SizeSelector
-                selectedSize={selectedSize}
-                onSizeChange={setSelectedSize}
-                basePrice={productData.price}
-              />
-
-              <QuantitySelector
-                quantity={quantity}
-                onQuantityChange={setQuantity}
-              />
+            {/* Size & Quantity */}
+            <div
+              className="space-y-4 p-5 rounded-2xl"
+              style={{
+                background: 'linear-gradient(135deg,#faf8f5,#ffffff)',
+                border: '1px solid #ede9e3',
+                boxShadow: '0 2px 12px rgba(199,158,72,0.06)'
+              }}
+            >
+              <SizeSelector selectedSize={selectedSize} onSizeChange={setSelectedSize} />
+              <div className="h-px bg-[#ede9e3]" />
+              <QuantitySelector quantity={quantity} onQuantityChange={setQuantity} />
             </div>
 
-            {/* Add to Cart Section */}
+            {/* CTA Buttons */}
             <div className="space-y-3">
-              <button
-                className="w-full py-4 bg-[#C79E48] hover:bg-[#B88A44] text-white font-medium rounded-md transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              <motion.button
+                className="relative w-full py-4 rounded-2xl font-semibold text-white text-base flex items-center justify-center gap-2.5 overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed"
+                style={{
+                  background: productData.inStock
+                    ? 'linear-gradient(135deg, #C79E48 0%, #d4af52 50%, #C79E48 100%)'
+                    : '#d1d5db',
+                  boxShadow: productData.inStock ? '0 6px 24px rgba(199,158,72,0.38)' : 'none',
+                  fontFamily: "'EB Garamond', serif",
+                  backgroundSize: '200% 100%',
+                  letterSpacing: '0.04em'
+                }}
                 onClick={handleAddToCart}
                 disabled={isLoading || isLoadingProduct || !productData.inStock}
+                whileHover={{ scale: 1.012, boxShadow: '0 8px 30px rgba(199,158,72,0.48)' }}
+                whileTap={{ scale: 0.985 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
               >
-                <ShoppingCart className="w-5 h-5" />
-                <span>{isLoading || isLoadingProduct ? 'Loading...' : !productData.inStock ? 'Out of Stock' : 'Add to Cart'}</span>
-              </button>
+                {isLoading ? (
+                  <>
+                    <motion.div
+                      className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white"
+                      animate={{ rotate: 360 }}
+                      transition={{ repeat: Infinity, duration: 0.8, ease: 'linear' }}
+                    />
+                    <span>Adding to Cart…</span>
+                  </>
+                ) : addedToCart ? (
+                  <>
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center"
+                    >
+                      <span className="text-white text-xs">✓</span>
+                    </motion.div>
+                    <span>Added to Cart!</span>
+                  </>
+                ) : !productData.inStock ? (
+                  <span>Out of Stock</span>
+                ) : (
+                  <>
+                    <ShoppingCart size={18} />
+                    <span>Add to Cart</span>
+                    {quantity > 1 && (
+                      <span className="ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs">
+                        ×{quantity}
+                      </span>
+                    )}
+                  </>
+                )}
+              </motion.button>
 
-              {/* Favorite Button */}
               <button
-                className={`w-full py-3 border-2 rounded-md font-medium transition-all flex items-center justify-center gap-2 ${
+                className={`w-full py-3.5 rounded-2xl font-medium text-sm flex items-center justify-center gap-2 transition-all border ${
                   isFavorite(productData.id)
-                    ? 'bg-pink-50 border-pink-300 text-pink-600'
-                    : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
+                    ? 'bg-pink-50 border-pink-200 text-pink-600'
+                    : 'bg-white border-stone-200 text-stone-600 hover:border-[#C79E48]/50 hover:text-[#C79E48]'
                 }`}
+                style={{ fontFamily: "'EB Garamond', serif", fontSize: '0.95rem' }}
                 onClick={handleToggleFavorite}
               >
-                <Heart className={`w-5 h-5 ${isFavorite(productData.id) ? 'fill-pink-600' : ''}`} />
-                <span>{isFavorite(productData.id) ? 'Saved' : 'Save'}</span>
+                <Heart
+                  size={16}
+                  className={isFavorite(productData.id) ? 'fill-pink-500 text-pink-500' : ''}
+                />
+                <span>{isFavorite(productData.id) ? 'Saved to Favorites' : 'Save to Favorites'}</span>
               </button>
             </div>
+
+            {/* Delivery note */}
+            <div
+              className="flex items-center gap-2.5 px-4 py-3 rounded-xl"
+              style={{ background: '#f5f8f0', border: '1px solid #deebd0' }}
+            >
+              <Clock size={14} style={{ color: '#4a9c2d', flexShrink: 0 }} />
+              <p className="text-xs text-stone-600" style={{ fontFamily: "'EB Garamond', serif" }}>
+                <strong className="text-stone-700">Order before 2 PM</strong> for same-day delivery within Beirut
+              </p>
+            </div>
+
+            {/* Trust Badges */}
+            <TrustBadges />
           </motion.div>
         </div>
       </div>
 
-      {/* Suggested Flowers Section */}
+      {/* ── You Might Also Like ── */}
       {recommendedBouquets.length > 0 && (
-        <section className="py-16 bg-gray-50">
+        <section
+          className="py-20"
+          style={{ background: 'linear-gradient(180deg, #f8f5f0 0%, #fdfcfa 100%)' }}
+        >
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            {/* Section header */}
             <div className="text-center mb-12">
-              <h2 className="font-luxury text-3xl font-normal text-foreground mb-2">
-                You Might Also Like
-              </h2>
-              <p className="text-base" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>
-                Similar products you may be interested in
+              <p
+                className="text-[11px] uppercase tracking-[0.25em] mb-3"
+                style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif" }}
+              >
+                Curated for You
               </p>
+              <h2
+                className="text-3xl lg:text-4xl font-normal mb-3"
+                style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#1c1a17' }}
+              >
+                You Might Also Love
+              </h2>
+              <div className="flex items-center justify-center gap-3 mt-3">
+                <div className="w-16 h-px bg-gradient-to-r from-transparent to-[#C79E48]/50" />
+                <Sparkles size={12} style={{ color: '#C79E48' }} />
+                <div className="w-16 h-px bg-gradient-to-l from-transparent to-[#C79E48]/50" />
+              </div>
             </div>
 
+            {/* Product grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-              {recommendedBouquets.map((bouquet) => (
-                <Link
+              {recommendedBouquets.map((bouquet, index) => (
+                <motion.div
                   key={bouquet.id}
-                  to={`/product/${bouquet.id}`}
-                  className="group"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: index * 0.08 }}
                 >
-                  <div className="bg-white rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
-                    <div className="relative overflow-hidden aspect-[3/4] bg-[#F5F5F5]">
-                      <img
-                        src={bouquet.image}
-                        alt={getProductImageAlt(bouquet)}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                      />
+                  <Link to={`/product/${bouquet.id}`} className="group block">
+                    <div
+                      className="bg-white rounded-2xl overflow-hidden transition-all duration-300 group-hover:shadow-xl"
+                      style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: '1px solid #f0ece6' }}
+                    >
+                      {/* Image */}
+                      <div className="relative overflow-hidden aspect-[3/4] bg-[#f8f5f0]">
+                        <img
+                          src={bouquet.image}
+                          alt={getProductImageAlt(bouquet)}
+                          className="w-full h-full object-cover group-hover:scale-106 transition-transform duration-500"
+                          loading="lazy"
+                        />
+                        {/* Hover overlay */}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/8 transition-colors duration-300" />
+                        {/* Quick view pill */}
+                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+                          <span
+                            className="px-3 py-1.5 rounded-full text-[11px] font-semibold text-white whitespace-nowrap"
+                            style={{ background: 'rgba(199,158,72,0.92)', backdropFilter: 'blur(8px)' }}
+                          >
+                            View Details
+                          </span>
+                        </div>
+                        {/* Discount badge */}
+                        {bouquet.discount_percentage && bouquet.discount_percentage > 0 && (
+                          <div
+                            className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
+                            style={{ background: 'linear-gradient(135deg,#ef4444,#dc2626)' }}
+                          >
+                            -{bouquet.discount_percentage}%
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Info */}
+                      <div className="p-3.5">
+                        <p
+                          className="text-[10px] uppercase tracking-wider mb-1"
+                          style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif" }}
+                        >
+                          {bouquet.displayCategory || bouquet.category}
+                        </p>
+                        <h3
+                          className="text-sm font-normal mb-2 line-clamp-1 group-hover:text-[#C79E48] transition-colors"
+                          style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#1c1a17' }}
+                        >
+                          {bouquet.name}
+                        </h3>
+                        <div className="flex items-center justify-between">
+                          <p
+                            className="text-sm font-semibold"
+                            style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif" }}
+                          >
+                            ${bouquet.price}
+                          </p>
+                          <ShoppingCart size={13} className="text-stone-300 group-hover:text-[#C79E48] transition-colors" />
+                        </div>
+                      </div>
                     </div>
-                    <div className="p-3">
-                      <p className="text-xs mb-1" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>
-                        {bouquet.displayCategory || bouquet.category}
-                      </p>
-                      <h3 className="font-luxury text-sm font-normal text-foreground mb-2 line-clamp-1">
-                        {bouquet.name}
-                      </h3>
-                      <p className="text-sm font-medium text-foreground">
-                        €{bouquet.price}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
+                  </Link>
+                </motion.div>
               ))}
+            </div>
+
+            {/* View all CTA */}
+            <div className="text-center mt-12">
+              <Link
+                to="/collection"
+                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-sm font-medium transition-all hover:shadow-lg"
+                style={{
+                  border: '1.5px solid #C79E48',
+                  color: '#C79E48',
+                  fontFamily: "'EB Garamond', serif",
+                  letterSpacing: '0.06em',
+                  background: 'transparent'
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLAnchorElement).style.background = '#C79E48';
+                  (e.currentTarget as HTMLAnchorElement).style.color = '#fff';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLAnchorElement).style.background = 'transparent';
+                  (e.currentTarget as HTMLAnchorElement).style.color = '#C79E48';
+                }}
+              >
+                <span>Explore Full Collection</span>
+                <ChevronRight size={14} />
+              </Link>
             </div>
           </div>
         </section>
       )}
+
       <BackToTop />
     </motion.div>
   );
