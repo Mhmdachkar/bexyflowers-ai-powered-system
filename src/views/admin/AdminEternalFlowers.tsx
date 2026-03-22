@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from '@/lib/navigation-compat';
 import { motion } from 'framer-motion';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import {
   ArrowLeft,
@@ -54,12 +55,9 @@ const AVAILABLE_YEARS = [CURRENT_YEAR - 2, CURRENT_YEAR - 1, CURRENT_YEAR, CURRE
 const AdminEternalFlowers = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'eternal' | 'real'>('eternal');
-  const [eternalProducts, setEternalProducts] = useState<EternalFlowerProduct[]>([]);
-  const [realProducts, setRealProducts] = useState<EternalFlowerProduct[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<number | 'all'>('all');
-  const [availableYears, setAvailableYears] = useState<number[]>([]);
   
   const [createDialog, setCreateDialog] = useState(false);
   const [editDialog, setEditDialog] = useState(false);
@@ -89,42 +87,26 @@ const AdminEternalFlowers = () => {
   const [editingProduct, setEditingProduct] = useState<EternalFlowerProduct | null>(null);
   const [newTag, setNewTag] = useState('');
 
-  useEffect(() => {
-    loadProducts();
-    loadAvailableYears();
-  }, [activeTab, selectedYear]);
-
-  const loadProducts = async () => {
-    setLoading(true);
-    try {
+  // Cached queries — refetch automatically when tab or year changes
+  const { data: currentProducts = [], isLoading: loading } = useQuery<EternalFlowerProduct[]>({
+    queryKey: ['eternal-flowers', activeTab, selectedYear],
+    queryFn: () => {
       const year = selectedYear === 'all' ? undefined : selectedYear;
-      
-      if (activeTab === 'eternal') {
-        const data = await getEternalFlowers(year);
-        setEternalProducts(data);
-      } else {
-        const data = await getRealFlowers(year);
-        setRealProducts(data);
-      }
-    } catch (error) {
-      console.error('Error loading products:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load products',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+      return activeTab === 'eternal' ? getEternalFlowers(year) : getRealFlowers(year);
+    },
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
-  const loadAvailableYears = async () => {
-    try {
-      const years = await getAvailableCollectionYears(activeTab);
-      setAvailableYears(years);
-    } catch (error) {
-      console.error('Error loading years:', error);
-    }
+  const { data: availableYears = [] } = useQuery<number[]>({
+    queryKey: ['eternal-flowers-years', activeTab],
+    queryFn: () => getAvailableCollectionYears(activeTab),
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  const loadProducts = () => {
+    queryClient.invalidateQueries({ queryKey: ['eternal-flowers', activeTab, selectedYear] });
   };
 
   const handleCreate = () => {
@@ -249,7 +231,6 @@ const AdminEternalFlowers = () => {
     });
   };
 
-  const currentProducts = activeTab === 'eternal' ? eternalProducts : realProducts;
 
   return (
     <AdminLayout>

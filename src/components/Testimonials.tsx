@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, Quote, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -82,24 +82,27 @@ const AvatarCircle = ({ initials }: { initials: string }) => (
 export default function Testimonials() {
   const [current, setCurrent] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
-  const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const total = REVIEWS.length;
 
   const next = () => setCurrent((c) => (c + 1) % total);
   const prev = () => setCurrent((c) => (c - 1 + total) % total);
 
-  // Auto-advance
+  // Auto-advance — deps are stable (no `current`), so the interval is created
+  // once and never recreated on every slide change.
+  // Functional setState safely increments without needing `current` in deps.
+  // Skips advance when the browser tab is hidden to prevent accumulation.
   useEffect(() => {
     if (!isAutoPlaying) return;
-    autoRef.current = setInterval(next, 5000);
-    return () => { if (autoRef.current) clearInterval(autoRef.current); };
-  }, [isAutoPlaying, current]);
+    const id = setInterval(() => {
+      if (!document.hidden) {
+        setCurrent((c) => (c + 1) % total);
+      }
+    }, 5000);
+    return () => clearInterval(id);
+  }, [isAutoPlaying, total]);
 
-  const pause = () => {
-    setIsAutoPlaying(false);
-    if (autoRef.current) clearInterval(autoRef.current);
-  };
+  const pause = () => setIsAutoPlaying(false);
   const resume = () => setIsAutoPlaying(true);
 
   // Visible card indices: prev, current, next
@@ -169,7 +172,7 @@ export default function Testimonials() {
             const review = REVIEWS[idx];
             const isFeatured = position === 1;
             return (
-              <motion.div
+              <div
                 key={review.id}
                 className="flex-1 rounded-2xl p-6 flex flex-col gap-4 cursor-pointer transition-all duration-500"
                 style={{
@@ -185,7 +188,6 @@ export default function Testimonials() {
                   transform: isFeatured ? 'scale(1.04)' : 'scale(0.97)',
                   opacity: isFeatured ? 1 : 0.72,
                 }}
-                layout
                 onClick={() => setCurrent(idx)}
               >
                 <Quote
@@ -224,7 +226,7 @@ export default function Testimonials() {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+                </div>
             );
           })}
         </div>

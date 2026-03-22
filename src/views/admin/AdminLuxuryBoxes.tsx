@@ -171,10 +171,7 @@ const AdminLuxuryBoxes = () => {
       if (editingId) {
         await updateLuxuryBox(editingId, formData);
         
-        // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-        await queryClient.invalidateQueries({ queryKey: luxuryBoxesQueryKeys.all });
-        queryClient.removeQueries({ queryKey: luxuryBoxesQueryKeys.all });
-        await queryClient.refetchQueries({ queryKey: luxuryBoxesQueryKeys.lists() });
+        queryClient.invalidateQueries({ queryKey: luxuryBoxesQueryKeys.all });
         
         toast({
           title: 'Success',
@@ -183,10 +180,7 @@ const AdminLuxuryBoxes = () => {
       } else {
         await createLuxuryBox(formData);
         
-        // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-        await queryClient.invalidateQueries({ queryKey: luxuryBoxesQueryKeys.all });
-        queryClient.removeQueries({ queryKey: luxuryBoxesQueryKeys.all });
-        await queryClient.refetchQueries({ queryKey: luxuryBoxesQueryKeys.lists() });
+        queryClient.invalidateQueries({ queryKey: luxuryBoxesQueryKeys.all });
         
         toast({
           title: 'Success',
@@ -212,10 +206,7 @@ const AdminLuxuryBoxes = () => {
     try {
       await deleteLuxuryBox(id);
       
-      // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-      await queryClient.invalidateQueries({ queryKey: luxuryBoxesQueryKeys.all });
-      queryClient.removeQueries({ queryKey: luxuryBoxesQueryKeys.all });
-      await queryClient.refetchQueries({ queryKey: luxuryBoxesQueryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: luxuryBoxesQueryKeys.all });
       
       toast({
         title: 'Success',
@@ -276,10 +267,7 @@ const AdminLuxuryBoxes = () => {
       if (editingColorId) {
         await updateBoxColor(editingColorId, colorFormData);
         
-        // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-        await queryClient.invalidateQueries({ queryKey: luxuryBoxesQueryKeys.all });
-        queryClient.removeQueries({ queryKey: luxuryBoxesQueryKeys.all });
-        await queryClient.refetchQueries({ queryKey: luxuryBoxesQueryKeys.lists() });
+        queryClient.invalidateQueries({ queryKey: luxuryBoxesQueryKeys.all });
         
         toast({
           title: 'Success',
@@ -291,10 +279,7 @@ const AdminLuxuryBoxes = () => {
           ...colorFormData,
         });
         
-        // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-        await queryClient.invalidateQueries({ queryKey: luxuryBoxesQueryKeys.all });
-        queryClient.removeQueries({ queryKey: luxuryBoxesQueryKeys.all });
-        await queryClient.refetchQueries({ queryKey: luxuryBoxesQueryKeys.lists() });
+        queryClient.invalidateQueries({ queryKey: luxuryBoxesQueryKeys.all });
         
         toast({
           title: 'Success',
@@ -320,10 +305,7 @@ const AdminLuxuryBoxes = () => {
     try {
       await deleteBoxColor(colorId);
       
-      // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-      await queryClient.invalidateQueries({ queryKey: luxuryBoxesQueryKeys.all });
-      queryClient.removeQueries({ queryKey: luxuryBoxesQueryKeys.all });
-      await queryClient.refetchQueries({ queryKey: luxuryBoxesQueryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: luxuryBoxesQueryKeys.all });
       
       toast({
         title: 'Success',
@@ -374,10 +356,7 @@ const AdminLuxuryBoxes = () => {
       if (editingSizeId) {
         await updateBoxSize(editingSizeId, sizeFormData);
         
-        // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-        await queryClient.invalidateQueries({ queryKey: luxuryBoxesQueryKeys.all });
-        queryClient.removeQueries({ queryKey: luxuryBoxesQueryKeys.all });
-        await queryClient.refetchQueries({ queryKey: luxuryBoxesQueryKeys.lists() });
+        queryClient.invalidateQueries({ queryKey: luxuryBoxesQueryKeys.all });
         
         toast({
           title: 'Success',
@@ -389,10 +368,7 @@ const AdminLuxuryBoxes = () => {
           ...sizeFormData,
         });
         
-        // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-        await queryClient.invalidateQueries({ queryKey: luxuryBoxesQueryKeys.all });
-        queryClient.removeQueries({ queryKey: luxuryBoxesQueryKeys.all });
-        await queryClient.refetchQueries({ queryKey: luxuryBoxesQueryKeys.lists() });
+        queryClient.invalidateQueries({ queryKey: luxuryBoxesQueryKeys.all });
         
         toast({
           title: 'Success',
@@ -418,10 +394,7 @@ const AdminLuxuryBoxes = () => {
     try {
       await deleteBoxSize(sizeId);
       
-      // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-      await queryClient.invalidateQueries({ queryKey: luxuryBoxesQueryKeys.all });
-      queryClient.removeQueries({ queryKey: luxuryBoxesQueryKeys.all });
-      await queryClient.refetchQueries({ queryKey: luxuryBoxesQueryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: luxuryBoxesQueryKeys.all });
       
       toast({
         title: 'Success',

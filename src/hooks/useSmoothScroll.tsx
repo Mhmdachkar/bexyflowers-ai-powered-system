@@ -65,21 +65,15 @@ export const useSmoothScroll = () => {
     // Integrate Lenis with GSAP ScrollTrigger for smooth animations
     lenis.on('scroll', updateScrollTrigger);
 
-    // Animation loop for Lenis - with proper cleanup checks and visibility handling
+    // Animation loop for Lenis — only runs when the tab is visible.
+    // Stopping the RAF entirely when hidden prevents GSAP/Lenis from accumulating
+    // scroll-state over long background periods, which is the root cause of the
+    // "Page Unresponsive" hang after 5–10 minutes.
     function raf(time: number) {
       if (!isActiveRef.current || !lenisRef.current) {
-        // Stop if component unmounted or lenis destroyed
         rafIdRef.current = null;
         return;
       }
-      
-      // CRITICAL: Pause RAF loop when page is hidden to prevent unresponsive page
-      if (document.hidden) {
-        // Continue RAF but don't process scroll
-        rafIdRef.current = requestAnimationFrame(raf);
-        return;
-      }
-      
       try {
         lenisRef.current.raf(time);
         rafIdRef.current = requestAnimationFrame(raf);
@@ -90,19 +84,30 @@ export const useSmoothScroll = () => {
       }
     }
 
-    rafIdRef.current = requestAnimationFrame(raf);
-    
-    // CRITICAL: Pause Lenis when page becomes hidden to prevent performance issues
+    // Only start the loop if the tab is currently visible
+    if (!document.hidden) {
+      rafIdRef.current = requestAnimationFrame(raf);
+    }
+
+    // Completely stop / restart the RAF loop based on tab visibility.
+    // This is the key fix: we no longer keep the loop alive in the background.
     const handleVisibilityChange = () => {
-      if (document.hidden && lenisRef.current) {
-        // Pause smooth scroll when tab is hidden
-        lenisRef.current.stop();
-      } else if (!document.hidden && lenisRef.current && isActiveRef.current) {
-        // Resume when tab becomes visible
+      if (document.hidden) {
+        // Tab hidden — stop the RAF loop and pause Lenis physics
+        if (rafIdRef.current !== null) {
+          cancelAnimationFrame(rafIdRef.current);
+          rafIdRef.current = null;
+        }
+        lenisRef.current?.stop();
+      } else if (isActiveRef.current && lenisRef.current) {
+        // Tab visible again — resume Lenis and restart the RAF loop
         lenisRef.current.start();
+        if (rafIdRef.current === null) {
+          rafIdRef.current = requestAnimationFrame(raf);
+        }
       }
     };
-    
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Update ScrollTrigger when Lenis scrolls

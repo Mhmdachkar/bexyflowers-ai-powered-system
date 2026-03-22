@@ -306,8 +306,7 @@ const AdminProducts = () => {
         description: `Successfully migrated ${result.success} products. ${result.failed > 0 ? `${result.failed} failed.` : ''}`,
       });
 
-      await queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all });
-      await queryClient.refetchQueries({ queryKey: collectionQueryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all });
     } catch (error) {
       toast({
         title: "Migration Error",

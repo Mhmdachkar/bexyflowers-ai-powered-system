@@ -153,11 +153,7 @@ const AdminSignatureCollection = () => {
         : 0;
       
       await addToSignatureCollection(selectedProductId, maxOrder);
-      // CRITICAL FIX: Complete cache invalidation
-      await queryClient.invalidateQueries({ queryKey: signatureQueryKeys.all });
-      queryClient.removeQueries({ queryKey: signatureQueryKeys.all });
-      await queryClient.refetchQueries({ queryKey: signatureQueryKeys.lists() });
-      localStorage.removeItem('signature-collection-timestamp');
+      queryClient.invalidateQueries({ queryKey: signatureQueryKeys.all });
       toast({
         title: 'Success',
         description: 'Product added to signature collection',
@@ -211,11 +207,7 @@ const AdminSignatureCollection = () => {
           imageFiles: customProductImages,
         }
       );
-      // CRITICAL FIX: Complete cache invalidation
-      await queryClient.invalidateQueries({ queryKey: signatureQueryKeys.all });
-      queryClient.removeQueries({ queryKey: signatureQueryKeys.all });
-      await queryClient.refetchQueries({ queryKey: signatureQueryKeys.lists() });
-      localStorage.removeItem('signature-collection-timestamp');
+      queryClient.invalidateQueries({ queryKey: signatureQueryKeys.all });
       toast({
         title: 'Success',
         description: 'Custom product created and added to signature collection',
@@ -263,11 +255,7 @@ const AdminSignatureCollection = () => {
   const handleDelete = async (id: string) => {
     try {
       await removeFromSignatureCollection(id);
-      // CRITICAL FIX: Complete cache invalidation
-      await queryClient.invalidateQueries({ queryKey: signatureQueryKeys.all });
-      queryClient.removeQueries({ queryKey: signatureQueryKeys.all });
-      await queryClient.refetchQueries({ queryKey: signatureQueryKeys.lists() });
-      localStorage.removeItem('signature-collection-timestamp');
+      queryClient.invalidateQueries({ queryKey: signatureQueryKeys.all });
       toast({
         title: 'Success',
         description: 'Product removed from signature collection',
@@ -295,8 +283,7 @@ const AdminSignatureCollection = () => {
       await reorderSignatureCollections(
         items.map((item) => ({ id: item.id, display_order: item.display_order }))
       );
-      // Invalidate React Query cache
-      queryClient.invalidateQueries({ queryKey: signatureQueryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: signatureQueryKeys.all });
       await loadData();
     } catch (error) {
       toast({
@@ -319,11 +306,7 @@ const AdminSignatureCollection = () => {
       await reorderSignatureCollections(
         items.map((item) => ({ id: item.id, display_order: item.display_order }))
       );
-      // CRITICAL FIX: Complete cache invalidation
-      await queryClient.invalidateQueries({ queryKey: signatureQueryKeys.all });
-      queryClient.removeQueries({ queryKey: signatureQueryKeys.all });
-      await queryClient.refetchQueries({ queryKey: signatureQueryKeys.lists() });
-      localStorage.removeItem('signature-collection-timestamp');
+      queryClient.invalidateQueries({ queryKey: signatureQueryKeys.all });
       await loadData();
     } catch (error) {
       toast({
@@ -337,11 +320,7 @@ const AdminSignatureCollection = () => {
   const handleSwapProduct = async (id: string, newProductId: string) => {
     try {
       await updateSignatureCollection(id, { product_id: newProductId });
-      // CRITICAL FIX: Complete cache invalidation
-      await queryClient.invalidateQueries({ queryKey: signatureQueryKeys.all });
-      queryClient.removeQueries({ queryKey: signatureQueryKeys.all });
-      await queryClient.refetchQueries({ queryKey: signatureQueryKeys.lists() });
-      localStorage.removeItem('signature-collection-timestamp');
+      queryClient.invalidateQueries({ queryKey: signatureQueryKeys.all });
       toast({
         title: 'Success',
         description: 'Product swapped successfully',
@@ -413,17 +392,7 @@ const AdminSignatureCollection = () => {
       }
 
       await updateSignatureCollection(editingItem.id, updates);
-      
-      // CRITICAL FIX: Complete cache invalidation to force frontend update
-      // 1. Invalidate all signature collection queries
-      await queryClient.invalidateQueries({ queryKey: signatureQueryKeys.all });
-      // 2. Remove all cached data completely
-      queryClient.removeQueries({ queryKey: signatureQueryKeys.all });
-      // 3. Refetch to get fresh data
-      await queryClient.refetchQueries({ queryKey: signatureQueryKeys.lists() });
-      // 4. Clear browser cache timestamp to force reload
-      localStorage.removeItem('signature-collection-timestamp');
-      
+      queryClient.invalidateQueries({ queryKey: signatureQueryKeys.all });
       toast({
         title: 'Success',
         description: 'Discount updated! Refresh the website (F5) to see changes immediately.',

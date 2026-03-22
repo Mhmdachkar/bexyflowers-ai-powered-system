@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from '@/lib/navigation-compat';
 import { AdminLayout } from "@/components/admin/AdminLayout";
@@ -360,6 +360,60 @@ const AdminDashboard = () => {
 
   const loading = loadingProducts;
 
+  // Memoized calendar cells — avoids re-computing 30+ DOM nodes on every render
+  const calendarCells = useMemo(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDayOfMonth = new Date(year, month, 1).getDay();
+    const leadingBlanks = (firstDayOfMonth + 6) % 7; // Monday-first grid
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = new Date();
+    const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
+
+    const blanks = Array.from({ length: leadingBlanks }, (_, i) => (
+      <div key={`empty-${i}`} className="aspect-square" />
+    ));
+
+    const days = Array.from({ length: daysInMonth }, (_, i) => {
+      const day = i + 1;
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const date = new Date(year, month, day);
+      const isSunday = date.getDay() === 0;
+      const isToday = isCurrentMonth && day === today.getDate();
+      const schedule = availabilitySchedule[dateStr];
+      const hasAvailability = !!schedule && !isSunday;
+
+      return (
+        <div
+          key={day}
+          className={`aspect-square rounded-lg flex flex-col items-center justify-center text-sm font-medium transition-transform cursor-pointer hover:scale-105 ${
+            isToday
+              ? 'bg-yellow-400 text-gray-900'
+              : isSunday
+              ? 'bg-red-900/50 text-red-300 opacity-50'
+              : hasAvailability
+              ? 'bg-green-600 text-white'
+              : 'text-gray-500'
+          }`}
+          title={
+            isSunday
+              ? 'Sunday - Closed'
+              : schedule
+              ? `Available: ${schedule.start} - ${schedule.end}`
+              : 'Not available'
+          }
+        >
+          <span>{day}</span>
+          {schedule && !isSunday && (
+            <span className="text-[8px] mt-0.5 opacity-80">{schedule.start}</span>
+          )}
+        </div>
+      );
+    });
+
+    return [...blanks, ...days];
+  }, [currentDate, availabilitySchedule]);
+
   const handleLogout = () => {
     localStorage.removeItem("adminAuthenticated");
     localStorage.removeItem("adminUsername");
@@ -681,63 +735,7 @@ const AdminDashboard = () => {
                       ))}
                     </div>
                     <div className="grid grid-cols-7 gap-2">
-                      {(() => {
-                        const year = currentDate.getFullYear();
-                        const month = currentDate.getMonth();
-                        // Monday-first week: M=0 .. S=6. getDay() is 0=Sun, 1=Mon -> map so Sun is column 6
-                        const firstDayOfMonth = new Date(year, month, 1).getDay();
-                        const leadingBlanks = (firstDayOfMonth + 6) % 7;
-                        const daysInMonth = new Date(year, month + 1, 0).getDate();
-                        const today = new Date();
-                        const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
-                        
-                        return Array.from({ length: leadingBlanks }, (_, i) => (
-                          <div key={`empty-${i}`} className="aspect-square" />
-                        )).concat(
-                          Array.from({ length: daysInMonth }, (_, i) => {
-                            const day = i + 1;
-                            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                            const date = new Date(year, month, day);
-                            const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
-                            const isSunday = dayOfWeek === 0;
-                            const isToday = isCurrentMonth && day === today.getDate();
-                            const schedule = availabilitySchedule[dateStr];
-                            const hasAvailability = !!schedule && !isSunday;
-
-                            return (
-                              <motion.div
-                                key={day}
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: 0.5 + i * 0.01 }}
-                                className={`aspect-square rounded-lg flex flex-col items-center justify-center text-sm font-medium transition-all cursor-pointer hover:scale-105 ${
-                                  isToday
-                                    ? 'bg-yellow-400 text-gray-900'
-                                    : isSunday
-                                    ? 'bg-red-900/50 text-red-300 opacity-50'
-                                    : hasAvailability
-                                    ? 'bg-green-600 text-white'
-                                    : 'text-gray-500'
-                                }`}
-                                title={
-                                  isSunday
-                                    ? 'Sunday - Closed'
-                                    : schedule
-                                    ? `Available: ${schedule.start} - ${schedule.end}`
-                                    : 'Not available'
-                                }
-                              >
-                                <span>{day}</span>
-                                {schedule && !isSunday && (
-                                  <span className="text-[8px] mt-0.5 opacity-80">
-                                    {schedule.start}
-                                  </span>
-                                )}
-                              </motion.div>
-                            );
-                          })
-                        );
-                      })()}
+                      {calendarCells}
                     </div>
                     
                     {/* Legend */}

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from '@/lib/navigation-compat';
 import { motion } from 'framer-motion';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { accessoriesQueryKeys } from '@/hooks/useAccessories';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import {
@@ -37,8 +37,6 @@ const AdminAccessories = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [accessories, setAccessories] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -59,28 +57,16 @@ const AdminAccessories = () => {
 
   useEffect(() => {
     const isAuthenticated = localStorage.getItem('adminAuthenticated');
-    if (!isAuthenticated) {
-      navigate('/admin/login');
-      return;
-    }
-    loadAccessories();
+    if (!isAuthenticated) navigate('/admin/login');
   }, [navigate]);
 
-  const loadAccessories = async () => {
-    try {
-      setLoading(true);
-      const data = await getAccessories();
-      setAccessories(data);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to load accessories',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Cached data — no raw fetch on every visit
+  const { data: accessories = [], isLoading: loading } = useQuery({
+    queryKey: accessoriesQueryKeys.lists(),
+    queryFn: getAccessories,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
   const handleEdit = (accessory: any) => {
     setEditingId(accessory.id);
@@ -125,10 +111,7 @@ const AdminAccessories = () => {
       if (editingId) {
         await updateAccessory(editingId, formData, imageFile || undefined, !!imageFile);
         
-        // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-        await queryClient.invalidateQueries({ queryKey: accessoriesQueryKeys.all });
-        queryClient.removeQueries({ queryKey: accessoriesQueryKeys.all });
-        await queryClient.refetchQueries({ queryKey: accessoriesQueryKeys.lists() });
+        queryClient.invalidateQueries({ queryKey: accessoriesQueryKeys.all });
         
         toast({
           title: 'Success',
@@ -137,10 +120,7 @@ const AdminAccessories = () => {
       } else {
         await createAccessory(formData, imageFile || undefined);
         
-        // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-        await queryClient.invalidateQueries({ queryKey: accessoriesQueryKeys.all });
-        queryClient.removeQueries({ queryKey: accessoriesQueryKeys.all });
-        await queryClient.refetchQueries({ queryKey: accessoriesQueryKeys.lists() });
+        queryClient.invalidateQueries({ queryKey: accessoriesQueryKeys.all });
         
         toast({
           title: 'Success',
@@ -151,7 +131,6 @@ const AdminAccessories = () => {
       setShowForm(false);
       setEditingId(null);
       setImageFile(null);
-      await loadAccessories();
     } catch (error) {
       toast({
         title: 'Error',
@@ -167,16 +146,11 @@ const AdminAccessories = () => {
     try {
       await deleteAccessory(id);
       
-      // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-      await queryClient.invalidateQueries({ queryKey: accessoriesQueryKeys.all });
-      queryClient.removeQueries({ queryKey: accessoriesQueryKeys.all });
-      await queryClient.refetchQueries({ queryKey: accessoriesQueryKeys.lists() });
-      
+      queryClient.invalidateQueries({ queryKey: accessoriesQueryKeys.all });
       toast({
         title: 'Success',
         description: 'Accessory deleted successfully',
       });
-      await loadAccessories();
     } catch (error) {
       toast({
         title: 'Error',

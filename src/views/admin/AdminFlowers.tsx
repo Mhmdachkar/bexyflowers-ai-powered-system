@@ -209,11 +209,8 @@ const AdminFlowers = () => {
       setSaving(true);
       await createFlowerTypeCategory(categoryFormData);
       
-      // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-      await queryClient.invalidateQueries({ queryKey: flowersQueryKeys.all });
-      queryClient.removeQueries({ queryKey: flowersQueryKeys.all });
-      await queryClient.refetchQueries({ queryKey: flowersQueryKeys.lists() });
-      await queryClient.refetchQueries({ queryKey: ['flowers', 'customize'] });
+      queryClient.invalidateQueries({ queryKey: flowersQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['flowers', 'customize'] });
       
       toast({
         title: 'Success',
@@ -253,11 +250,8 @@ const AdminFlowers = () => {
           !!imageFile
         );
         
-        // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-        await queryClient.invalidateQueries({ queryKey: flowersQueryKeys.all });
-        queryClient.removeQueries({ queryKey: flowersQueryKeys.all });
-        await queryClient.refetchQueries({ queryKey: flowersQueryKeys.lists() });
-        await queryClient.refetchQueries({ queryKey: ['flowers', 'customize'] });
+        queryClient.invalidateQueries({ queryKey: flowersQueryKeys.all });
+        queryClient.invalidateQueries({ queryKey: ['flowers', 'customize'] });
         
         toast({
           title: 'Success',
@@ -266,11 +260,8 @@ const AdminFlowers = () => {
       } else {
         await createFlowerType(formData, imageFile || undefined);
         
-        // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-        await queryClient.invalidateQueries({ queryKey: flowersQueryKeys.all });
-        queryClient.removeQueries({ queryKey: flowersQueryKeys.all });
-        await queryClient.refetchQueries({ queryKey: flowersQueryKeys.lists() });
-        await queryClient.refetchQueries({ queryKey: ['flowers', 'customize'] });
+        queryClient.invalidateQueries({ queryKey: flowersQueryKeys.all });
+        queryClient.invalidateQueries({ queryKey: ['flowers', 'customize'] });
         
         toast({
           title: 'Success',
@@ -297,11 +288,8 @@ const AdminFlowers = () => {
     try {
       await deleteFlowerType(id);
       
-      // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-      await queryClient.invalidateQueries({ queryKey: flowersQueryKeys.all });
-      queryClient.removeQueries({ queryKey: flowersQueryKeys.all });
-      await queryClient.refetchQueries({ queryKey: flowersQueryKeys.lists() });
-      await queryClient.refetchQueries({ queryKey: ['flowers', 'customize'] });
+      queryClient.invalidateQueries({ queryKey: flowersQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['flowers', 'customize'] });
       
       toast({
         title: 'Success',
@@ -362,11 +350,8 @@ const AdminFlowers = () => {
       if (editingColorId) {
         await updateFlowerColor(editingColorId, colorFormData);
         
-        // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-        await queryClient.invalidateQueries({ queryKey: flowersQueryKeys.all });
-        queryClient.removeQueries({ queryKey: flowersQueryKeys.all });
-        await queryClient.refetchQueries({ queryKey: flowersQueryKeys.lists() });
-        await queryClient.refetchQueries({ queryKey: ['flowers', 'customize'] });
+        queryClient.invalidateQueries({ queryKey: flowersQueryKeys.all });
+        queryClient.invalidateQueries({ queryKey: ['flowers', 'customize'] });
         
         toast({
           title: 'Success',
@@ -381,11 +366,8 @@ const AdminFlowers = () => {
           // Note: is_active column doesn't exist in flower_colors table
         });
         
-        // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-        await queryClient.invalidateQueries({ queryKey: flowersQueryKeys.all });
-        queryClient.removeQueries({ queryKey: flowersQueryKeys.all });
-        await queryClient.refetchQueries({ queryKey: flowersQueryKeys.lists() });
-        await queryClient.refetchQueries({ queryKey: ['flowers', 'customize'] });
+        queryClient.invalidateQueries({ queryKey: flowersQueryKeys.all });
+        queryClient.invalidateQueries({ queryKey: ['flowers', 'customize'] });
         
         toast({
           title: 'Success',
@@ -412,11 +394,8 @@ const AdminFlowers = () => {
     try {
       await deleteFlowerColor(colorId);
       
-      // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-      await queryClient.invalidateQueries({ queryKey: flowersQueryKeys.all });
-      queryClient.removeQueries({ queryKey: flowersQueryKeys.all });
-      await queryClient.refetchQueries({ queryKey: flowersQueryKeys.lists() });
-      await queryClient.refetchQueries({ queryKey: ['flowers', 'customize'] });
+      queryClient.invalidateQueries({ queryKey: flowersQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['flowers', 'customize'] });
       
       toast({
         title: 'Success',

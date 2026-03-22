@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from '@/lib/navigation-compat';
 import { motion } from 'framer-motion';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { weddingQueryKeys } from '@/hooks/useWeddingCreations';
 import {
   ArrowLeft,
@@ -42,8 +42,6 @@ const AdminWeddingCreations = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [creations, setCreations] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -61,27 +59,21 @@ const AdminWeddingCreations = () => {
 
   useEffect(() => {
     const isAuthenticated = localStorage.getItem('adminAuthenticated');
-    if (!isAuthenticated) {
-      navigate('/admin/login');
-      return;
-    }
-    loadCreations();
+    if (!isAuthenticated) navigate('/admin/login');
   }, [navigate]);
 
-  const loadCreations = async () => {
-    try {
-      setLoading(true);
-      const data = await getWeddingCreations();
-      setCreations(data);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to load wedding creations',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
+  // Cached data — no raw fetch on every visit
+  const { data: creations = [], isLoading: loading } = useQuery({
+    queryKey: weddingQueryKeys.lists(),
+    queryFn: getWeddingCreations,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Invalidate the cache so useQuery auto-refetches after mutations / reorder
+  const loadCreations = () => {
+    queryClient.invalidateQueries({ queryKey: weddingQueryKeys.all });
+    return Promise.resolve();
   };
 
   const handleEdit = (creation: any) => {
@@ -132,10 +124,7 @@ const AdminWeddingCreations = () => {
           imageFile || undefined,
           imageFile ? true : false
         );
-        // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-        await queryClient.invalidateQueries({ queryKey: weddingQueryKeys.all });
-        queryClient.removeQueries({ queryKey: weddingQueryKeys.all });
-        await queryClient.refetchQueries({ queryKey: weddingQueryKeys.lists() });
+        queryClient.invalidateQueries({ queryKey: weddingQueryKeys.all });
         toast({
           title: 'Success',
           description: 'Wedding creation updated successfully',
@@ -156,10 +145,7 @@ const AdminWeddingCreations = () => {
           },
           imageFile
         );
-        // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-        await queryClient.invalidateQueries({ queryKey: weddingQueryKeys.all });
-        queryClient.removeQueries({ queryKey: weddingQueryKeys.all });
-        await queryClient.refetchQueries({ queryKey: weddingQueryKeys.lists() });
+        queryClient.invalidateQueries({ queryKey: weddingQueryKeys.all });
         toast({
           title: 'Success',
           description: 'Wedding creation added successfully',
@@ -168,7 +154,6 @@ const AdminWeddingCreations = () => {
 
       setShowForm(false);
       setEditingId(null);
-      await loadCreations();
     } catch (error) {
       toast({
         title: 'Error',
@@ -183,15 +168,11 @@ const AdminWeddingCreations = () => {
   const handleDelete = async (id: string) => {
     try {
       await deleteWeddingCreation(id);
-      // CRITICAL: Invalidate React Query cache so frontend sees changes immediately
-      await queryClient.invalidateQueries({ queryKey: weddingQueryKeys.all });
-      queryClient.removeQueries({ queryKey: weddingQueryKeys.all });
-      await queryClient.refetchQueries({ queryKey: weddingQueryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: weddingQueryKeys.all });
       toast({
         title: 'Success',
         description: 'Wedding creation deleted successfully',
       });
-      await loadCreations();
     } catch (error) {
       toast({
         title: 'Error',

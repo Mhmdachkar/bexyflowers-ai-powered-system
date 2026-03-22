@@ -1,104 +1,116 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight, Gift, Loader2, Wand2, RefreshCw } from 'lucide-react';
+import {
+  Sparkles, ArrowRight, Gift, Loader2, Wand2, RefreshCw,
+  Star, Shuffle, ChevronRight, Download
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { 
-  zodiacSigns, 
-  getZodiacSign, 
-  getElementColors, 
-  ZodiacSign, 
-  ZodiacBouquet 
+import {
+  zodiacSigns, getZodiacSign, ZodiacSign, ZodiacBouquet,
 } from '@/data/zodiac';
-import { getProductImageAlt } from '@/lib/imageAltUtils';
 import { generateBouquetImage as generateImage } from '@/lib/api/imageGeneration';
 import { useCartWithToast } from '@/hooks/useCartWithToast';
 import { findCachedZodiacImage, cacheZodiacImage } from '@/lib/api/zodiac-image-cache';
 import { toast } from 'sonner';
 
-// Luxury Gold Accent Component
-const GoldAccent = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-  <div className={`relative ${className}`}>
-    <div className="absolute inset-0 bg-gradient-to-r from-[#C79E48]/20 via-[#D4A85A]/30 to-[#C79E48]/20 rounded-full blur-xl" />
-    {children}
-  </div>
-);
+// ── Variation system ─────────────────────────────────────────────────────────
+// 8 distinct cinematographic styles ensure every regeneration looks different
+const COMPOSITION_VARIATIONS = [
+  'elegant overhead flat-lay on a white marble surface, soft diffused window light from the left',
+  'three-quarter angle close-up at 45 degrees, shallow depth of field, bokeh background',
+  'straight-on frontal portrait of bouquet in hands, warm golden-hour studio lighting',
+  'dramatic side profile with hard rim lighting creating deep contrast and long shadows',
+  'macro close-up detail shot focusing on a single central bloom with surrounding flowers softly blurred',
+  'elevated view with petals scattered around the arrangement on a light wood surface',
+  'romantic soft-focus portrait with backlit halo glow, gauze-like atmosphere',
+  'editorial-style full-length on a white studio sweep, crisp even lighting, fashion magazine quality',
+];
 
+// ── Prompt builder ───────────────────────────────────────────────────────────
+function buildZodiacPrompt(
+  sign: ZodiacSign,
+  bouquet: ZodiacBouquet,
+  gender: 'female' | 'male' | '',
+  variationIndex: number
+): string {
+  const { aiPromptDetails } = sign;
+  const composition = COMPOSITION_VARIATIONS[variationIndex % COMPOSITION_VARIATIONS.length];
+
+  const genderNote =
+    gender === 'male'
+      ? 'Masculine presentation: structured upright stems, no lace or pastel, dark rich wrapping, architectural feel.'
+      : gender === 'female'
+      ? 'Feminine presentation: soft flowing romantic silhouette, lush rounded shape, delicate ribbon detail.'
+      : '';
+
+  return (
+    `Professional luxury floral photography. A stunning handcrafted bouquet. ` +
+    `Flowers: ${aiPromptDetails.flowers}. ` +
+    `Color atmosphere: ${aiPromptDetails.colorAtmosphere}. ` +
+    `Arrangement shape: ${aiPromptDetails.arrangementShape}. ` +
+    `Packaging: ${aiPromptDetails.packaging}. ` +
+    `Emotional tone: ${aiPromptDetails.mood}. ` +
+    (genderNote ? `${genderNote} ` : '') +
+    `Composition: ${composition}. ` +
+    `The bouquet evokes ${bouquet.meaning}. ` +
+    `Zodiac energy: ${sign.name} ruled by ${sign.rulingPlanet}, ${sign.element} element. ` +
+    `Photorealistic, 8K detail, high-end floral studio photography, white or neutral background.`
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 const ZodiacBouquetQuiz = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [userInfo, setUserInfo] = useState({
-    name: '',
-    gender: '' as '' | 'female' | 'male',
-    month: '',
-    day: '',
-    email: ''
+    name: '', gender: '' as '' | 'female' | 'male', month: '', day: '',
   });
   const [birthError, setBirthError] = useState<string | null>(null);
   const [selectedSign, setSelectedSign] = useState<ZodiacSign | null>(null);
-  const [selectedBouquet, setSelectedBouquet] = useState<ZodiacBouquet | null>(null);
   const [showResult, setShowResult] = useState(false);
 
   const steps = [
     { title: 'Welcome', description: 'Discover your cosmic bouquet' },
-    { title: 'Birth Details', description: 'Enter your birth information' },
-    { title: 'Zodiac Sign', description: 'Your astrological profile' },
-    { title: 'Perfect Match', description: 'Your ideal bouquet' }
+    { title: 'Birth Date', description: 'Enter your birth details' },
+    { title: 'Your Sign', description: 'Your astrological profile' },
+    { title: 'Bouquet', description: 'Your perfect match' },
   ];
 
   const handleUserInfoChange = (patch: Partial<typeof userInfo>) => {
     setUserInfo(prev => ({ ...prev, ...patch }));
-    // Clear birth validation error as soon as the user changes their inputs
-    if (birthError) {
-      setBirthError(null);
-    }
+    if (birthError) setBirthError(null);
   };
 
   const handleNext = () => {
     if (currentStep === 1) {
-      // Validate birth date before moving on
       if (!userInfo.month || !userInfo.day) {
         setBirthError('Please select both your birth month and day.');
         return;
       }
-
       const month = Number(userInfo.month);
       const day = Number(userInfo.day);
-
       if (!Number.isInteger(month) || month < 1 || month > 12) {
-        setBirthError('Please enter a valid birth month (1-12).');
+        setBirthError('Please enter a valid birth month (1–12).');
         return;
       }
-
-      if (!Number.isInteger(day) || day < 1 || day > 31) {
-        setBirthError('Please enter a valid birth day.');
-        return;
-      }
-
-      // Check max days for the selected month (using a non-leap reference year)
       const daysInMonth = new Date(2001, month, 0).getDate();
-      if (day > daysInMonth) {
-        setBirthError('This day does not exist for the selected month. Please double-check.');
+      if (day < 1 || day > daysInMonth) {
+        setBirthError('This day does not exist for the selected month.');
         return;
       }
-
       const sign = getZodiacSign(month, day);
       if (!sign) {
-        setBirthError('We could not determine your zodiac sign from this date. Please check your birth date.');
+        setBirthError('Could not determine your zodiac sign. Please check your birth date.');
         return;
       }
-
       setSelectedSign(sign);
       setBirthError(null);
     }
@@ -110,668 +122,473 @@ const ZodiacBouquetQuiz = () => {
   };
 
   const handlePrevious = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const handleBouquetSelect = (bouquet: ZodiacBouquet) => {
-    setSelectedBouquet(bouquet);
+    if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
 
   const handleRestart = () => {
     setCurrentStep(0);
-    setUserInfo({ name: '', gender: '', month: '', day: '', email: '' });
+    setUserInfo({ name: '', gender: '', month: '', day: '' });
     setBirthError(null);
     setSelectedSign(null);
-    setSelectedBouquet(null);
     setShowResult(false);
   };
 
   const progress = ((currentStep + 1) / steps.length) * 100;
 
-  // When entering the final step, auto-select the first recommended bouquet
-  useEffect(() => {
-    if (currentStep === 3 && selectedSign && !selectedBouquet) {
-      const first = selectedSign.recommendedBouquets?.[0];
-      if (first) {
-        setSelectedBouquet(first);
-      }
-    }
-  }, [currentStep, selectedSign, selectedBouquet]);
-
-  if (showResult && selectedSign && selectedBouquet) {
+  if (showResult && selectedSign) {
+    const bouquet = selectedSign.recommendedBouquets[0];
     return (
-      <ZodiacResult 
+      <ZodiacResult
         userInfo={userInfo}
         sign={selectedSign}
-        bouquet={selectedBouquet}
+        bouquet={bouquet}
         onRestart={handleRestart}
       />
     );
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{ background: 'rgb(211, 211, 209)' }}>
-      {/* Enhanced Background Pattern */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `radial-gradient(circle at 20% 20%, hsl(51 100% 50% / 0.15) 0%, transparent 40%),
-                           radial-gradient(circle at 80% 80%, hsl(51 100% 50% / 0.15) 0%, transparent 40%),
-                           radial-gradient(circle at 50% 50%, hsl(51 100% 50% / 0.05) 0%, transparent 60%)`
-        }} />
+    <div
+      className="relative overflow-hidden"
+      style={{ background: 'linear-gradient(160deg,#1c1a17 0%,#2a2218 50%,#1c1a17 100%)' }}
+    >
+      {/* Background glow */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-10 left-1/4 w-80 h-80 rounded-full blur-3xl opacity-10"
+          style={{ background: 'radial-gradient(circle,#C79E48,transparent)' }} />
+        <div className="absolute bottom-10 right-1/4 w-60 h-60 rounded-full blur-3xl opacity-8"
+          style={{ background: 'radial-gradient(circle,#C79E48,transparent)' }} />
       </div>
 
-      {/* Floating Geometric Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-amber-400/10 to-yellow-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute top-40 right-20 w-24 h-24 bg-gradient-to-br from-amber-300/15 to-orange-400/15 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute bottom-32 left-1/4 w-40 h-40 bg-gradient-to-br from-yellow-400/8 to-amber-500/8 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
-      </div>
+      <section className="relative z-10 py-20 sm:py-28 px-4 sm:px-6">
+        <div className="max-w-3xl mx-auto">
 
-      <section className="py-16 sm:py-24 lg:py-32 px-4 sm:px-6 relative z-10">
-        <div className="container mx-auto px-2 sm:px-4 max-w-4xl">
-        {/* Header */}
-        <div
-          className="text-center mb-10 sm:mb-16 relative"
-        >
-          {/* Modern Floating Badge */}
-          <div
-            className="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-gradient-to-r from-slate-800/10 to-slate-700/10 backdrop-blur-xl border border-slate-600/20 mb-6 sm:mb-8"
-          >
-            <div className="w-2 h-2 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 animate-pulse" />
-            <span className="text-sm font-medium text-slate-700 tracking-wider uppercase">Zodiac Bouquet Finder</span>
+          {/* Section header */}
+          <div className="text-center mb-14">
+            <motion.div
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-full mb-6"
+              style={{ background: 'rgba(199,158,72,0.12)', border: '1px solid rgba(199,158,72,0.3)' }}
+              initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
+            >
+              <div className="w-1.5 h-1.5 rounded-full bg-[#C79E48] animate-pulse" />
+              <span className="text-xs tracking-widest uppercase text-[#C79E48]"
+                style={{ fontFamily: "'EB Garamond', serif" }}>
+                Zodiac Bouquet Finder
+              </span>
+            </motion.div>
+
+            <motion.h2
+              className="text-4xl sm:text-5xl font-normal text-white mb-4"
+              style={{ fontFamily: "'Playfair Display', serif" }}
+              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              Find Your{' '}
+              <span style={{ color: '#C79E48' }}>Cosmic</span>{' '}
+              Bouquet
+            </motion.h2>
+            <motion.p
+              className="text-base sm:text-lg max-w-xl mx-auto"
+              style={{ color: 'rgba(255,255,255,0.55)', fontFamily: "'EB Garamond', serif", fontSize: '1.1rem' }}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              Your birth chart knows which flowers are yours. Let the stars choose.
+            </motion.p>
           </div>
-          
-          {/* Luxury Typography with Gold Accent */}
-          <h1 
-            className="font-luxury text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-normal mb-6 relative"
+
+          {/* Progress steps */}
+          <motion.div className="mb-10 px-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}>
+            <div className="relative flex justify-between items-center max-w-xl mx-auto">
+              <div className="absolute top-1/2 left-0 w-full h-px -translate-y-1/2 rounded-full"
+                style={{ background: 'rgba(255,255,255,0.1)' }} />
+              <motion.div
+                className="absolute top-1/2 left-0 h-px -translate-y-1/2 rounded-full origin-left"
+                style={{ background: '#C79E48', width: '100%' }}
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: progress / 100 }}
+                transition={{ duration: 0.6 }}
+              />
+              {steps.map((step, index) => (
+                <div key={index} className="relative flex flex-col items-center z-10">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                    index <= currentStep
+                      ? 'text-white shadow-lg'
+                      : 'bg-transparent border border-white/20 text-white/30'
+                  }`}
+                    style={index <= currentStep
+                      ? { background: 'linear-gradient(135deg,#C79E48,#d4af52)', boxShadow: '0 4px 16px rgba(199,158,72,0.4)' }
+                      : {}
+                    }
+                  >
+                    {index + 1}
+                  </div>
+                  <span className={`absolute -bottom-7 text-[10px] tracking-wider uppercase hidden sm:block ${
+                    index <= currentStep ? 'text-[#C79E48]' : 'text-white/25'
+                  }`} style={{ fontFamily: "'EB Garamond', serif", whiteSpace: 'nowrap' }}>
+                    {step.title}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Quiz card */}
+          <div
+            className="rounded-3xl p-7 sm:p-10"
             style={{
-              fontFamily: 'EB Garamond, serif',
-              background: 'linear-gradient(135deg, #2c2d2a 0%, #3D3027 50%, #2c2d2a 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))',
-              letterSpacing: '-0.02em',
-              lineHeight: '1.2em'
+              background: 'linear-gradient(160deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))',
+              border: '1px solid rgba(199,158,72,0.2)',
+              backdropFilter: 'blur(12px)',
             }}
           >
-            FIND YOUR
-            <br />
-            COSMIC BOUQUET
-            {/* Gold Underline */}
-            <div 
-              className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 h-1 bg-gradient-to-r from-[#C79E48] to-[#D4A85A] rounded-full"
-              style={{ width: '200px' }}
-            />
-          </h1>
-          
-          {/* Enhanced Decorative Elements */}
-          <div className="relative mb-8">
-            <div className="w-40 h-0.5 bg-gradient-to-r from-transparent via-[#C79E48]/60 to-transparent mx-auto" />
-            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-[#C79E48] rotate-45 shadow-lg shadow-[#C79E48]/50" />
-          </div>
-          
-          {/* Enhanced Description */}
-          <p 
-            className="text-gray-600 text-base sm:text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-light"
-          >
-            Discover the perfect floral arrangement that aligns with your zodiac sign and cosmic energy
-          </p>
-        </div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentStep}
+                initial={{ opacity: 0, x: 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -40 }}
+                transition={{ duration: 0.4 }}
+              >
+                {currentStep === 0 && <WelcomeStep userInfo={userInfo} onChangeUserInfo={handleUserInfoChange} />}
+                {currentStep === 1 && <BirthDetailsStep userInfo={userInfo} onChangeUserInfo={handleUserInfoChange} error={birthError} />}
+                {currentStep === 2 && selectedSign && <ZodiacProfileStep sign={selectedSign} />}
+                {currentStep === 3 && selectedSign && <FinalStep sign={selectedSign} />}
+              </motion.div>
+            </AnimatePresence>
 
-        {/* Connected Progress Steps */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mb-8 sm:mb-12 px-2 sm:px-4"
-        >
-          <div className="relative flex justify-between items-center max-w-2xl mx-auto">
-            {/* Continuous Background Line */}
-            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-200 -z-10 transform -translate-y-1/2 rounded-full" />
-            
-            {/* Active Progress Line */}
-            <motion.div 
-              className="absolute top-1/2 left-0 h-0.5 bg-[#C79E48] -z-10 transform -translate-y-1/2 rounded-full origin-left"
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: progress / 100 }}
-              transition={{ duration: 0.8, ease: "easeInOut" }}
-              style={{ width: '100%', transformOrigin: 'left' }} 
-            />
-
-            {steps.map((step, index) => (
-              <div key={index} className="relative group cursor-default flex flex-col items-center">
-                <motion.div
-                  className={`w-10 h-10 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-sm sm:text-lg font-bold transition-all duration-500 relative z-10 ${
-                    index <= currentStep
-                      ? 'bg-[#C79E48] text-white shadow-md shadow-[#C79E48]/30 scale-110'
-                      : 'bg-white border-2 border-gray-200 text-gray-300'
-                  }`}
-                  whileHover={{ scale: 1.15 }}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  {index + 1}
-                  {index <= currentStep && (
-                    <motion.div
-                      className="absolute inset-0 rounded-full bg-[#C79E48] opacity-20"
-                      animate={{ scale: [1, 1.3, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    />
-                  )}
-                </motion.div>
-                <span className={`absolute -bottom-7 sm:-bottom-8 text-[10px] sm:text-xs font-bold tracking-wider whitespace-nowrap transition-colors duration-300 uppercase hidden sm:block ${
-                  index <= currentStep ? 'text-[#C79E48]' : 'text-gray-300'
-                }`}>
-                  {step.title}
-                </span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Luxury Quiz Content Card */}
-        <Card className="p-6 sm:p-8 md:p-10 bg-gradient-to-br from-white to-[#F5F1E8] border border-[#D4A85A] shadow-xl shadow-[#C79E48]/15 rounded-3xl">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStep}
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.5 }}
-            >
-              {currentStep === 0 && (
-                <WelcomeStep 
-                  userInfo={userInfo}
-                  onChangeUserInfo={handleUserInfoChange}
-                />
-              )}
-              
-              {currentStep === 1 && (
-                <BirthDetailsStep 
-                  userInfo={userInfo}
-                  onChangeUserInfo={handleUserInfoChange}
-                  error={birthError}
-                />
-              )}
-              
-              {currentStep === 2 && selectedSign && (
-                <ZodiacProfileStep 
-                  sign={selectedSign}
-                />
-              )}
-              
-              {currentStep === 3 && selectedSign && (
-                <BouquetSelectionStep 
-                  sign={selectedSign}
-                  selectedBouquet={selectedBouquet}
-                  onBouquetSelect={handleBouquetSelect}
-                />
-              )}
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Luxury Navigation Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 justify-between mt-8 sm:mt-10">
-            <motion.div
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Button
-                variant="outline"
+            {/* Navigation */}
+            <div className="flex justify-between gap-4 mt-10">
+              <button
                 onClick={handlePrevious}
                 disabled={currentStep === 0}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white border-2 border-[#C79E48] text-[#C79E48] hover:bg-[#F5F1E8] disabled:opacity-50 disabled:cursor-not-allowed px-8 py-3 rounded-xl font-semibold"
+                className="px-6 py-3 rounded-xl text-sm font-medium transition-all disabled:opacity-30"
+                style={{
+                  border: '1px solid rgba(199,158,72,0.35)',
+                  color: '#C79E48',
+                  background: 'transparent',
+                  fontFamily: "'EB Garamond', serif",
+                }}
               >
-                Previous
-              </Button>
-            </motion.div>
-            
-            <motion.div
-              whileHover={{ scale: 1.05, y: -3 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Button
+                ← Back
+              </button>
+
+              <motion.button
                 onClick={handleNext}
                 disabled={
                   (currentStep === 0 && (!userInfo.name || !userInfo.gender)) ||
-                  (currentStep === 1 && (!userInfo.month || !userInfo.day)) ||
-                  (currentStep === 3 && !selectedBouquet)
+                  (currentStep === 1 && (!userInfo.month || !userInfo.day))
                 }
-                className="w-full sm:w-auto flex items-center justify-center gap-3 bg-gradient-to-r from-[#C79E48] to-[#C79E48] hover:from-[#C79E48] hover:to-[#C79E48] text-white shadow-lg shadow-[#C79E48]/40 disabled:opacity-50 disabled:cursor-not-allowed px-8 py-3 rounded-xl font-semibold text-lg"
+                className="flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{
+                  background: 'linear-gradient(135deg,#C79E48,#d4af52)',
+                  boxShadow: '0 6px 20px rgba(199,158,72,0.4)',
+                  fontFamily: "'EB Garamond', serif",
+                  letterSpacing: '0.04em',
+                }}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
               >
-                {currentStep === steps.length - 1 ? 'Find My Bouquet' : 'Next'}
-                <motion.div
-                  animate={{ x: [0, 5, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                >
-                  <ArrowRight className="w-5 h-5" />
-                </motion.div>
-              </Button>
-            </motion.div>
+                {currentStep === steps.length - 1 ? (
+                  <><Sparkles size={15} /> Reveal My Bouquet</>
+                ) : (
+                  <>Continue <ChevronRight size={15} /></>
+                )}
+              </motion.button>
+            </div>
           </div>
-        </Card>
+
         </div>
       </section>
     </div>
   );
 };
 
-// Step Components
-const WelcomeStep = ({ 
-  userInfo, 
-  onChangeUserInfo,
-}: { 
-  userInfo: any; 
-  onChangeUserInfo: (patch: Partial<any>) => void; 
-}) => (
-      <div className="text-center space-y-8 sm:space-y-10">
-    
-    <motion.h3 
-      className="text-2xl sm:text-4xl font-bold text-gray-900 mb-4 sm:mb-6 tracking-wide"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.4 }}
-      style={{ fontFamily: 'EB Garamond, serif' }}
-    >
-      Welcome to Your{' '}
-      <span className="text-[#C79E48]">Cosmic</span>{' '}
-      Journey
-    </motion.h3>
-    
-    <motion.p 
-      className="text-gray-600 text-base sm:text-xl mb-6 sm:mb-10 leading-relaxed font-light max-w-2xl mx-auto"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.5 }}
-    >
-      Let's discover the perfect bouquet that resonates with your zodiac energy and personal style.
-    </motion.p>
-    
-    <motion.div 
-      className="max-w-md mx-auto space-y-8"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.6 }}
-    >
+// ── Step 1 — Welcome ──────────────────────────────────────────────────────────
+const WelcomeStep = ({
+  userInfo, onChangeUserInfo
+}: { userInfo: any; onChangeUserInfo: (p: Partial<any>) => void }) => (
+  <div className="space-y-8 text-center">
+    <div>
+      <h3 className="text-2xl sm:text-3xl font-normal text-white mb-3"
+        style={{ fontFamily: "'Playfair Display', serif" }}>
+        Welcome to Your <span style={{ color: '#C79E48' }}>Cosmic</span> Journey
+      </h3>
+      <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)', fontFamily: "'EB Garamond', serif", fontSize: '1rem' }}>
+        Tell us a little about yourself so we can curate your perfect arrangement.
+      </p>
+    </div>
+
+    <div className="max-w-sm mx-auto space-y-6 text-left">
       <div>
-        <Label htmlFor="name" className="text-gray-800 font-semibold text-xl mb-4 block tracking-wide">
-          What should we call you?
-        </Label>
-        <Input
-          id="name"
+        <label className="block text-xs tracking-widest uppercase mb-2"
+          style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif" }}>
+          Your Name
+        </label>
+        <input
+          type="text"
           placeholder="Enter your name"
           value={userInfo.name}
-          onChange={(e) => onChangeUserInfo({ name: e.target.value })}
-          className="bg-white border-2 border-[#D4A85A] focus:border-[#C79E48] focus:ring-[#C79E48]/20 h-14 text-lg rounded-xl px-6 shadow-lg text-gray-900 placeholder:text-gray-500"
+          onChange={e => onChangeUserInfo({ name: e.target.value })}
+          className="w-full h-12 rounded-xl px-4 text-sm text-white outline-none focus:ring-1 focus:ring-[#C79E48]"
+          style={{
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(199,158,72,0.25)',
+            fontFamily: "'EB Garamond', serif",
+          }}
         />
       </div>
 
       <div>
-        <Label className="text-gray-800 font-semibold text-xl mb-4 block tracking-wide">
+        <label className="block text-xs tracking-widest uppercase mb-3"
+          style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif" }}>
           Who is this bouquet for?
-        </Label>
-        <div className="grid grid-cols-2 gap-4">
-          {([
-            { value: 'female' as const, label: 'Her', icon: '🌸' },
-            { value: 'male' as const, label: 'Him', icon: '🌿' },
-          ]).map((opt) => (
-            <motion.button
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { value: 'female', label: 'Her', icon: '🌸' },
+            { value: 'male', label: 'Him', icon: '🌿' },
+          ].map(opt => (
+            <button
               key={opt.value}
               type="button"
               onClick={() => onChangeUserInfo({ gender: opt.value })}
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.96 }}
-              className={`flex items-center justify-center gap-3 h-14 rounded-xl text-lg font-semibold transition-all duration-300 border-2 shadow-lg ${
-                userInfo.gender === opt.value
-                  ? 'border-[#C79E48] bg-[#F5F1E8] text-[#8B6F3A] ring-2 ring-[#C79E48]/30'
-                  : 'border-[#D4A85A] bg-white text-gray-700 hover:border-[#C79E48] hover:bg-[#F5F1E8]/50'
-              }`}
+              className="h-12 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-all"
+              style={{
+                background: userInfo.gender === opt.value ? 'rgba(199,158,72,0.2)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${userInfo.gender === opt.value ? '#C79E48' : 'rgba(255,255,255,0.12)'}`,
+                color: userInfo.gender === opt.value ? '#C79E48' : 'rgba(255,255,255,0.6)',
+                fontFamily: "'EB Garamond', serif",
+              }}
             >
-              <span className="text-2xl">{opt.icon}</span>
-              {opt.label}
-            </motion.button>
+              <span>{opt.icon}</span>
+              <span>{opt.label}</span>
+            </button>
           ))}
         </div>
       </div>
-    </motion.div>
+    </div>
   </div>
 );
 
-const BirthDetailsStep = ({ 
-  userInfo, 
-  onChangeUserInfo,
-  error,
-}: { 
-  userInfo: any; 
-  onChangeUserInfo: (patch: Partial<any>) => void;
-  error?: string | null;
-}) => (
-  <div className="space-y-10">
-    <motion.div 
-      className="text-center"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-    >
-      <h3 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
+// ── Step 2 — Birth Date ───────────────────────────────────────────────────────
+const BirthDetailsStep = ({
+  userInfo, onChangeUserInfo, error,
+}: { userInfo: any; onChangeUserInfo: (p: Partial<any>) => void; error?: string | null }) => (
+  <div className="space-y-8">
+    <div className="text-center">
+      <h3 className="text-2xl sm:text-3xl font-normal text-white mb-2"
+        style={{ fontFamily: "'Playfair Display', serif" }}>
         Your Birth Details
       </h3>
-      <p className="text-gray-600 text-base sm:text-xl font-light">
-        Enter your birth month and day to discover your zodiac sign
+      <p className="text-sm" style={{ color: 'rgba(255,255,255,0.45)', fontFamily: "'EB Garamond', serif", fontSize: '1rem' }}>
+        Your birth date unlocks your zodiac sign and your perfect blooms.
       </p>
-    </motion.div>
-    
-    <motion.div 
-      className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.3 }}
-    >
+    </div>
+
+    <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto">
       <div>
-        <Label htmlFor="month" className="text-gray-800 font-semibold text-xl mb-4 block tracking-wide">Birth Month</Label>
-        <Select
-          value={userInfo.month}
-          onValueChange={(value) => onChangeUserInfo({ month: value })}
-        >
-          <SelectTrigger className="bg-white border-2 border-[#D4A85A] focus:border-[#C79E48] h-14 text-lg rounded-xl px-6 shadow-lg text-gray-900">
+        <label className="block text-xs tracking-widest uppercase mb-2"
+          style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif" }}>
+          Month
+        </label>
+        <Select value={userInfo.month} onValueChange={v => onChangeUserInfo({ month: v })}>
+          <SelectTrigger className="h-12 rounded-xl text-white text-sm"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(199,158,72,0.25)', fontFamily: "'EB Garamond', serif" }}>
             <SelectValue placeholder="Select month" />
           </SelectTrigger>
-          <SelectContent className="bg-white border border-[#D4A85A] rounded-xl shadow-lg">
+          <SelectContent className="bg-[#1c1a17] border border-[#C79E48]/30 rounded-xl">
             {Array.from({ length: 12 }, (_, i) => (
-              <SelectItem key={i + 1} value={(i + 1).toString()} className="text-gray-900 hover:bg-[#F5F1E8]">
+              <SelectItem key={i + 1} value={(i + 1).toString()}
+                className="text-white hover:bg-[#C79E48]/10 text-sm">
                 {new Date(2000, i).toLocaleString('default', { month: 'long' })}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
-      
+
       <div>
-        <Label htmlFor="day" className="text-gray-800 font-semibold text-xl mb-4 block tracking-wide">Birth Day</Label>
-        <Input
-          id="day"
-          type="number"
-          min="1"
-          max="31"
-          placeholder="Day"
+        <label className="block text-xs tracking-widest uppercase mb-2"
+          style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif" }}>
+          Day
+        </label>
+        <input
+          type="number" min="1" max="31" placeholder="Day"
           value={userInfo.day}
-          onChange={(e) => onChangeUserInfo({ day: e.target.value })}
-          className="bg-white border-2 border-[#D4A85A] focus:border-[#C79E48] focus:ring-[#C79E48]/20 h-14 text-lg rounded-xl px-6 shadow-lg text-gray-900 placeholder:text-gray-500"
+          onChange={e => onChangeUserInfo({ day: e.target.value })}
+          className="w-full h-12 rounded-xl px-4 text-sm text-white outline-none focus:ring-1 focus:ring-[#C79E48]"
+          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(199,158,72,0.25)', fontFamily: "'EB Garamond', serif" }}
         />
       </div>
-    </motion.div>
+    </div>
+
     {error && (
-      <motion.p
-        className="text-center text-sm text-red-600 mt-2"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
+      <motion.p className="text-center text-sm text-red-400" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         {error}
       </motion.p>
     )}
   </div>
 );
 
+// ── Step 3 — Zodiac Profile ────────────────────────────────────────────────────
 const ZodiacProfileStep = ({ sign }: { sign: ZodiacSign }) => (
   <div className="space-y-6">
-    <motion.div 
-      className="text-center"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-    >
+    {/* Sign header */}
+    <div className="text-center">
       <motion.div
         initial={{ scale: 0, rotate: -180 }}
         animate={{ scale: 1, rotate: 0 }}
-        transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
-        className="relative mx-auto mb-4"
+        transition={{ type: 'spring', stiffness: 220, damping: 16 }}
+        className="w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center text-5xl border-2 shadow-xl"
+        style={{
+          borderColor: '#C79E48',
+          background: 'rgba(199,158,72,0.1)',
+          boxShadow: '0 0 32px rgba(199,158,72,0.25)',
+        }}
       >
-        <div className="w-28 h-28 bg-white border-4 border-[#C79E48] rounded-full flex items-center justify-center shadow-2xl shadow-[#C79E48]/30 relative">
-          <span className="text-6xl drop-shadow-lg">{sign.symbol}</span>
-          <motion.div
-            className="absolute inset-0 border-4 border-[#C79E48] rounded-full"
-            animate={{ scale: [1, 1.05, 1], opacity: [0.3, 0.1, 0.3] }}
-            transition={{ duration: 3, repeat: Infinity }}
-          />
-        </div>
+        {sign.symbol}
       </motion.div>
-      
-      <motion.h3 
-        className="text-2xl sm:text-4xl font-bold text-gray-900 mb-2 tracking-wide"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
-        style={{ fontFamily: 'EB Garamond, serif' }}
-      >
+      <h3 className="text-3xl font-normal text-white mb-1" style={{ fontFamily: "'Playfair Display', serif" }}>
         {sign.name}
-      </motion.h3>
-      
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6, delay: 0.5 }}
-      >
-        <Badge variant="secondary" className="mb-3 bg-[#F5F1E8] border border-[#C79E48] text-[#8B6F3A] text-sm px-4 py-1 rounded-full font-semibold">
-          {sign.element} • {sign.modality}
-        </Badge>
-      </motion.div>
-      
-      <motion.p 
-        className="text-gray-600 text-sm font-light"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.6 }}
-      >
-        {sign.dates} • Ruled by {sign.rulingPlanet}
-      </motion.p>
-    </motion.div>
-    
-    <motion.div 
-      className="grid md:grid-cols-2 gap-4"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.7 }}
-    >
-      <div className="bg-white rounded-2xl p-5 border border-[#E8D4A8] shadow-md">
-        <h4 className="font-bold text-gray-900 text-lg mb-3 tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
-          Your Personality
-        </h4>
-        <p className="text-gray-800 leading-relaxed text-sm">
-          {sign.personality}
-        </p>
-      </div>
-      
-      <div className="bg-white rounded-2xl p-5 border border-[#E8D4A8] shadow-md">
-        <h4 className="font-bold text-gray-900 text-lg mb-3 tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
-          Your Traits
-        </h4>
-        <div className="flex flex-wrap gap-2">
-          {sign.traits.map((trait, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: 0.8 + index * 0.1 }}
-              whileHover={{ scale: 1.05 }}
-            >
-              <span className="inline-block border border-[#C79E48] text-[#8B6F3A] bg-[#F5F1E8] rounded-full px-3 py-1 text-xs font-medium hover:bg-[#C79E48] hover:text-white transition-all duration-300 cursor-pointer">
-                {trait}
-              </span>
-            </motion.div>
+      </h3>
+      <p className="text-xs tracking-widest" style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif" }}>
+        {sign.element.toUpperCase()} · {sign.rulingPlanet.toUpperCase()} · {sign.dates}
+      </p>
+    </div>
+
+    {/* Personality */}
+    <div className="rounded-2xl p-5"
+      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(199,158,72,0.15)' }}>
+      <p className="leading-relaxed text-sm" style={{ color: 'rgba(255,255,255,0.75)', fontFamily: "'EB Garamond', serif", fontSize: '0.95rem' }}>
+        {sign.personality}
+      </p>
+    </div>
+
+    {/* Traits + Colors */}
+    <div className="grid grid-cols-2 gap-3">
+      <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(199,158,72,0.12)' }}>
+        <p className="text-xs tracking-widest uppercase mb-3" style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif" }}>Traits</p>
+        <div className="flex flex-wrap gap-1.5">
+          {sign.traits.map(t => (
+            <span key={t}
+              className="px-2.5 py-1 rounded-full text-[11px] font-medium"
+              style={{ background: 'rgba(199,158,72,0.12)', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(199,158,72,0.2)', fontFamily: "'EB Garamond', serif" }}>
+              {t}
+            </span>
           ))}
         </div>
       </div>
-    </motion.div>
-    
-    <motion.div 
-      className="bg-white rounded-2xl p-5 border border-[#E8D4A8] shadow-md flex flex-col items-center"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.9 }}
-    >
-      <h4 className="font-bold text-gray-900 text-lg mb-4 tracking-wide text-center" style={{ fontFamily: 'EB Garamond, serif' }}>
-        Your Colors
-      </h4>
-      <div className="flex justify-center gap-4">
-        {sign.colors.map((color, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3, delay: 1 + index * 0.1 }}
-            className="relative group cursor-pointer"
-            whileHover={{ scale: 1.2 }}
-          >
-            <div
-              className="w-10 h-10 rounded-full border-2 border-[#C79E48] shadow-md"
-              style={{ backgroundColor: color }}
-              title={`${sign.name} ${color}`}
-            />
-            <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-              {color}
+
+      <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(199,158,72,0.12)' }}>
+        <p className="text-xs tracking-widest uppercase mb-3" style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif" }}>Your Colors</p>
+        <div className="space-y-2">
+          {sign.colors.map((hex, i) => (
+            <div key={hex} className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full border border-white/20 flex-shrink-0"
+                style={{ background: hex }} />
+              <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'EB Garamond', serif" }}>
+                {sign.colorNames[i]}
+              </span>
             </div>
-          </motion.div>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    {/* Flowers */}
+    <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(199,158,72,0.12)' }}>
+      <p className="text-xs tracking-widest uppercase mb-3" style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif" }}>Your Flowers</p>
+      <div className="flex flex-wrap gap-2">
+        {sign.flowers.map(f => (
+          <span key={f} className="text-[11px] px-2 py-0.5 rounded-full"
+            style={{ background: 'rgba(199,158,72,0.08)', color: 'rgba(255,255,255,0.65)', fontFamily: "'EB Garamond', serif" }}>
+            🌸 {f}
+          </span>
         ))}
       </div>
-    </motion.div>
-  </div>
-);
-
-const BouquetSelectionStep = ({ 
-  sign, 
-  selectedBouquet, 
-  onBouquetSelect 
-}: { 
-  sign: ZodiacSign; 
-  selectedBouquet: ZodiacBouquet | null; 
-  onBouquetSelect: (bouquet: ZodiacBouquet) => void; 
-}) => (
-  <div className="space-y-10">
-    <motion.div 
-      className="text-center"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-    >
-      <h3 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
-        Your Perfect Match
-      </h3>
-      <p className="text-gray-600 text-base sm:text-xl font-light">
-        Choose the bouquet that speaks to your {sign.name} soul
-      </p>
-    </motion.div>
-    
-    <div className="grid gap-6 sm:gap-8">
-      {sign.recommendedBouquets.map((bouquet, index) => (
-        <motion.div
-          key={bouquet.id}
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.1, duration: 0.6 }}
-          whileHover={{ y: -8 }}
-        >
-          <Card 
-            className={`p-5 sm:p-6 md:p-8 cursor-pointer transition-all duration-500 rounded-2xl border-2 shadow-lg ${
-              selectedBouquet?.id === bouquet.id
-                ? 'ring-4 ring-[#C79E48] bg-gradient-to-br from-[#F5F1E8] to-white border-[#C79E48] shadow-xl shadow-[#C79E48]/30'
-                : 'bg-white border-[#E8D4A8] hover:border-[#D4A85A] hover:shadow-xl'
-            }`}
-            onClick={() => onBouquetSelect(bouquet)}
-          >
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 bg-white rounded-2xl overflow-hidden flex-shrink-0 border-2 border-[#E8D4A8] shadow-lg">
-                <img
-                  src={bouquet.image}
-                  alt={getProductImageAlt(bouquet)}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              
-              <div className="flex-1">
-                <h4 className="font-bold text-gray-900 text-xl sm:text-2xl mb-3 sm:mb-4 tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
-                  {bouquet.name}
-                </h4>
-                <p className="text-gray-700 mb-4 sm:mb-6 leading-relaxed text-sm sm:text-base md:text-lg">
-                  {bouquet.description}
-                </p>
-                <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-base sm:text-lg md:text-xl">
-                  <span className="text-[#C79E48] font-bold text-xl sm:text-2xl">
-                    ${bouquet.price}
-                  </span>
-                  <span className="text-gray-800 bg-[#F5F1E8] border border-[#D4A85A] px-4 py-2 rounded-full text-sm font-medium">
-                    {bouquet.occasion}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="text-center md:self-center">
-                <motion.div 
-                  className={`w-12 h-12 rounded-full border-3 flex items-center justify-center transition-all duration-300 ${
-                    selectedBouquet?.id === bouquet.id
-                      ? 'border-[#C79E48] bg-[#C79E48] shadow-lg shadow-[#C79E48]/40'
-                      : 'border-[#D4A85A] bg-white'
-                  }`}
-                  whileHover={{ scale: 1.1 }}
-                >
-                  {selectedBouquet?.id === bouquet.id && (
-                    <motion.div 
-                      className="w-6 h-6 bg-white rounded-full"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                    />
-                  )}
-                </motion.div>
-              </div>
-            </div>
-          </Card>
-        </motion.div>
-      ))}
     </div>
   </div>
 );
 
-// Result Component (with AI image generation)
-const ZodiacResult = ({ 
-  userInfo, 
-  sign, 
-  bouquet, 
-  onRestart 
-}: { 
-  userInfo: any; 
-  sign: ZodiacSign; 
-  bouquet: ZodiacBouquet; 
-  onRestart: () => void; 
+// ── Step 4 — Final confirmation ───────────────────────────────────────────────
+const FinalStep = ({ sign }: { sign: ZodiacSign }) => {
+  const bouquet = sign.recommendedBouquets[0];
+  return (
+    <div className="space-y-6 text-center">
+      <div>
+        <h3 className="text-2xl sm:text-3xl font-normal text-white mb-2"
+          style={{ fontFamily: "'Playfair Display', serif" }}>
+          Your Perfect Bouquet is Ready
+        </h3>
+        <p className="text-sm" style={{ color: 'rgba(255,255,255,0.45)', fontFamily: "'EB Garamond', serif", fontSize: '1rem' }}>
+          We've crafted the perfect arrangement for {sign.name} energy.
+          Click below to generate your AI preview.
+        </p>
+      </div>
+
+      {/* Preview card */}
+      <div className="rounded-2xl p-5 text-left"
+        style={{ background: 'rgba(199,158,72,0.06)', border: '1px solid rgba(199,158,72,0.2)' }}>
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
+            style={{ background: 'rgba(199,158,72,0.12)', border: '1px solid rgba(199,158,72,0.2)' }}>
+            {sign.symbol}
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-white mb-1" style={{ fontFamily: "'Playfair Display', serif" }}>
+              {bouquet.name}
+            </p>
+            <p className="text-xs mb-2" style={{ color: 'rgba(255,255,255,0.55)', fontFamily: "'EB Garamond', serif" }}>
+              {bouquet.description}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {bouquet.flowers.slice(0, 3).map(f => (
+                <span key={f} className="text-[10px] px-2 py-0.5 rounded-full"
+                  style={{ background: 'rgba(199,158,72,0.12)', color: '#C79E48', fontFamily: "'EB Garamond', serif" }}>
+                  {f}
+                </span>
+              ))}
+            </div>
+          </div>
+          <p className="text-lg font-bold flex-shrink-0" style={{ color: '#C79E48', fontFamily: "'Playfair Display', serif" }}>
+            ${bouquet.price}
+          </p>
+        </div>
+      </div>
+
+      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.3)', fontFamily: "'EB Garamond', serif" }}>
+        ✨ Each generation creates a unique AI image based on your sign's real astrology
+      </p>
+    </div>
+  );
+};
+
+// ── Result page ───────────────────────────────────────────────────────────────
+const ZodiacResult = ({
+  userInfo, sign, bouquet, onRestart,
+}: {
+  userInfo: any;
+  sign: ZodiacSign;
+  bouquet: ZodiacBouquet;
+  onRestart: () => void;
 }) => {
   const { addToCart } = useCartWithToast();
+  const gender = (userInfo.gender as 'female' | 'male' | '') || '';
+
   const [aiImage, setAiImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoadingCache, setIsLoadingCache] = useState(true);
-  const gender = (userInfo.gender as 'female' | 'male' | '') || '';
+  const [variationIndex, setVariationIndex] = useState(0);
+  const [generationCount, setGenerationCount] = useState(0);
 
-  const handleAddToCart = () => {
-    addToCart({
-      id: bouquet.id,
-      title: bouquet.name,
-      price: bouquet.price,
-      image: aiImage || bouquet.image,
-      description: `${sign.name} Zodiac Bouquet${gender === 'male' ? ' (For Him)' : gender === 'female' ? ' (For Her)' : ''} — ${bouquet.occasion}`,
-    });
-  };
-
-  // On mount, check if a cached image already exists for this combo
+  // Check cache on mount
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const cached = await findCachedZodiacImage(gender, sign.id, bouquet.id);
-        if (!cancelled && cached) {
-          setAiImage(cached);
-        }
+        if (!cancelled && cached) setAiImage(cached);
       } catch { /* ignore */ } finally {
         if (!cancelled) setIsLoadingCache(false);
       }
@@ -779,41 +596,34 @@ const ZodiacResult = ({
     return () => { cancelled = true; };
   }, [gender, sign.id, bouquet.id]);
 
-  const buildZodiacPrompt = () => {
-    const flowerList = bouquet.flowers.join(', ');
-    const colorList = bouquet.colors.join(', ');
+  // Cleanup blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (aiImage && aiImage.startsWith('blob:')) URL.revokeObjectURL(aiImage);
+    };
+  }, [aiImage]);
 
-    const genderStyle =
-      gender === 'male'
-        ? 'Masculine presentation: structured geometric arrangement, bold upright stems, ' +
-          'deep rich tones (burgundy, navy, forest green, charcoal, copper), ' +
-          'minimal foliage with architectural greenery (eucalyptus, thistle, protea accents), ' +
-          'wrapped in matte dark paper or kraft with leather ribbon. ' +
-          'No pastel colors, no lace, no overly round or soft shapes.'
-        : gender === 'female'
-          ? 'Feminine presentation: soft flowing romantic arrangement, ' +
-            'lush rounded silhouette with cascading elements, ' +
-            'delicate pastel and blush tones mixed with vibrant pops, ' +
-            'wrapped in elegant satin ribbon with tissue paper. ' +
-            'Soft and luxurious feel with peonies, garden roses, or ranunculus highlights.'
-          : '';
-
-    return (
-      `A professional studio photograph of a luxury flower bouquet arrangement on a clean white background. ` +
-      `The bouquet contains: ${flowerList}. ` +
-      `Color palette: ${colorList}. ` +
-      `Style: ${sign.bouquetStyle}. ` +
-      (genderStyle ? `${genderStyle} ` : '') +
-      `The arrangement evokes ${bouquet.meaning}. ` +
-      `Soft natural lighting, elegant presentation, high-end floral photography, 8K detail.`
-    );
-  };
-
-  const handleGenerate = async () => {
+  const handleGenerate = async (isRegenerate = false) => {
+    if (isGenerating) return;
     setIsGenerating(true);
+
+    // Each regeneration uses next variation index for a genuinely different image
+    const nextVariation = isRegenerate ? (variationIndex + 1) % 8 : variationIndex;
+    if (isRegenerate) setVariationIndex(nextVariation);
+
+    const toastId = 'zodiac-ai';
+    toast.loading(
+      isRegenerate
+        ? `Creating variation ${generationCount + 2} of your ${sign.name} bouquet…`
+        : 'Generating your cosmic bouquet preview…',
+      { id: toastId }
+    );
+
     try {
-      toast.loading('Generating your cosmic bouquet preview...', { id: 'zodiac-ai' });
-      const prompt = buildZodiacPrompt();
+      const prompt = buildZodiacPrompt(sign, bouquet, gender, nextVariation);
+
+      if (aiImage && aiImage.startsWith('blob:')) URL.revokeObjectURL(aiImage);
+
       const result = await generateImage(prompt, {
         width: 768,
         height: 768,
@@ -821,247 +631,310 @@ const ZodiacResult = ({
         useCache: false,
       });
 
-      if (aiImage && aiImage.startsWith('blob:')) {
-        URL.revokeObjectURL(aiImage);
-      }
       setAiImage(result.imageUrl);
-      toast.success('AI preview generated!', { id: 'zodiac-ai' });
+      setGenerationCount(c => c + 1);
+      toast.success(
+        isRegenerate ? `New variation generated!` : 'Your cosmic bouquet is ready!',
+        { id: toastId }
+      );
 
-      // Save to database so future visitors with the same combo skip generation
-      cacheZodiacImage(gender, sign.id, bouquet.id, result.imageUrl).then((storedUrl) => {
-        if (storedUrl) setAiImage(storedUrl);
-      });
+      // Cache the first generation only
+      if (!isRegenerate) {
+        cacheZodiacImage(gender, sign.id, bouquet.id, result.imageUrl).then(storedUrl => {
+          if (storedUrl) setAiImage(storedUrl);
+        });
+      }
     } catch {
-      toast.error('Could not generate preview. Please try again.', { id: 'zodiac-ai' });
+      toast.error('Could not generate preview. Please try again.', { id: toastId });
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // Cleanup blob URLs on unmount (Storage URLs don't need cleanup)
-  useEffect(() => {
-    return () => {
-      if (aiImage && aiImage.startsWith('blob:')) {
-        URL.revokeObjectURL(aiImage);
-      }
-    };
-  }, [aiImage]);
+  const handleAddToCart = () => {
+    addToCart({
+      id: bouquet.id,
+      title: `${sign.name} — ${bouquet.name}`,
+      price: bouquet.price,
+      image: aiImage || bouquet.image,
+      description: `${sign.name} Zodiac Bouquet · ${bouquet.occasion}`,
+    });
+  };
+
+  const compositionLabel = [
+    'Flat-Lay', 'Three-Quarter', 'Frontal Portrait', 'Side Dramatic',
+    'Macro Detail', 'Elevated View', 'Soft Focus', 'Editorial',
+  ][variationIndex % 8];
 
   return (
-  <div className="min-h-screen bg-white">
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.8 }}
-      className="space-y-10 sm:space-y-16 px-4 sm:px-8 py-8"
+    <div
+      className="min-h-screen"
+      style={{ background: 'linear-gradient(160deg,#1c1a17 0%,#2a2218 60%,#1c1a17 100%)' }}
     >
-      {/* Success Header */}
-      <motion.div 
-        className="text-center"
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-      >
-        <motion.div
-          initial={{ scale: 0, rotate: -180 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
-          className="relative mx-auto mb-8"
-        >
-          <div className="w-28 h-28 sm:w-40 sm:h-40 md:w-48 md:h-48 bg-white border-4 border-[#C79E48] rounded-full flex items-center justify-center shadow-2xl shadow-[#C79E48]/30 relative">
-            <span className="text-5xl sm:text-7xl md:text-9xl drop-shadow-lg">{sign.symbol}</span>
-            <motion.div
-              className="absolute inset-0 border-4 border-[#C79E48] rounded-full"
-              animate={{ scale: [1, 1.05, 1], opacity: [0.3, 0.1, 0.3] }}
-              transition={{ duration: 3, repeat: Infinity }}
-            />
-          </div>
-        </motion.div>
-        
-        <motion.h2 
-          className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 sm:mb-8 tracking-wide"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          style={{ fontFamily: 'EB Garamond, serif' }}
-        >
-          {userInfo.name}, Your{' '}
-          <span className="text-[#C79E48]">Cosmic</span>{' '}
-          Bouquet Awaits!
-        </motion.h2>
-        
-        <motion.p 
-          className="text-gray-600 text-base sm:text-lg md:text-2xl max-w-3xl mx-auto font-light leading-relaxed"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-        >
-          As a {sign.name}, this arrangement perfectly matches your cosmic energy
-        </motion.p>
-      </motion.div>
+      {/* Glow background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-1/3 w-96 h-96 rounded-full blur-3xl opacity-8"
+          style={{ background: `radial-gradient(circle,${sign.colors[0]},transparent)` }} />
+        <div className="absolute bottom-0 right-1/3 w-64 h-64 rounded-full blur-3xl opacity-6"
+          style={{ background: `radial-gradient(circle,${sign.colors[1] || sign.colors[0]},transparent)` }} />
+      </div>
 
-      {/* Bouquet Result */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.8 }}
-      >
-        <Card className="p-6 sm:p-8 md:p-12 bg-gradient-to-br from-white to-[#F5F1E8] border-2 border-[#D4A85A] shadow-2xl shadow-[#C79E48]/15 rounded-3xl">
-          <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 1 }}
-              className="space-y-4"
-              >
-              <div className="relative">
-                <img
-                  src={aiImage || bouquet.image}
-                  alt={getProductImageAlt(bouquet)}
-                  className="w-full h-64 sm:h-80 md:h-96 object-cover rounded-3xl shadow-2xl border-2 border-[#E8D4A8]"
-                />
-                {(isGenerating || isLoadingCache) && (
-                  <div className="absolute inset-0 bg-black/40 rounded-3xl flex flex-col items-center justify-center gap-3">
-                    <Loader2 className="w-10 h-10 text-white animate-spin" />
-                    <span className="text-white text-sm font-medium">
-                      {isGenerating ? 'Creating your cosmic bouquet…' : 'Loading…'}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <motion.div
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-12">
+
+        {/* Header */}
+        <motion.div
+          className="text-center mb-12"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <motion.div
+            className="w-20 h-20 sm:w-28 sm:h-28 rounded-full mx-auto mb-6 flex items-center justify-center text-4xl sm:text-6xl"
+            style={{
+              background: 'rgba(199,158,72,0.1)',
+              border: '2px solid rgba(199,158,72,0.4)',
+              boxShadow: '0 0 48px rgba(199,158,72,0.2)',
+            }}
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 16, delay: 0.2 }}
+          >
+            {sign.symbol}
+          </motion.div>
+
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-normal text-white mb-3"
+            style={{ fontFamily: "'Playfair Display', serif" }}>
+            {userInfo.name
+              ? <>{userInfo.name}, Your <span style={{ color: '#C79E48' }}>Cosmic</span> Bouquet</>
+              : <>Your <span style={{ color: '#C79E48' }}>Cosmic</span> Bouquet</>
+            }
+          </h1>
+          <p className="text-sm sm:text-base" style={{ color: 'rgba(255,255,255,0.45)', fontFamily: "'EB Garamond', serif", fontSize: '1.05rem' }}>
+            Curated by the stars for {sign.name} · {sign.dates}
+          </p>
+        </motion.div>
+
+        {/* Main 2-column grid */}
+        <div className="grid lg:grid-cols-[1fr_1.05fr] gap-8 items-start">
+
+          {/* Left — AI Image */}
+          <motion.div
+            className="space-y-4"
+            initial={{ opacity: 0, x: -28 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            {/* Image card */}
+            <div className="relative rounded-2xl overflow-hidden aspect-square"
+              style={{ border: '1px solid rgba(199,158,72,0.2)', boxShadow: '0 8px 40px rgba(0,0,0,0.4)' }}>
+
+              {aiImage ? (
+                <img src={aiImage} alt={`${sign.name} bouquet`} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-3"
+                  style={{ background: 'rgba(255,255,255,0.03)' }}>
+                  <div className="text-6xl opacity-20">{sign.symbol}</div>
+                  <p className="text-sm text-white/30" style={{ fontFamily: "'EB Garamond', serif" }}>
+                    Generate your bouquet below
+                  </p>
+                </div>
+              )}
+
+              {(isGenerating || isLoadingCache) && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4"
+                  style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}>
+                  <motion.div
+                    className="w-12 h-12 rounded-full border-2 border-white/20 border-t-[#C79E48]"
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                  />
+                  <p className="text-sm text-white/70" style={{ fontFamily: "'EB Garamond', serif" }}>
+                    {isLoadingCache ? 'Loading…' : `Creating your ${sign.name} bouquet…`}
+                  </p>
+                </div>
+              )}
+
+              {/* Variation badge */}
+              {aiImage && !isGenerating && (
+                <div className="absolute bottom-3 left-3 px-3 py-1.5 rounded-lg text-[11px]"
+                  style={{ background: 'rgba(0,0,0,0.7)', color: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(6px)', fontFamily: "'EB Garamond', serif" }}>
+                  {compositionLabel} · Generation {generationCount}
+                </div>
+              )}
+            </div>
+
+            {/* Generate / Regenerate button */}
+            {!aiImage && !isLoadingCache ? (
+              <motion.button
+                onClick={() => handleGenerate(false)}
+                disabled={isGenerating}
+                className="w-full py-4 rounded-2xl flex items-center justify-center gap-2.5 text-sm font-semibold text-white"
+                style={{
+                  background: 'linear-gradient(135deg,#C79E48,#d4af52)',
+                  boxShadow: '0 6px 24px rgba(199,158,72,0.4)',
+                  fontFamily: "'EB Garamond', serif",
+                  letterSpacing: '0.04em',
+                }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
               >
-                <Button
-                  onClick={handleGenerate}
-                  disabled={isGenerating || isLoadingCache}
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#C79E48] to-[#D4A85A] hover:from-[#b8903c] hover:to-[#c9a04f] text-white shadow-lg shadow-[#C79E48]/30 h-12 rounded-xl font-semibold"
-                >
-                  {isGenerating ? (
-                    <><Loader2 className="w-5 h-5 animate-spin" /> Generating…</>
-                  ) : aiImage ? (
-                    <><RefreshCw className="w-5 h-5" /> Regenerate AI Preview</>
-                  ) : (
-                    <><Wand2 className="w-5 h-5" /> Generate AI Preview</>
-                  )}
-                </Button>
-              </motion.div>
-            </motion.div>
-            
-            <div className="space-y-8 sm:space-y-10">
-              <motion.div
-                initial={{ opacity: 0, x: 30 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8, delay: 1.2 }}
-                >
-                <h3 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 sm:mb-6 tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
-                  {bouquet.name}
-                </h3>
-                <p className="text-[#C79E48] text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8">
-                  ${bouquet.price}
-                </p>
-                <p className="text-gray-800 text-base sm:text-lg md:text-xl leading-relaxed">
-                  {bouquet.description}
-                </p>
-              </motion.div>
-              
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 1.4 }}
-                className="bg-white rounded-2xl p-6 sm:p-8 border-2 border-[#E8D4A8] shadow-lg"
+                <Wand2 size={17} />
+                Generate My {sign.name} Bouquet
+              </motion.button>
+            ) : aiImage && !isGenerating ? (
+              <motion.button
+                onClick={() => handleGenerate(true)}
+                disabled={isGenerating}
+                className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2.5 text-sm font-medium"
+                style={{
+                  background: 'rgba(199,158,72,0.1)',
+                  border: '1px solid rgba(199,158,72,0.3)',
+                  color: '#C79E48',
+                  fontFamily: "'EB Garamond', serif",
+                }}
+                whileHover={{ scale: 1.01, background: 'rgba(199,158,72,0.16)' }}
+                whileTap={{ scale: 0.98 }}
               >
-                <h4 className="font-bold text-gray-900 text-lg sm:text-2xl mb-4 sm:mb-6 tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
-                  Why This Bouquet?
-                </h4>
-                <p className="text-gray-800 mb-6 sm:mb-8 leading-relaxed text-base sm:text-lg">
-                  {bouquet.meaning}
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  {bouquet.specialFeatures.map((feature, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.3, delay: 1.6 + index * 0.1 }}
-                    >
-                      <span className="inline-block border-2 border-[#C79E48] text-[#8B6F3A] bg-[#F5F1E8] rounded-full px-4 py-2 text-sm font-medium">
-                        {feature}
-                      </span>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-              
-              <motion.div 
-                className="flex flex-col sm:flex-row gap-4 sm:gap-6"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 1.8 }}
-              >
-                <motion.div whileHover={{ scale: 1.05, y: -3 }} whileTap={{ scale: 0.95 }} className="flex-1">
-                  <Button size="lg" onClick={handleAddToCart} className="w-full bg-gradient-to-r from-[#C79E48] to-[#C79E48] hover:from-[#C79E48] hover:to-[#C79E48] text-white shadow-lg shadow-[#C79E48]/40 h-14 sm:h-16 text-lg sm:text-xl font-semibold rounded-xl">
-                    <Gift className="w-6 h-6 mr-3" />
-                    Add to Cart
-                  </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.95 }} className="sm:flex-none">
-                  <Button variant="outline" size="lg" onClick={onRestart} className="w-full sm:w-auto bg-white border-2 border-[#C79E48] text-[#C79E48] hover:bg-[#F5F1E8] h-14 sm:h-16 text-lg sm:text-xl px-6 sm:px-8 rounded-xl font-semibold">
-                    Try Again
-                  </Button>
-                </motion.div>
-              </motion.div>
-            </div>
-          </div>
-        </Card>
-      </motion.div>
+                <Shuffle size={15} />
+                Generate New Variation
+                <span className="text-[10px] text-white/30 ml-1">
+                  (Style {((variationIndex + 1) % 8) + 1}/8)
+                </span>
+              </motion.button>
+            ) : null}
 
-      {/* Zodiac Insights */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 2 }}
-      >
-        <Card className="p-6 sm:p-8 md:p-10 bg-gradient-to-r from-[#F5F1E8] to-white border-2 border-[#D4A85A] shadow-xl shadow-[#C79E48]/10 rounded-3xl">
-          <h3 className="font-bold text-gray-900 text-xl sm:text-3xl mb-6 sm:mb-12 text-center tracking-wide" style={{ fontFamily: 'EB Garamond, serif' }}>
-            Your Zodiac Insights
-          </h3>
-          <div className="grid grid-cols-3 gap-3 sm:gap-8">
-            <motion.div 
-              className="text-center bg-white rounded-xl sm:rounded-2xl p-3 sm:p-8 border-2 border-[#E8D4A8] shadow-lg"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 2.2 }}
-            >
-              <h4 className="font-bold text-gray-900 text-sm sm:text-xl mb-2 sm:mb-4 tracking-wide">Element</h4>
-              <span className="inline-block border-2 border-[#C79E48] text-[#8B6F3A] bg-[#F5F1E8] rounded-full px-3 py-1.5 sm:px-6 sm:py-3 text-xs sm:text-lg font-semibold">
-                {sign.element}
-              </span>
-            </motion.div>
-            <motion.div 
-              className="text-center bg-white rounded-xl sm:rounded-2xl p-3 sm:p-8 border-2 border-[#E8D4A8] shadow-lg"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 2.4 }}
-            >
-              <h4 className="font-bold text-gray-900 text-sm sm:text-xl mb-2 sm:mb-4 tracking-wide">Ruling Planet</h4>
-              <span className="text-gray-800 text-xs sm:text-xl font-semibold">{sign.rulingPlanet}</span>
-            </motion.div>
-            <motion.div 
-              className="text-center bg-white rounded-xl sm:rounded-2xl p-3 sm:p-8 border-2 border-[#E8D4A8] shadow-lg"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 2.6 }}
-            >
-              <h4 className="font-bold text-gray-900 text-sm sm:text-xl mb-2 sm:mb-4 tracking-wide">Gemstone</h4>
-              <span className="text-gray-800 text-xs sm:text-xl font-semibold">{sign.gemstone}</span>
-            </motion.div>
-          </div>
-        </Card>
-      </motion.div>
-    </motion.div>
-  </div>
+            {/* Variation hint */}
+            {aiImage && (
+              <p className="text-center text-[11px]"
+                style={{ color: 'rgba(255,255,255,0.25)', fontFamily: "'EB Garamond', serif" }}>
+                Each generation uses a different composition style for a unique result
+              </p>
+            )}
+          </motion.div>
+
+          {/* Right — Sign info + CTAs */}
+          <motion.div
+            className="space-y-5"
+            initial={{ opacity: 0, x: 28 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            {/* Bouquet name + price */}
+            <div className="rounded-2xl p-6"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(199,158,72,0.18)' }}>
+              <p className="text-xs tracking-widest uppercase mb-2" style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif" }}>
+                Your Cosmic Arrangement
+              </p>
+              <h2 className="text-2xl sm:text-3xl font-normal text-white mb-1"
+                style={{ fontFamily: "'Playfair Display', serif" }}>
+                {bouquet.name}
+              </h2>
+              <p className="text-2xl font-bold mb-3" style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif" }}>
+                ${bouquet.price}
+              </p>
+              <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.65)', fontFamily: "'EB Garamond', serif", fontSize: '0.95rem' }}>
+                {bouquet.description}
+              </p>
+            </div>
+
+            {/* Why this bouquet */}
+            <div className="rounded-2xl p-5"
+              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(199,158,72,0.12)' }}>
+              <p className="text-xs tracking-widest uppercase mb-2" style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif" }}>
+                Why This Bouquet?
+              </p>
+              <p className="text-sm leading-relaxed mb-4"
+                style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'EB Garamond', serif", fontSize: '0.9rem' }}>
+                {bouquet.meaning}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {bouquet.specialFeatures.map(f => (
+                  <span key={f} className="text-[11px] px-2.5 py-1 rounded-full"
+                    style={{ background: 'rgba(199,158,72,0.1)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(199,158,72,0.2)', fontFamily: "'EB Garamond', serif" }}>
+                    {f}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Sign stats grid */}
+            <div className="grid grid-cols-3 gap-2.5">
+              {[
+                { label: 'Element', value: sign.element },
+                { label: 'Planet', value: sign.rulingPlanet },
+                { label: 'Gemstone', value: sign.gemstone },
+              ].map(({ label, value }) => (
+                <div key={label} className="rounded-xl p-3 text-center"
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(199,158,72,0.1)' }}>
+                  <p className="text-[10px] tracking-widest uppercase mb-1" style={{ color: 'rgba(255,255,255,0.3)', fontFamily: "'EB Garamond', serif" }}>
+                    {label}
+                  </p>
+                  <p className="text-xs font-semibold text-white capitalize" style={{ fontFamily: "'EB Garamond', serif" }}>
+                    {value}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Colors row */}
+            <div className="rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(199,158,72,0.1)' }}>
+              <p className="text-[10px] tracking-widest uppercase mb-3" style={{ color: 'rgba(255,255,255,0.3)', fontFamily: "'EB Garamond', serif" }}>
+                Your Sign's Colors
+              </p>
+              <div className="flex gap-3 flex-wrap">
+                {sign.colors.map((hex, i) => (
+                  <div key={hex} className="flex items-center gap-1.5">
+                    <div className="w-4 h-4 rounded-full border border-white/10" style={{ background: hex }} />
+                    <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.45)', fontFamily: "'EB Garamond', serif" }}>
+                      {sign.colorNames[i]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* CTAs */}
+            <div className="space-y-3 pt-2">
+              <motion.button
+                onClick={handleAddToCart}
+                className="w-full py-4 rounded-2xl flex items-center justify-center gap-2.5 text-sm font-semibold text-white"
+                style={{
+                  background: aiImage
+                    ? 'linear-gradient(135deg,#C79E48,#d4af52)'
+                    : 'rgba(199,158,72,0.3)',
+                  boxShadow: aiImage ? '0 6px 24px rgba(199,158,72,0.38)' : 'none',
+                  fontFamily: "'EB Garamond', serif",
+                  letterSpacing: '0.04em',
+                  cursor: aiImage ? 'pointer' : 'not-allowed',
+                  opacity: aiImage ? 1 : 0.5,
+                }}
+                whileHover={aiImage ? { scale: 1.02 } : {}}
+                whileTap={aiImage ? { scale: 0.97 } : {}}
+              >
+                <Gift size={16} />
+                Add to Cart — ${bouquet.price}
+              </motion.button>
+
+              <button
+                onClick={onRestart}
+                className="w-full py-3.5 rounded-2xl text-sm font-medium transition-all"
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'rgba(255,255,255,0.45)',
+                  fontFamily: "'EB Garamond', serif",
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(199,158,72,0.35)'; (e.currentTarget as HTMLButtonElement).style.color = '#C79E48'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.45)'; }}
+              >
+                Try a Different Sign
+              </button>
+            </div>
+          </motion.div>
+        </div>
+
+      </div>
+    </div>
   );
 };
 
