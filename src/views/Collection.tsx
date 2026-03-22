@@ -25,6 +25,7 @@ import { FlowerTypeToggle } from "@/components/collection/FlowerTypeToggle";
 // import { useNavigationPredictor } from "@/hooks/useNavigationPredictor";
 // import { useEnhancedRoutePrefetch } from "@/hooks/useEnhancedRoutePrefetch";
 import { useIsMobile } from "@/hooks/use-mobile";
+import StickyCartBar from "@/components/StickyCartBar";
 // import CarouselHero from "@/components/CarouselHero"; // ⚡ DISABLED - Causes 99% CPU usage
 
 // Get default category ID - prefer "red-roses", fallback to first non-"all" category, or "all"
@@ -306,6 +307,9 @@ const CollectionContent = () => {
         </LazySection>
       </div>
       
+      {/* Sticky cart bar — appears when cart has items */}
+      <StickyCartBar />
+
       {/* Product Modal */}
       <AnimatePresence>
         {selectedBouquet && (

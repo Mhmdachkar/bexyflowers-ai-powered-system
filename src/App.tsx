@@ -15,6 +15,8 @@ import { FavoritesProvider } from "@/contexts/FavoritesContext";
 import { FlyingHeartProvider } from "@/contexts/FlyingHeartContext";
 import { RouteStateProvider } from "@/contexts/RouteStateContext";
 import GlobalCartWrapper from "@/components/GlobalCartWrapper";
+import FloatingWhatsApp from "@/components/FloatingWhatsApp";
+import CookieBanner from "@/components/CookieBanner";
 import { useNavigationPredictor } from "@/hooks/useNavigationPredictor";
 import { useComponentPrefetch } from "@/hooks/useComponentPrefetch";
 import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
@@ -236,6 +238,8 @@ const App = () => {
                 <Sonner />
                 <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                   <GlobalCartWrapper />
+                  <FloatingWhatsApp />
+                  <CookieBanner />
                   <AppRouter />
                 </BrowserRouter>
               </FlyingHeartProvider>

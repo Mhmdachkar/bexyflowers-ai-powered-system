@@ -32,6 +32,7 @@ import { useSignatureCollection } from '@/hooks/useSignatureCollection';
 import { PriceDisplay } from '@/components/PriceDisplay';
 import type { Bouquet } from '@/types/bouquet';
 import { encodeImageUrl, toImageSrc } from '@/lib/imageUtils';
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 
 import bouquet1 from '@/assets/bouquet-1.jpg';
 import bouquet2 from '@/assets/bouquet-2.jpg';
@@ -329,6 +330,21 @@ const ProductDetailPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
+
+  // Recently viewed — track this product, expose previously viewed ones
+  const { items: recentlyViewed, trackView } = useRecentlyViewed(productData.id);
+
+  useEffect(() => {
+    if (!productData.id || isLoadingProduct) return;
+    trackView({
+      id: productData.id,
+      title: productData.title,
+      price: productData.price,
+      image: productData.imageUrl,
+      category: productData.category || '',
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productData.id, isLoadingProduct]);
 
   const selectedSizeOption = sizeOptions.find(option => option.id === selectedSize);
   const basePrice = productData.price + (selectedSizeOption?.priceModifier || 0);
@@ -726,6 +742,81 @@ const ProductDetailPage = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* ── Recently Viewed ── */}
+      {recentlyViewed.length > 0 && (
+        <section className="py-14 border-t border-[#f0ece6]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <p
+                  className="text-[10px] uppercase tracking-widest mb-1"
+                  style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif" }}
+                >
+                  Your History
+                </p>
+                <h3
+                  className="text-2xl font-normal"
+                  style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#1c1a17' }}
+                >
+                  Recently Viewed
+                </h3>
+              </div>
+              <Link
+                to="/collection"
+                className="text-xs text-stone-400 hover:text-[#C79E48] transition-colors flex items-center gap-1"
+                style={{ fontFamily: "'EB Garamond', serif" }}
+              >
+                View all <ChevronRight size={13} />
+              </Link>
+            </div>
+
+            <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+              {recentlyViewed.map((item) => (
+                <Link
+                  key={item.id}
+                  to={`/product/${item.id}`}
+                  className="group flex-shrink-0 w-[130px] sm:w-auto block"
+                >
+                  <div
+                    className="rounded-xl overflow-hidden border transition-all duration-300 group-hover:shadow-md"
+                    style={{ borderColor: '#f0ece6', background: '#faf8f5' }}
+                  >
+                    <div className="relative aspect-[3/4] overflow-hidden">
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-400"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="p-2.5">
+                      <p
+                        className="text-[10px] text-stone-400 truncate"
+                        style={{ fontFamily: "'EB Garamond', serif" }}
+                      >
+                        {item.category}
+                      </p>
+                      <p
+                        className="text-xs font-medium truncate group-hover:text-[#C79E48] transition-colors"
+                        style={{ fontFamily: "'Playfair Display', serif", color: '#1c1a17' }}
+                      >
+                        {item.title}
+                      </p>
+                      <p
+                        className="text-xs font-semibold mt-1"
+                        style={{ color: '#C79E48', fontFamily: "'EB Garamond', serif" }}
+                      >
+                        ${item.price}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── You Might Also Like ── */}
       {recommendedBouquets.length > 0 && (

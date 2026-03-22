@@ -21,6 +21,7 @@ import LazySection from "@/components/LazySection";
 import UltraNavigation from "@/components/UltraNavigation";
 import BackToTop from "@/components/BackToTop";
 import CarouselHero from "@/components/CarouselHero";
+import Testimonials from "@/components/Testimonials";
 import {
   FeaturedBouquetsSkeleton,
   CategoriesSkeleton,
@@ -389,6 +390,8 @@ const Index = () => {
         </Suspense>
         {/* Professional Custom Bouquet Design Section - Premium Redesign */}
         <ProfessionalCustomSection />
+        {/* Customer Testimonials */}
+        <Testimonials />
         <Suspense fallback={<GenericSectionSkeleton />}>
           <ZodiacBouquetQuiz />
         </Suspense>
