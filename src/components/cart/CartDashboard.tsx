@@ -21,7 +21,7 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
 
   const isEmpty = cartItems.length === 0;
   const totalPrice = getTotalPrice();
-  const accentColor = '#C79E48'; // Gold accent matching zodiac theme
+  const accentColor = '#C79E48';
 
   // Swipe-to-close for mobile
   const y = useMotionValue(0);
@@ -154,16 +154,22 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop - Luxury dark theme matching zodiac */}
+          {/* Backdrop - Reduced blur on mobile */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[105] bg-black/70 backdrop-blur-sm"
+            className={`fixed inset-0 z-[105] ${isMobile
+                ? 'bg-black/40'
+                : 'bg-black/60 backdrop-blur-sm'
+              }`}
             onClick={onClose}
+            style={{
+              pointerEvents: 'auto',
+            }}
           />
 
-          {/* Dashboard - Luxury dark theme matching zodiac */}
+          {/* Dashboard - Mobile Full-Screen / Desktop Side Panel */}
           <motion.div
             initial="closed"
             animate="open"
@@ -172,9 +178,9 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
             className={`fixed ${isMobile
                 ? 'top-0 left-0 right-0 bottom-0 h-full w-full'
                 : 'top-0 right-0 h-full w-full max-w-md sm:max-w-lg'
-              } shadow-2xl z-[110] overflow-hidden`}
+              } bg-white shadow-2xl z-[110] overflow-hidden`}
             style={{
-              background: 'linear-gradient(160deg, #1c1a17 0%, #2a2218 50%, #1c1a17 100%)',
+              clipPath: isMobile ? 'none' : 'polygon(0 0, calc(100% - 30px) 0, 100% 30px, 100% 100%, 30px 100%, 0 calc(100% - 30px))',
               paddingTop: isMobile ? 'env(safe-area-inset-top, 0)' : undefined,
               paddingBottom: isMobile ? 'env(safe-area-inset-bottom, 0)' : undefined,
               display: 'flex',
@@ -188,29 +194,30 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
             dragDirectionLock
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Swipe Indicator for Mobile - Gold themed */}
+            {/* Swipe Indicator for Mobile */}
             {isMobile && (
-              <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-12 h-1 rounded-full z-20" 
-                style={{ background: 'rgba(199, 158, 72, 0.4)' }} />
+              <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gray-300 rounded-full z-20" />
             )}
-            {/* Luxury Background Glow - Zodiac inspired */}
+            {/* Geometric Pattern Background */}
             <div
-              className="absolute inset-0 pointer-events-none overflow-hidden"
-              style={{ opacity: 0.08 }}
+              className="absolute inset-0 opacity-[0.02] pointer-events-none"
+              style={{
+                backgroundImage: `
+                  repeating-linear-gradient(45deg, transparent, transparent 10px, ${accentColor} 10px, ${accentColor} 20px),
+                  repeating-linear-gradient(-45deg, transparent, transparent 10px, ${accentColor} 10px, ${accentColor} 20px)
+                `,
+                backgroundSize: '28px 28px'
+              }}
             >
-              <div className="absolute top-10 right-1/4 w-80 h-80 rounded-full blur-3xl"
-                style={{ background: 'radial-gradient(circle, #C79E48, transparent)' }} />
-              <div className="absolute bottom-10 left-1/4 w-60 h-60 rounded-full blur-3xl"
-                style={{ background: 'radial-gradient(circle, #C79E48, transparent)' }} />
             </div>
 
-            {/* Header - Luxury dark theme */}
+            {/* Header - Mobile Optimized */}
             <div
-              className={`relative flex items-center justify-between border-b flex-shrink-0 ${isMobile ? 'p-4' : 'p-6'
+              className={`relative flex items-center justify-between border-b-2 flex-shrink-0 ${isMobile ? 'p-4' : 'p-6'
                 }`}
               style={{
-                borderColor: 'rgba(199, 158, 72, 0.2)',
-                background: 'rgba(255, 255, 255, 0.03)',
+                borderColor: `${accentColor}20`,
+                background: `linear-gradient(135deg, ${accentColor}08 0%, white 100%)`,
                 paddingTop: isMobile ? 'calc(env(safe-area-inset-top, 0) + 1rem)' : undefined,
                 minHeight: isMobile ? '4.5rem' : '5rem',
               }}
@@ -218,24 +225,25 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
               <div className="flex items-center space-x-3 sm:space-x-4">
                 <div
                   className={`flex items-center justify-center ${isMobile ? 'w-10 h-10' : 'w-12 h-12'
-                    } rounded-lg`}
+                    }`}
                   style={{
-                    background: 'linear-gradient(135deg, #C79E48 0%, #d4af52 100%)',
-                    boxShadow: '0 4px 16px rgba(199, 158, 72, 0.3)'
+                    background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
+                    clipPath: isMobile ? 'none' : 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+                    borderRadius: isMobile ? '0.5rem' : undefined,
+                    boxShadow: `0 4px 12px ${accentColor}30`
                   }}
                 >
                   <ShoppingCart className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} text-white`} strokeWidth={2.5} />
                 </div>
                 <div>
                   <h2
-                    className={`font-normal ${isMobile ? 'text-xl' : 'text-2xl'
-                      } text-white`}
-                    style={{ fontFamily: "'Playfair Display', serif", letterSpacing: '-0.02em' }}
+                    className={`font-luxury font-normal ${isMobile ? 'text-xl' : 'text-2xl'
+                      }`}
+                    style={{ letterSpacing: '-0.02em', color: '#2c2d2a' }}
                   >
                     Shopping Cart
                   </h2>
-                  <p className={`font-normal ${isMobile ? 'text-xs' : 'text-sm'}`} 
-                    style={{ color: 'rgba(255, 255, 255, 0.6)', fontFamily: "'EB Garamond', serif" }}>
+                  <p className={`font-normal ${isMobile ? 'text-xs' : 'text-sm'}`} style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>
                     {getTotalItems()} {getTotalItems() === 1 ? 'item' : 'items'}
                   </p>
                 </div>
@@ -244,9 +252,10 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
                 variant="ghost"
                 size="icon"
                 onClick={onClose}
-                className={`rounded-lg hover:bg-white/10 touch-target ${isMobile ? 'w-12 h-12' : 'w-10 h-10'
-                  } text-white/70 hover:text-white`}
+                className={`rounded-lg hover:bg-slate-100 touch-target ${isMobile ? 'w-12 h-12' : 'w-10 h-10'
+                  }`}
                 style={{
+                  clipPath: isMobile ? 'none' : 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))',
                   WebkitTapHighlightColor: 'transparent',
                   touchAction: 'manipulation',
                   minWidth: '48px',
@@ -292,31 +301,31 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
                     className="text-center"
                   >
                     <div
-                      className="w-24 h-24 mx-auto mb-6 flex items-center justify-center rounded-xl"
+                      className="w-24 h-24 mx-auto mb-6 flex items-center justify-center"
                       style={{
-                        background: 'rgba(199, 158, 72, 0.12)',
-                        border: '1px solid rgba(199, 158, 72, 0.3)'
+                        background: `linear-gradient(135deg, ${accentColor}15 0%, ${accentColor}05 100%)`,
+                        clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))',
+                        border: `2px solid ${accentColor}30`
                       }}
                     >
                       <ShoppingCart className="w-10 h-10" style={{ color: accentColor }} strokeWidth={1.5} />
                     </div>
-                    <h3 className="text-2xl font-normal mb-2 text-white" 
-                      style={{ fontFamily: "'Playfair Display', serif", letterSpacing: '-0.02em' }}>
+                    <h3 className="font-luxury text-2xl font-normal mb-2" style={{ color: '#2c2d2a', letterSpacing: '-0.02em' }}>
                       Your cart is empty
                     </h3>
-                    <p className="mb-8 max-w-xs mx-auto" 
-                      style={{ color: 'rgba(255, 255, 255, 0.6)', fontFamily: "'EB Garamond', serif", fontSize: '1.1rem' }}>
+                    <p className="mb-8 max-w-xs mx-auto" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>
                       Add some beautiful arrangements to get started
                     </p>
                     <Button
                       onClick={onClose}
-                      className="px-8 py-3 font-normal uppercase rounded-full"
+                      className="px-8 py-3 font-normal uppercase"
                       style={{
                         fontFamily: "'EB Garamond', serif",
-                        letterSpacing: '0.1em',
-                        background: 'linear-gradient(135deg, #C79E48, #d4af52)',
+                        letterSpacing: '-0.02em',
+                        background: accentColor,
                         color: 'white',
-                        boxShadow: '0 4px 16px rgba(199, 158, 72, 0.4)'
+                        clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+                        boxShadow: `0 4px 12px ${accentColor}30`
                       }}
                     >
                       Continue Shopping
@@ -342,12 +351,12 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
                           initial={{ opacity: 0, x: 20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: index * 0.08 }}
-                          className="relative rounded-2xl"
+                          className="relative"
                           style={{
-                            background: 'linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03))',
-                            border: '1px solid rgba(199, 158, 72, 0.2)',
-                            backdropFilter: 'blur(12px)',
-                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+                            background: 'white',
+                            clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))',
+                            border: `1px solid ${accentColor}20`,
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
                           }}
                         >
                           <div className="p-4 sm:p-5">
@@ -376,8 +385,8 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
                               <div className="flex-1 min-w-0 space-y-2.5">
                                 <div className="space-y-1.5">
                                   <h3
-                                    className="font-normal text-white text-base sm:text-lg leading-tight line-clamp-2"
-                                    style={{ fontFamily: "'Playfair Display', serif", letterSpacing: '-0.02em' }}
+                                    className="font-luxury font-normal text-foreground text-base sm:text-lg leading-tight line-clamp-2"
+                                    style={{ letterSpacing: '-0.02em', color: '#2c2d2a' }}
                                   >
                                     {item.title}
                                   </h3>
@@ -390,9 +399,9 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
                                     >
                                       ${item.price.toFixed(2)}
                                     </span>
-                                    <span className="text-xs font-normal" style={{ color: 'rgba(255, 255, 255, 0.5)', fontFamily: "'EB Garamond', serif" }}>each</span>
+                                    <span className="text-xs text-foreground font-normal" style={{ color: '#2c2d2a' }}>each</span>
                                     {item.quantity > 1 && (
-                                      <span className="text-xs ml-1" style={{ color: 'rgba(255, 255, 255, 0.5)', fontFamily: "'EB Garamond', serif" }}>
+                                      <span className="text-xs text-foreground ml-1" style={{ color: '#2c2d2a' }}>
                                         × {item.quantity}
                                       </span>
                                     )}
@@ -401,10 +410,10 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
                                   {/* Item Total - Prominent Display */}
                                   {item.quantity > 1 && (
                                     <div className="flex items-center gap-1.5 pt-0.5">
-                                      <span className="text-xs font-normal" style={{ color: 'rgba(255, 255, 255, 0.6)', fontFamily: "'EB Garamond', serif" }}>Subtotal:</span>
+                                      <span className="text-xs font-normal" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>Subtotal:</span>
                                       <span
-                                        className="font-normal text-base"
-                                        style={{ color: accentColor, fontFamily: "'Playfair Display', serif" }}
+                                        className="font-luxury font-normal text-base"
+                                        style={{ color: accentColor }}
                                       >
                                         ${(item.price * item.quantity).toFixed(2)}
                                       </span>
@@ -464,8 +473,7 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
                                       <Sparkles className="w-3 h-3" />
                                       Personal Note:
                                     </p>
-                                    <p className="italic leading-relaxed" 
-                                      style={{ color: 'rgba(255, 255, 255, 0.8)', fontFamily: "'EB Garamond', serif", fontSize: '1.05rem' }}>
+                                    <p className="italic leading-relaxed" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>
                                       "{item.personalNote}"
                                     </p>
                                   </div>
@@ -485,12 +493,12 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
                                       <Package className="w-3 h-3" />
                                       Gift Information:
                                     </p>
-                                    <div className="space-y-1" style={{ color: 'rgba(255, 255, 255, 0.8)', fontFamily: "'EB Garamond', serif" }}>
+                                    <div className="space-y-1" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif" }}>
                                       {item.giftInfo.recipient && (
-                                        <p><span className="font-normal text-white/60">To:</span> {item.giftInfo.recipient}</p>
+                                        <p><span className="font-normal">To:</span> {item.giftInfo.recipient}</p>
                                       )}
                                       {item.giftInfo.deliveryDate && (
-                                        <p><span className="font-normal text-white/60">Delivery:</span> {item.giftInfo.deliveryDate}</p>
+                                        <p><span className="font-normal">Delivery:</span> {item.giftInfo.deliveryDate}</p>
                                       )}
                                       {item.giftInfo.message && (
                                         <p className="italic mt-1">"{item.giftInfo.message}"</p>
@@ -504,9 +512,9 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
                                   }`} style={{ borderColor: 'rgba(199, 158, 72, 0.2)' }}>
                                   <div className="flex items-center gap-2.5">
                                     <span className={`font-normal uppercase ${isMobile ? 'text-xs' : 'text-xs'
-                                      }`} style={{ color: 'rgba(255, 255, 255, 0.6)', fontFamily: "'EB Garamond', serif", letterSpacing: '0.05em' }}>Quantity:</span>
+                                      }`} style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>Quantity:</span>
                                     <div className={`flex items-center gap-1.5 rounded-lg ${isMobile ? 'p-1.5' : 'p-1'
-                                      }`} style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
+                                      }`} style={{ background: '#f8fafc' }}>
                                       <motion.button
                                         onClick={(e) => {
                                           e.stopPropagation();
@@ -524,8 +532,8 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
                                         className={`flex items-center justify-center hover:bg-white/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-target rounded-lg ${isMobile ? 'w-10 h-10' : 'w-8 h-8'
                                           }`}
                                         style={{
-                                          color: 'rgba(255, 255, 255, 0.8)',
-                                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                                          color: '#334155',
+                                          border: '1px solid #e2e8f0',
                                           WebkitTapHighlightColor: 'transparent',
                                           touchAction: 'manipulation',
                                           minWidth: '44px',
@@ -556,8 +564,8 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
                                         className={`flex items-center justify-center hover:bg-white/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-target rounded-lg ${isMobile ? 'w-10 h-10' : 'w-8 h-8'
                                           }`}
                                         style={{
-                                          color: 'rgba(255, 255, 255, 0.8)',
-                                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                                          color: '#334155',
+                                          border: '1px solid #e2e8f0',
                                           WebkitTapHighlightColor: 'transparent',
                                           touchAction: 'manipulation',
                                           minWidth: '44px',
@@ -574,10 +582,10 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
 
                                   {/* Total Price - Enhanced Display */}
                                   <div className="text-right">
-                                    <p className="text-xs font-medium mb-0.5" style={{ color: 'rgba(255, 255, 255, 0.5)', fontFamily: "'EB Garamond', serif" }}>Item Total</p>
+                                    <p className="text-xs text-slate-500 font-medium mb-0.5">Item Total</p>
                                     <p
-                                      className="font-normal text-lg sm:text-xl"
-                                      style={{ color: accentColor, fontFamily: "'Playfair Display', serif" }}
+                                      className="font-luxury font-normal text-lg sm:text-xl"
+                                      style={{ color: accentColor }}
                                     >
                                       ${(item.price * item.quantity).toFixed(2)}
                                     </p>
@@ -624,40 +632,40 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
                     })}
                   </div>
 
-                  {/* Footer - Luxury dark theme */}
+                  {/* Footer - Sharp Professional Design */}
                   <div
-                    className="border-t p-6 space-y-6"
+                    className="border-t-2 p-6 space-y-6"
                     style={{
-                      borderColor: 'rgba(199, 158, 72, 0.2)',
-                      background: 'rgba(255, 255, 255, 0.03)'
+                      borderColor: `${accentColor}20`,
+                      background: `linear-gradient(180deg, white 0%, ${accentColor}03 100%)`
                     }}
                   >
-                    {/* Order Summary - Luxury Layout */}
+                    {/* Order Summary - Professional Layout */}
                     <div className="space-y-3">
                       <div className="flex justify-between text-sm">
-                        <span className="font-medium" style={{ color: 'rgba(255, 255, 255, 0.6)', fontFamily: "'EB Garamond', serif" }}>Subtotal ({cartItems.length} items)</span>
-                        <span className="font-normal" style={{ color: 'white', fontFamily: "'EB Garamond', serif" }}>${totalPrice.toFixed(2)}</span>
+                        <span className="text-slate-600 font-medium">Subtotal ({cartItems.length} items)</span>
+                        <span className="font-normal" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>${totalPrice.toFixed(2)}</span>
                       </div>
 
                       <div className="flex justify-between text-sm">
-                        <span className="font-medium" style={{ color: 'rgba(255, 255, 255, 0.6)', fontFamily: "'EB Garamond', serif" }}>Shipping</span>
-                        <span className="font-normal" style={{ color: 'white', fontFamily: "'EB Garamond', serif" }}>Free</span>
+                        <span className="text-slate-600 font-medium">Shipping</span>
+                        <span className="font-normal" style={{ color: '#2c2d2a', fontFamily: "'EB Garamond', serif", letterSpacing: '-0.02em' }}>Free</span>
                       </div>
 
                       <div className="flex justify-between text-sm">
-                        <span className="font-medium" style={{ color: 'rgba(255, 255, 255, 0.6)', fontFamily: "'EB Garamond', serif" }}>Tax</span>
-                        <span className="font-semibold text-white">${(totalPrice * 0.08).toFixed(2)}</span>
+                        <span className="text-slate-600 font-medium">Tax</span>
+                        <span className="font-semibold text-slate-900">${(totalPrice * 0.08).toFixed(2)}</span>
                       </div>
 
                       <div
-                        className="pt-3 border-t"
-                        style={{ borderColor: 'rgba(199, 158, 72, 0.3)' }}
+                        className="pt-3 border-t-2"
+                        style={{ borderColor: `${accentColor}30` }}
                       >
                         <div className="flex justify-between items-baseline">
-                          <span className="text-xl font-normal text-white" style={{ fontFamily: "'Playfair Display', serif" }}>Total</span>
+                          <span className="font-luxury text-xl font-bold text-slate-900">Total</span>
                           <span
-                            className="text-2xl font-normal"
-                            style={{ color: accentColor, fontFamily: "'Playfair Display', serif" }}
+                            className="font-luxury text-2xl font-bold"
+                            style={{ color: accentColor }}
                           >
                             ${(totalPrice * 1.08).toFixed(2)}
                           </span>
@@ -665,19 +673,18 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
                       </div>
                     </div>
 
-                    {/* Action Buttons - Luxury Design */}
+                    {/* Action Buttons - Sharp Professional Design */}
                     <div className="space-y-3" style={{ position: 'relative', zIndex: 10 }}>
                       <Button
                         type="button"
                         onClick={(e) => handleCheckout(e)}
                         disabled={isCheckingOut}
-                        className="w-full py-4 font-semibold text-sm uppercase tracking-wider relative overflow-hidden rounded-full"
+                        className="w-full py-4 font-semibold text-sm uppercase tracking-wider relative overflow-hidden"
                         style={{
-                          fontFamily: "'EB Garamond', serif",
-                          letterSpacing: '0.1em',
-                          background: 'linear-gradient(135deg, #C79E48, #d4af52)',
+                          background: accentColor,
                           color: 'white',
-                          boxShadow: '0 4px 16px rgba(199, 158, 72, 0.4)',
+                          clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+                          boxShadow: `0 4px 12px ${accentColor}30`,
                           position: 'relative',
                           zIndex: 1000,
                           pointerEvents: 'auto',
@@ -708,12 +715,9 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
                         }}
                         variant="outline"
                         disabled={isEmpty}
-                        className="w-full py-3 font-medium disabled:opacity-50 disabled:cursor-not-allowed rounded-full"
+                        className="w-full py-3 border-red-300 text-red-600 hover:bg-red-50 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{
-                          borderColor: 'rgba(239, 68, 68, 0.3)',
-                          color: '#ef4444',
-                          background: 'rgba(239, 68, 68, 0.05)',
-                          fontFamily: "'EB Garamond', serif"
+                          clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))'
                         }}
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
@@ -721,7 +725,7 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
                       </Button>
                     </div>
 
-                    <p className="text-xs text-center pt-2" style={{ color: 'rgba(255, 255, 255, 0.4)', fontFamily: "'EB Garamond', serif" }}>
+                    <p className="text-xs text-slate-500 text-center pt-2">
                       <Package className="w-3 h-3 inline mr-1" />
                       Secure checkout powered by our trusted partners
                     </p>

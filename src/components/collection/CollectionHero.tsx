@@ -178,7 +178,7 @@ const CollectionHeroComponent = () => {
         >
           {/* Brand Name */}
           <motion.p 
-            className={`uppercase tracking-[0.2em] sm:tracking-ultra-wide text-[10px] sm:text-xs md:text-sm font-semibold ${isMobile ? 'text-white' : 'text-[#8B7355]'}`}
+            className={`uppercase tracking-[0.2em] sm:tracking-ultra-wide text-[10px] sm:text-xs md:text-sm font-semibold ${isMobile ? 'text-white' : 'text-primary/90'}`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15, duration: 0.6 }}
@@ -191,7 +191,7 @@ const CollectionHeroComponent = () => {
 
           {/* Main Heading */}
           <motion.h1 
-            className={`font-luxury text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold relative ${isMobile ? 'text-white' : 'text-[#3D3027]'}`}
+            className={`font-luxury text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold relative ${isMobile ? 'text-white' : 'text-[#2c2d2a]'}`}
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.8 }}
@@ -220,7 +220,7 @@ const CollectionHeroComponent = () => {
 
           {/* Description */}
           <motion.p 
-            className={`text-xs sm:text-sm md:text-base lg:text-lg max-w-3xl mx-auto leading-relaxed font-body px-2 sm:px-0 ${isMobile ? 'text-white' : 'text-[#6B5D52]'}`}
+            className={`text-xs sm:text-sm md:text-base lg:text-lg max-w-3xl mx-auto leading-relaxed font-body px-2 sm:px-0 ${isMobile ? 'text-white' : 'text-muted-foreground'}`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.45, duration: 0.7 }}
