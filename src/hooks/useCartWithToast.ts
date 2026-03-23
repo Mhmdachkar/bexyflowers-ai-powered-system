@@ -12,13 +12,16 @@ export const useCartWithToast = () => {
   const addToCartWithToast = useCallback((product: Product) => {
     cartContext.addToCart(product);
     
+    // Auto-open cart dashboard
+    cartContext.setIsCartOpen(true);
+    
     toast.success('Added to Cart!', {
       description: `${product.title} has been added to your cart.`,
       duration: 3000,
       position: 'top-right',
       closeButton: true,
     });
-  }, [cartContext.addToCart]);
+  }, [cartContext]);
 
   const removeFromCartWithToast = useCallback((productId: number) => {
     const item = cartContext.cartItems.find(item => item.id === productId);
