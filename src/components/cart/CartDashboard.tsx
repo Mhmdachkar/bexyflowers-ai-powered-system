@@ -268,13 +268,9 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
 
             {/* Content - Scrollable */}
             <div
-              className={`flex flex-col flex-1 overflow-y-auto ${isMobile ? 'min-h-0' : ''
+              className={`flex flex-col flex-1 overflow-hidden ${isMobile ? 'min-h-0' : ''
                 }`}
               style={{
-                WebkitOverflowScrolling: 'touch',
-                scrollbarWidth: 'thin',
-                scrollbarColor: `${accentColor}50 transparent`,
-                // Ensure scrolling works on mobile
                 touchAction: 'pan-y',
                 overscrollBehavior: 'contain',
               }}
@@ -338,8 +334,10 @@ const CartDashboard: React.FC<CartDashboardProps> = ({ isOpen, onClose }) => {
                   <div
                     className="flex-1 overflow-y-auto p-6 space-y-4 cart-scrollbar"
                     style={{
+                      WebkitOverflowScrolling: 'touch',
                       scrollbarWidth: 'thin',
-                      scrollbarColor: `${accentColor}40 transparent`
+                      scrollbarColor: `${accentColor}40 transparent`,
+                      overscrollBehavior: 'contain',
                     }}
                   >
                     {cartItems.map((item, index) => {
