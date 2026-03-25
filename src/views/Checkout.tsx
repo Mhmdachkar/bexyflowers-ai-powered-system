@@ -350,7 +350,7 @@ Please confirm my order and let me know about delivery timing. Thank you! 🌸`;
 
   return (
     <motion.div
-      className="min-h-screen bg-gradient-to-br from-stone-50 via-white to-amber-50/20"
+      className="min-h-screen bg-gradient-to-br from-stone-50 via-white to-amber-50/20 overflow-x-hidden"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
@@ -500,6 +500,10 @@ Please confirm my order and let me know about delivery timing. Thank you! 🌸`;
                       src={item.image}
                       alt={getProductImageAlt({ name: item.title })}
                       className="w-14 h-14 object-cover rounded-lg flex-shrink-0"
+                      loading="lazy"
+                      decoding="async"
+                      width="56"
+                      height="56"
                     />
                     <div className="flex-1 min-w-0">
                       <p

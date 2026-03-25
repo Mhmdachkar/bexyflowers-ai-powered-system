@@ -220,7 +220,7 @@ const CollectionContent = () => {
   return (
     <div 
       ref={containerRef} 
-      className="relative min-h-screen" 
+      className="relative min-h-screen overflow-x-hidden" 
       style={{ 
         background: isMobile ? '#FFFFFF' : 'linear-gradient(180deg, #FAF8F3 0%, #FFFFFF 100%)', 
         touchAction: 'pan-y' 

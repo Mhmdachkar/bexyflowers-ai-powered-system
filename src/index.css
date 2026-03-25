@@ -4,6 +4,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Global Mobile Safety ───────────────────────────────────────────────────
+   Prevent any component from causing horizontal scrolling on any page.
+   This is the single safest place to enforce it globally.
+──────────────────────────────────────────────────────────────────────────── */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  -webkit-text-size-adjust: 100%; /* prevent iOS font inflation on orientation change */
+}
+
+/* Ensure root mount point never causes overflow */
+#root {
+  overflow-x: hidden;
+  max-width: 100vw;
+  isolation: isolate; /* new stacking context — prevents z-index fights on mobile */
+}
+
 /* Custom Scrollbar Styles for Signature Modal */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;

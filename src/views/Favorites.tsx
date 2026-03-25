@@ -28,21 +28,24 @@ const Favorites = memo(() => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoveredCard, setHoveredCard] = useState<number | string | null>(null);
 
+  // Scroll to top only on initial page mount — not on every favorites change
   useEffect(() => {
-    // Ensure at top on page mount
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
+  }, []);
 
+  // Kill ScrollTrigger instances only on unmount — not on every favorites list change
+  useEffect(() => {
     return () => {
       ScrollTrigger.getAll().forEach(trigger => trigger.kill());
     };
-  }, [favorites]);
+  }, []);
 
   const totalFavorites = getTotalFavorites();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-[#faf9f7] to-white relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-white via-[#faf9f7] to-white relative overflow-x-hidden">
       <SEO title="Favorites" noIndex />
       <UltraNavigation />
       

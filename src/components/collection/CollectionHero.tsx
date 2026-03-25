@@ -53,29 +53,45 @@ const CollectionHeroComponent = () => {
     };
   }, [isMobile, shouldLoadVideo, needsMobileOptimizations]);
 
-  // Load and play video when it becomes visible
-  // iOS 18 OPTIMIZATION: Optimize video settings for older iOS devices
+  // Load, play, and pause/resume video based on scroll visibility
   useEffect(() => {
     if (!isMobile || isIOSDevice || !videoRef.current || !shouldLoadVideo) return;
 
     const videoElement = videoRef.current;
-    
-    // iOS/Android OPTIMIZATION: Reduce playback rate and optimize settings
+
     if (needsMobileOptimizations) {
-      videoElement.playbackRate = 0.85; // Slightly slower playback reduces CPU usage
-      videoElement.volume = 0.9; // Slightly lower volume
+      videoElement.playbackRate = 0.85;
     }
-    
-    // Load the video
+
     videoElement.load();
-    
-    // Attempt to play (may require user interaction on some browsers)
+
     const playPromise = videoElement.play();
     if (playPromise !== undefined) {
       playPromise.catch(() => {
-        // Auto-play was prevented, video will play when user interacts
+        // autoplay prevented — will play on first user interaction
       });
     }
+
+    // Keep pausing/resuming as hero scrolls in and out of view
+    const visibilityObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            videoElement.play().catch(() => {});
+          } else {
+            videoElement.pause();
+          }
+        });
+      },
+      { threshold: 0.05 }
+    );
+
+    visibilityObserver.observe(videoElement);
+
+    return () => {
+      visibilityObserver.disconnect();
+      videoElement.pause();
+    };
   }, [isMobile, shouldLoadVideo, needsMobileOptimizations]);
 
   return (

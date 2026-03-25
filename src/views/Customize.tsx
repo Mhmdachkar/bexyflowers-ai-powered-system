@@ -530,27 +530,30 @@ const Customize: React.FC = () => {
   // Auto-scroll: When Luxury Box is selected, scroll to box shape
   useEffect(() => {
     if (selectedPackage?.type === "box" && boxShapeRef.current) {
-      setTimeout(() => {
+      const t = setTimeout(() => {
         boxShapeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 300);
+      return () => clearTimeout(t);
     }
   }, [selectedPackage]);
 
   // Auto-scroll: When box shape is selected, scroll to size & color
   useEffect(() => {
     if (selectedBoxShape && step2Ref.current) {
-      setTimeout(() => {
+      const t = setTimeout(() => {
         step2Ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 300);
+      return () => clearTimeout(t);
     }
   }, [selectedBoxShape]);
 
   // Auto-scroll: When size and color are both selected, scroll to flowers
   useEffect(() => {
     if (step2Complete && step3Ref.current) {
-      setTimeout(() => {
+      const t = setTimeout(() => {
         step3Ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 300);
+      return () => clearTimeout(t);
     }
   }, [step2Complete]);
 
@@ -563,9 +566,10 @@ const Customize: React.FC = () => {
   // Auto-scroll: When family is selected, scroll to flowers grid
   useEffect(() => {
     if (selectedFamily && flowersGridRef.current) {
-      setTimeout(() => {
+      const t = setTimeout(() => {
         flowersGridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 300);
+      return () => clearTimeout(t);
     }
   }, [selectedFamily]);
 
@@ -1216,7 +1220,7 @@ const Customize: React.FC = () => {
   ]);
 
   return (
-    <div className="min-h-screen bg-white font-body" ref={containerRef}>
+    <div className="min-h-screen bg-white font-body overflow-x-hidden" ref={containerRef}>
       <SEO
         title="AI Custom Bouquet Designer - Create Your Perfect Arrangement"
         description="Design your perfect bouquet with AI. Choose flowers, colors, and styles to create a unique arrangement. Lebanon's most advanced flower customization tool. Personalized floral design."
@@ -1930,6 +1934,7 @@ const Customize: React.FC = () => {
                                       : ""
                                   }`}
                                   loading="lazy"
+                                  decoding="async"
                                 />
                                 {/* Out of Stock Overlay */}
                                 {isOutOfStock && (

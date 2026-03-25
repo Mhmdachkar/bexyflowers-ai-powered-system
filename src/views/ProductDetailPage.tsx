@@ -92,6 +92,8 @@ const ImageGallery = ({
           src={encodeImageUrl(images[currentImageIndex])}
           alt={productName ? `${productName} - luxury bouquet from Bexy Flowers Lebanon` : 'Product image'}
           className="w-full h-full object-cover"
+          decoding="async"
+          fetchPriority={currentImageIndex === 0 ? 'high' : 'low'}
           initial={{ opacity: 0, scale: 1.04 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.97 }}
@@ -143,6 +145,10 @@ const ImageGallery = ({
               src={encodeImageUrl(image)}
               alt={productName ? `${productName} – view ${index + 1}` : `View ${index + 1}`}
               className="w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
+              width="72"
+              height="90"
             />
           </button>
         ))}
@@ -478,7 +484,7 @@ const ProductDetailPage = () => {
   // ── Main render ─────────────────────────────────────────────────────────────
   return (
     <motion.div
-      className="min-h-screen"
+      className="min-h-screen overflow-x-hidden"
       style={{ background: 'linear-gradient(160deg, #faf8f5 0%, #ffffff 60%)' }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -788,6 +794,7 @@ const ProductDetailPage = () => {
                         alt={item.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-400"
                         loading="lazy"
+                        decoding="async"
                       />
                     </div>
                     <div className="p-2.5">
@@ -868,6 +875,7 @@ const ProductDetailPage = () => {
                           alt={getProductImageAlt(bouquet)}
                           className="w-full h-full object-cover group-hover:scale-106 transition-transform duration-500"
                           loading="lazy"
+                          decoding="async"
                         />
                         {/* Hover overlay */}
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/8 transition-colors duration-300" />
