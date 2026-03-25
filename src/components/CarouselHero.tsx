@@ -141,8 +141,8 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
 
   // ⚡ VIDEO: WebM is not supported on iOS Safari at all.
   // Detect iOS and skip the video entirely — the poster image already covers the background.
-  // On Android (WebM supported), reduce the delay from 3 s → 1.5 s so the video
-  // appears faster without competing with the LCP image download.
+  // PERFORMANCE FIX: Changed delay from 1.5s → 5s to allow FCP/LCP to complete first.
+  // The 1.5MB video was blocking critical page load metrics.
   const isIOSDevice = useMemo(() => {
     if (typeof navigator === 'undefined') return false;
     return /iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -150,7 +150,7 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
 
   useEffect(() => {
     if (!isMobile || isIOSDevice) return; // iOS: skip video entirely
-    const timer = setTimeout(() => setVideoReady(true), 1500); // was 3000 ms
+    const timer = setTimeout(() => setVideoReady(true), 5000); // INCREASED from 1500ms to 5000ms
     return () => clearTimeout(timer);
   }, [isMobile, isIOSDevice]);
 

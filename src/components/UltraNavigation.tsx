@@ -327,9 +327,11 @@ const UltraNavigation = () => {
                       <img
                         src={logoImage}
                         alt="Bexy Flowers Logo"
-                        width="160"
-                        height="99"
+                        width="80"
+                        height="80"
                         className="w-full h-full object-contain relative z-10 drop-shadow-lg filter brightness-110"
+                        decoding="async"
+                        fetchPriority="high"
                       />
                     </div>
 

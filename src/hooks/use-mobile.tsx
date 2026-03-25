@@ -18,7 +18,8 @@ export function useIsMobile() {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     };
     mql.addEventListener("change", onChange);
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    // Removed redundant setIsMobile call that was causing forced reflow
+    // Initial state is already set via getIsMobile() in useState
     return () => mql.removeEventListener("change", onChange);
   }, []);
 
