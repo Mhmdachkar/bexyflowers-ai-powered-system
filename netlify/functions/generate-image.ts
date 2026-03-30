@@ -799,8 +799,8 @@ export const handler: Handler = async (
     // NOTE: gptimage has been experiencing platform-wide 403 errors since March 4, 2026
     // due to Azure OpenAI content policy issues. See: https://github.com/pollinations/pollinations/issues/9356
     // Once Pollinations fixes gptimage, we can switch back to it as primary.
-    const PRIMARY_MODEL = 'klein'; // FLUX.2 Klein 4B - reliable, good quality
-    const BACKUP_MODEL = 'flux'; // Flux Schnell - fastest, most affordable
+    const PRIMARY_MODEL = 'grok-imagine'; // Grok Imagine - new high-quality model
+    const BACKUP_MODEL = 'klein'; // FLUX.2 Klein 4B - reliable fallback
     let model = PRIMARY_MODEL;
     
     const paramValidation = validateParameters(width, height, model);
