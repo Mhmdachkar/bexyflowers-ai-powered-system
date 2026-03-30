@@ -146,23 +146,29 @@ const ALLOWED_ORIGINS = [
   'http://localhost:52933', // Netlify dev server alt
 ];
 
-// Allowed models (from Pollinations pricing table)
-// See: https://pollinations.ai/pricing
+// Allowed models — synced with https://gen.pollinations.ai/v1/models (March 2026)
+// Only image-output models that support /image/{prompt} endpoint
 const ALLOWED_MODELS = [
-  // Flux variants (fast, affordable)
-  'flux', 'flux-realism', 'flux-anime', 'flux-3d',
-  // FLUX.2 Klein 4B (ALPHA - high quality, free tier)
+  // Flux (fast, affordable — most reliable)
+  'flux', 'zimage',
+  // FLUX.2 Klein 4B — primary model
   'klein',
-  // SDXL/Turbo (good balance)
-  'turbo', 'zimage',
-  // GPT Image models (best photorealism, text/logo support)
+  // GPT Image models (photorealistic)
   'gptimage', 'gptimage-large',
-  // Seedream models (high quality)
-  'seedream', 'seedream-pro',
-  // FLUX Kontext (better context understanding)
+  // NanoBanana family
+  'nanobanana', 'nanobanana-2', 'nanobanana-pro',
+  // Seedream v5
+  'seedream5',
+  // FLUX Kontext (context-aware)
   'kontext',
-  // NanoBanana (affordable)
-  'nanobanana', 'nanobanana-pro'
+  // Pollinations native image models
+  'p-image', 'p-image-edit',
+  // Qwen image
+  'qwen-image',
+  // Grok image (new — high quality)
+  'grok-imagine', 'grok-imagine-pro',
+  // Amazon Nova Canvas
+  'nova-canvas',
 ];
 
 /**
@@ -810,7 +816,15 @@ export const handler: Handler = async (
     
     const encodedPrompt = encodeURIComponent(prompt);
     const seed = Math.floor(Math.random() * 1000000000);
-    
+
+    // Build Pollinations request headers.
+    // IMPORTANT: Use Authorization: Bearer header (recommended by Pollinations v0.3 API).
+    // The old ?key= query param approach was triggering 530 Cloudflare DNS errors.
+    const pollinationsHeaders: Record<string, string> = {
+      'Authorization': `Bearer ${secretKey}`,
+      'Accept': 'image/*, application/json',
+    };
+
     // Log request details
     console.log('[Netlify Function] ========== IMAGE GENERATION REQUEST ==========');
     console.log('[Netlify Function] IP:', ip);
@@ -818,82 +832,98 @@ export const handler: Handler = async (
     console.log('[Netlify Function] Resolution:', `${width}x${height}`);
     console.log('[Netlify Function] Prompt length:', prompt.length);
     console.log('[Netlify Function] Seed:', seed);
+    console.log('[Netlify Function] Auth: Bearer token (header)');
     console.log('[Netlify Function] API Key prefix:', secretKey.substring(0, 8) + '...');
     console.log('[Netlify Function] ===============================================');
-    
+
     let response: Response;
     let usedModel = model;
-    
-    // Try preferred model first
-    let pollinationsUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=${secretKey}`;
-    
-    console.log(`[Netlify Function] Trying ${model} model first...`);
+
+    // Try preferred model first — URL no longer includes ?key= (moved to header)
+    const buildUrl = (m: string) =>
+      `https://gen.pollinations.ai/image/${encodedPrompt}?model=${m}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true`;
+
+    console.log(`[Netlify Function] Trying ${model} model...`);
     try {
-      response = await fetch(pollinationsUrl, { method: 'GET' });
+      response = await fetch(buildUrl(model), {
+        method: 'GET',
+        headers: pollinationsHeaders,
+      });
     } catch (fetchError) {
       console.error('[Netlify Function] Fetch error:', fetchError);
       throw fetchError;
     }
-    
-    // If primary model fails, automatically try backup model
-    if ((response.status === 403 || response.status === 402 || response.status === 500) && model === PRIMARY_MODEL) {
-      console.warn(`[Netlify Function] ${PRIMARY_MODEL} returned ${response.status}, trying backup model ${BACKUP_MODEL}...`);
+
+    // If primary model fails with 403/402/500/530, try backup model
+    const SHOULD_FALLBACK = [402, 403, 500, 503, 530];
+    if (SHOULD_FALLBACK.includes(response.status) && model === PRIMARY_MODEL) {
+      console.warn(`[Netlify Function] ${PRIMARY_MODEL} returned ${response.status}, falling back to ${BACKUP_MODEL}...`);
       model = BACKUP_MODEL;
       usedModel = BACKUP_MODEL;
-      
-      pollinationsUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=${secretKey}`;
-      
+
       try {
-        response = await fetch(pollinationsUrl, { method: 'GET' });
+        response = await fetch(buildUrl(model), {
+          method: 'GET',
+          headers: pollinationsHeaders,
+        });
       } catch (fetchError) {
         console.error('[Netlify Function] Fallback fetch error:', fetchError);
         throw fetchError;
       }
-      
+
       if (response.ok) {
         console.log(`[Netlify Function] Fallback to ${BACKUP_MODEL} succeeded!`);
       }
     }
-    
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[Netlify Function] Pollinations API error:', response.status, errorText.substring(0, 200));
+      const pollinationsStatus = response.status;
+      console.error('[Netlify Function] Pollinations API error:', pollinationsStatus, errorText.substring(0, 200));
       const responseTime = Date.now() - startTime;
-      logRequest(event, ip, responseTime, false, response.status, errorText.substring(0, 200));
-      
-      // Provide more specific error messages for common issues
-      let userMessage = `Pollinations API error: ${response.status}`;
-      let isRetryable = false;
-      
-      if (response.status === 403 && errorText.includes('temporarily blocked')) {
+      logRequest(event, ip, responseTime, false, pollinationsStatus, errorText.substring(0, 200));
+
+      // Map Pollinations / Cloudflare status codes to user-friendly messages.
+      // IMPORTANT: Never forward 530 (Cloudflare Origin DNS) — use 503 instead.
+      let userMessage = 'AI image generation temporarily unavailable. Please try again.';
+      let isRetryable = true;
+      let outboundStatus = 503; // Safe default — never expose upstream statuses like 530
+
+      if (pollinationsStatus === 530) {
+        userMessage = 'AI image service is temporarily unreachable. Please try again in a moment.';
+        isRetryable = true;
+        outboundStatus = 503;
+      } else if (pollinationsStatus === 403 && errorText.includes('temporarily blocked')) {
         userMessage = 'AI image service is temporarily unavailable due to high demand. Please try again in a few hours.';
         isRetryable = false;
-      } else if (response.status === 403) {
-        userMessage = 'AI service access denied. Please try again later.';
+        outboundStatus = 503;
+      } else if (pollinationsStatus === 403) {
+        userMessage = 'AI service access denied. The API key may need to be renewed at pollinations.ai.';
         isRetryable = false;
-      } else if (response.status === 402) {
-        userMessage = 'Insufficient pollen balance. Please top up your account at pollinations.ai';
+        outboundStatus = 503;
+      } else if (pollinationsStatus === 401) {
+        userMessage = 'AI service authentication failed. Please check the API key configuration.';
         isRetryable = false;
-      } else if (response.status === 502) {
-        userMessage = 'AI service gateway error. The service may be temporarily overloaded. Please try again.';
+        outboundStatus = 503;
+      } else if (pollinationsStatus === 402) {
+        userMessage = 'Insufficient pollen balance. Please top up your account at pollinations.ai.';
+        isRetryable = false;
+        outboundStatus = 503;
+      } else if (pollinationsStatus === 429) {
+        userMessage = 'AI service rate limit reached. Please wait a moment before trying again.';
         isRetryable = true;
-      } else if (response.status === 504) {
-        userMessage = 'AI service is busy right now. Please try again in a moment.';
+        outboundStatus = 429;
+      } else if (pollinationsStatus === 502 || pollinationsStatus === 504) {
+        userMessage = 'AI service is busy. Please try again in a moment.';
         isRetryable = true;
-      } else if (response.status === 429) {
-        userMessage = 'Rate limit exceeded. Please wait a moment before trying again.';
-        isRetryable = true;
-      } else if (response.status === 503) {
-        userMessage = 'AI service temporarily unavailable. Please try again shortly.';
-        isRetryable = true;
+        outboundStatus = 503;
       }
-      
+
       return {
-        statusCode: response.status,
+        statusCode: outboundStatus,
         headers: corsHeaders,
         body: JSON.stringify({
           error: userMessage,
-          details: errorText.substring(0, 200),
           retryable: isRetryable,
           modelAttempted: usedModel,
         }),
