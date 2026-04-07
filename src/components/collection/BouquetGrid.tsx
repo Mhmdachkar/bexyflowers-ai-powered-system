@@ -1,5 +1,5 @@
-import { useRef, memo, useState, useCallback } from "react";
-import { Heart, ShoppingCart } from "lucide-react";
+import { useRef, memo, useCallback } from "react";
+import { Heart, ShoppingBag, ArrowRight } from "lucide-react";
 import { useCartWithToast } from "@/hooks/useCartWithToast";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useFlyingHeart } from "@/contexts/FlyingHeartContext";
@@ -127,15 +127,28 @@ const BouquetCard = memo(({
     }
   }, [bouquet, finalPrice, addToCart]);
 
+  const handleCheckout = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!bouquet.is_out_of_stock) {
+      addToCart({
+        id: parseInt(bouquet.id),
+        title: bouquet.name,
+        price: finalPrice,
+        image: bouquet.image
+      });
+      navigate('/checkout');
+    }
+  }, [bouquet, finalPrice, addToCart, navigate]);
+
   return (
     <div
       className="group relative cursor-pointer transition-all duration-300 ease-out"
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
     >
-      {/* Discount Badge - Top Left (only if discount and not out of stock) */}
+      {/* Discount Badge - Top Left */}
       {bouquet.discount_percentage && bouquet.discount_percentage > 0 && !bouquet.is_out_of_stock && (
-        <div 
+        <div
           className="absolute top-2 left-2 z-10 px-2 py-1 text-[9px] sm:text-[10px] font-bold text-white shadow-lg"
           style={{
             background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
@@ -146,17 +159,16 @@ const BouquetCard = memo(({
           {bouquet.discount_percentage}% OFF
         </div>
       )}
-      
-      {/* Other Badges - Top Left (only if not out of stock and no discount) */}
+
+      {/* Other Badges - Top Left */}
       {badge && !bouquet.is_out_of_stock && !bouquet.discount_percentage && (
         <div className="absolute top-2 left-2 z-10 bg-white px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold tracking-wide">
           {badge}
         </div>
       )}
 
-      {/* Image Container - Clean with light background */}
+      {/* Image Container */}
       <div className="relative aspect-[3/4] overflow-hidden bg-[#F5F5F5]">
-        {/* ⚡ PERFORMANCE: First 8 images load eagerly (2 rows on mobile, 2 rows on desktop) */}
         <OptimizedImage
           src={bouquet.image}
           alt={getProductImageAlt(bouquet)}
@@ -177,29 +189,83 @@ const BouquetCard = memo(({
           </div>
         )}
 
-        {/* Favorite Button - Hidden by default, shows on hover */}
+        {/* Favorite Button - Top Right */}
         <button
           ref={heartButtonRef}
-          className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          className="absolute top-2 right-2 z-20 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-sm"
           onClick={handleFavoriteClick}
+          aria-label="Add to favorites"
         >
-          <Heart 
-            className={`w-4 h-4 ${isFav ? 'fill-[#dc267f] text-[#dc267f]' : 'text-foreground'}`} 
-            strokeWidth={1.5} 
+          <Heart
+            className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isFav ? 'fill-[#dc267f] text-[#dc267f]' : 'text-stone-600'}`}
+            strokeWidth={1.5}
           />
         </button>
 
-        {/* Add to Cart Button - Under favorite button */}
-        <button
-          className="absolute top-12 right-2 z-10 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-          onClick={handleAddToCart}
-          disabled={bouquet.is_out_of_stock}
-        >
-          <ShoppingCart 
-            className="w-4 h-4 text-foreground" 
-            strokeWidth={1.5} 
-          />
-        </button>
+        {/* ── Bottom CTA Bar ─────────────────────────────────────────────────
+            Desktop: slides up from bottom on hover.
+            Mobile:  always visible as a compact bar (no hover on touch).
+        ──────────────────────────────────────────────────────────────────── */}
+        {!bouquet.is_out_of_stock && (
+          <div
+            className="
+              absolute bottom-0 left-0 right-0 z-20
+              translate-y-full group-hover:translate-y-0
+              sm:translate-y-full sm:group-hover:translate-y-0
+              transition-transform duration-300 ease-out
+            "
+          >
+            <div
+              className="flex"
+              style={{ background: 'rgba(28,26,23,0.92)', backdropFilter: 'blur(6px)' }}
+            >
+              {/* Add to Cart */}
+              <button
+                onClick={handleAddToCart}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 sm:py-3 transition-colors duration-150 hover:bg-white/10 active:bg-white/20"
+                style={{ borderRight: '1px solid rgba(255,255,255,0.12)' }}
+                aria-label="Add to cart"
+              >
+                <ShoppingBag className="w-3.5 h-3.5 text-[#C79E48] flex-shrink-0" strokeWidth={1.5} />
+                <span
+                  className="text-white text-[10px] sm:text-[11px] font-medium tracking-wider uppercase"
+                  style={{ fontFamily: "'EB Garamond', serif", letterSpacing: '0.1em' }}
+                >
+                  Add to Cart
+                </span>
+              </button>
+
+              {/* Quick Checkout */}
+              <button
+                onClick={handleCheckout}
+                className="flex items-center justify-center gap-1 px-3 sm:px-4 py-2.5 sm:py-3 transition-colors duration-150 hover:bg-white/10 active:bg-white/20 flex-shrink-0"
+                aria-label="Buy now"
+              >
+                <ArrowRight className="w-3.5 h-3.5 text-[#C79E48]" strokeWidth={1.5} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Mobile-only: always-visible compact CTA strip (no hover on touch screens) */}
+        {!bouquet.is_out_of_stock && (
+          <div
+            className="sm:hidden absolute bottom-0 left-0 right-0 z-10"
+          >
+            <div
+              className="flex items-center justify-between px-3 py-2"
+              style={{ background: 'linear-gradient(to top, rgba(28,26,23,0.85) 0%, transparent 100%)' }}
+            >
+              <span
+                className="text-white/90 text-[10px] font-medium tracking-wider uppercase"
+                style={{ fontFamily: "'EB Garamond', serif" }}
+              >
+                Add to Cart
+              </span>
+              <ShoppingBag className="w-3.5 h-3.5 text-[#C79E48]" strokeWidth={1.5} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Card Info Below Image - Minimal Style */}

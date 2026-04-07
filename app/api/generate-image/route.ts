@@ -2,6 +2,8 @@
  * Image Generation API Route for Next.js
  * Fetches image from Pollinations AI server-side and returns as base64 data URL.
  * Matches the response format expected by imageGeneration.ts
+ * 
+ * Default model: 'gptimage' (GPT Image 1 Mini) - Best for photorealistic flower arrangements
  */
 
 import { NextRequest, NextResponse } from 'next/server';

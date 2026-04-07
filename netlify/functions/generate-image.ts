@@ -146,26 +146,24 @@ const ALLOWED_ORIGINS = [
   'http://localhost:52933', // Netlify dev server alt
 ];
 
-// Allowed models — synced with https://gen.pollinations.ai/v1/models (March 2026)
+// Allowed models — synced with https://pollinations.ai/models (April 2026)
 // Only image-output models that support /image/{prompt} endpoint
 const ALLOWED_MODELS = [
-  // Flux (fast, affordable — most reliable)
-  'flux', 'zimage',
-  // FLUX.2 Klein 4B — primary model
-  'klein',
-  // GPT Image models (photorealistic)
+  // GPT Image models (photorealistic) — PRIMARY
   'gptimage', 'gptimage-large',
+  // Flux (fast, affordable — reliable fallback)
+  'flux', 'zimage',
+  // FLUX.2 Klein 4B — good quality alternative
+  'klein',
   // NanoBanana family
   'nanobanana', 'nanobanana-2', 'nanobanana-pro',
-  // Seedream v5
-  'seedream5',
   // FLUX Kontext (context-aware)
   'kontext',
   // Pollinations native image models
   'p-image', 'p-image-edit',
   // Qwen image
   'qwen-image',
-  // Grok image (new — high quality)
+  // Grok image (high quality)
   'grok-imagine', 'grok-imagine-pro',
   // Amazon Nova Canvas
   'nova-canvas',
@@ -795,12 +793,11 @@ export const handler: Handler = async (
     
     const width = body.width || 512;
     const height = body.height || 512;
-    // Model selection: use klein as primary (reliable)
-    // NOTE: gptimage has been experiencing platform-wide 403 errors since March 4, 2026
-    // due to Azure OpenAI content policy issues. See: https://github.com/pollinations/pollinations/issues/9356
-    // Once Pollinations fixes gptimage, we can switch back to it as primary.
-    const PRIMARY_MODEL = 'grok-imagine'; // Grok Imagine - new high-quality model
-    const BACKUP_MODEL = 'klein'; // FLUX.2 Klein 4B - reliable fallback
+    // Model selection: use gptimage as primary (best photorealism)
+    // GPT Image 1 Mini - Best for photorealistic flower arrangements, text/logo support
+    // See: https://pollinations.ai/models for available models
+    const PRIMARY_MODEL = 'gptimage'; // GPT Image 1 Mini - best photorealism for flowers
+    const BACKUP_MODEL = 'flux'; // Flux Schnell - fast, reliable fallback
     let model = PRIMARY_MODEL;
     
     const paramValidation = validateParameters(width, height, model);

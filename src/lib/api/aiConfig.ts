@@ -70,23 +70,20 @@ export const AI_CONFIG = {
         // NOTE: Only basic parameters are supported in new API
         // enhance, nologo, seed may cause 400 errors - not including them
         // 
-        // Available Pollinations models (from pricing table):
-        // - 'flux': Flux Schnell - Fast, 5K images/pollen (tends to look 3D/synthetic)
-        // - 'turbo': SDXL Turbo - 3.3K images/pollen, good balance
-        // - 'gptimage': GPT Image 1 Mini - Best for photorealism, text generation
+        // Available Pollinations models (April 2026):
+        // - 'gptimage': GPT Image 1 Mini - PRIMARY MODEL - Best for photorealism, text generation
         // - 'gptimage-large': GPT Image 1.5 - Higher quality, slower
-        // - 'seedream': Seedream 4.0 - Good quality, 35 images/pollen
-        // - 'seedream-pro': Seedream 4.5 Pro - Best quality, 25 images/pollen
+        // - 'flux': Flux Schnell - Fast fallback (5-15 seconds)
+        // - 'klein': FLUX.2 Klein 4B - Good quality alternative
         // - 'kontext': FLUX.1 Kontext - Better context understanding
         // - 'nanobanana': NanoBanana - Affordable option
         // 
         // SPEED vs QUALITY tradeoff:
-        // 'flux' - FAST (5-15 seconds), default model
-        // 'turbo' - Fast (5-15 seconds), good quality
-        // 'gptimage' - Best photorealism, text/logo support (20-40 seconds at 512x512)
+        // 'gptimage' - Best photorealism, text/logo support (20-40 seconds at 512x512) ⭐ PRIMARY
+        // 'flux' - FAST (5-15 seconds), reliable fallback
         // 
-        // Using 'gptimage' for best quality flower images
-        model: 'gptimage', // Best photorealism for flower arrangements
+        // Using 'gptimage' (GPT Image 1 Mini) for best quality flower images
+        model: 'gptimage', // GPT Image 1 Mini - Best photorealism for flower arrangements
         width: 512, // Smaller resolution = faster generation (20-40s vs 60s at 768x768)
         height: 512, // Smaller resolution = faster generation
       }
