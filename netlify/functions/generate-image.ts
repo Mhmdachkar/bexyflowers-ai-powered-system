@@ -793,11 +793,10 @@ export const handler: Handler = async (
     
     const width = body.width || 512;
     const height = body.height || 512;
-    // Model selection: use gptimage as primary (best photorealism)
-    // GPT Image 1 Mini - Best for photorealistic flower arrangements, text/logo support
-    // See: https://pollinations.ai/models for available models
-    const PRIMARY_MODEL = 'gptimage'; // GPT Image 1 Mini - best photorealism for flowers
-    const BACKUP_MODEL = 'flux'; // Flux Schnell - fast, reliable fallback
+    // Model selection: use gptimage as primary (GPT Image 1 Mini)
+    // Best photorealism for flower arrangements
+    const PRIMARY_MODEL = 'gptimage'; // GPT Image 1 Mini - photorealistic
+    const BACKUP_MODEL = 'flux'; // Flux Schnell - fast reliable fallback
     let model = PRIMARY_MODEL;
     
     const paramValidation = validateParameters(width, height, model);
