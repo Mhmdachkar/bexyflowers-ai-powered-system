@@ -796,10 +796,9 @@ export const handler: Handler = async (
     // Model selection: use gptimage as primary (GPT Image 1 Mini)
     // Best photorealism for flower arrangements
     const PRIMARY_MODEL = 'gptimage'; // GPT Image 1 Mini - photorealistic
-    const BACKUP_MODEL = 'flux'; // Flux Schnell - fast reliable fallback
-    let model = PRIMARY_MODEL;
+    const BACKUP_MODEL = 'klein';     // FLUX.2 Klein 4B - last confirmed working fallback
     
-    const paramValidation = validateParameters(width, height, model);
+    const paramValidation = validateParameters(width, height, PRIMARY_MODEL);
     if (!paramValidation.valid) {
       const responseTime = Date.now() - startTime;
       logRequest(event, ip, responseTime, false, 400, paramValidation.error);
@@ -812,64 +811,104 @@ export const handler: Handler = async (
     
     const encodedPrompt = encodeURIComponent(prompt);
     const seed = Math.floor(Math.random() * 1000000000);
+    // Per-request abort timeout (20 s) so we don't hang inside Netlify's 60 s limit
+    const PER_REQUEST_TIMEOUT_MS = 20_000;
 
-    // Build Pollinations request headers.
-    // IMPORTANT: Use Authorization: Bearer header (recommended by Pollinations v0.3 API).
-    // The old ?key= query param approach was triggering 530 Cloudflare DNS errors.
-    const pollinationsHeaders: Record<string, string> = {
+    // ─── Helper: single fetch with AbortController timeout ───────────────────
+    async function fetchWithTimeout(url: string, headers: Record<string, string>): Promise<Response> {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), PER_REQUEST_TIMEOUT_MS);
+      try {
+        const res = await fetch(url, { method: 'GET', headers, signal: controller.signal });
+        return res;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    // ─── Two endpoint builders ────────────────────────────────────────────────
+    // 1. OLD endpoint (image.pollinations.ai) — key as URL param.
+    //    Confirmed working in earlier production sessions. gptimage was known
+    //    to work here before we migrated to gen.pollinations.ai.
+    const buildUrlOld = (m: string) =>
+      `https://image.pollinations.ai/prompt/${encodedPrompt}?model=${m}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=${secretKey}`;
+
+    // 2. NEW endpoint (gen.pollinations.ai) — Bearer header auth.
+    const buildUrlNew = (m: string) =>
+      `https://gen.pollinations.ai/image/${encodedPrompt}?model=${m}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true`;
+
+    const bearerHeaders: Record<string, string> = {
       'Authorization': `Bearer ${secretKey}`,
+      'Accept': 'image/*, application/json',
+    };
+    const noAuthHeaders: Record<string, string> = {
       'Accept': 'image/*, application/json',
     };
 
     // Log request details
     console.log('[Netlify Function] ========== IMAGE GENERATION REQUEST ==========');
     console.log('[Netlify Function] IP:', ip);
-    console.log('[Netlify Function] Model:', model);
+    console.log('[Netlify Function] Primary model:', PRIMARY_MODEL, '| Backup:', BACKUP_MODEL);
     console.log('[Netlify Function] Resolution:', `${width}x${height}`);
     console.log('[Netlify Function] Prompt length:', prompt.length);
     console.log('[Netlify Function] Seed:', seed);
-    console.log('[Netlify Function] Auth: Bearer token (header)');
     console.log('[Netlify Function] API Key prefix:', secretKey.substring(0, 8) + '...');
     console.log('[Netlify Function] ===============================================');
 
-    let response: Response;
-    let usedModel = model;
+    // ─── Multi-attempt strategy ───────────────────────────────────────────────
+    // Attempt 1: gptimage on the OLD endpoint (key in URL param)
+    // Attempt 2: gptimage on the NEW endpoint (Bearer header)
+    // Attempt 3: klein   on the NEW endpoint (Bearer header)  ← last confirmed working
+    const attempts = [
+      { label: 'gptimage/old-endpoint/?key=', url: buildUrlOld(PRIMARY_MODEL), headers: noAuthHeaders, modelName: PRIMARY_MODEL },
+      { label: 'gptimage/new-endpoint/Bearer', url: buildUrlNew(PRIMARY_MODEL), headers: bearerHeaders, modelName: PRIMARY_MODEL },
+      { label: `${BACKUP_MODEL}/new-endpoint/Bearer`, url: buildUrlNew(BACKUP_MODEL), headers: bearerHeaders, modelName: BACKUP_MODEL },
+    ];
 
-    // Try preferred model first — URL no longer includes ?key= (moved to header)
-    const buildUrl = (m: string) =>
-      `https://gen.pollinations.ai/image/${encodedPrompt}?model=${m}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true`;
+    const SHOULD_SKIP = [400, 401, 402, 403, 500, 503, 530]; // non-retryable upstream errors
+    let response: Response | undefined;
+    let usedModel = PRIMARY_MODEL;
 
-    console.log(`[Netlify Function] Trying ${model} model...`);
-    try {
-      response = await fetch(buildUrl(model), {
-        method: 'GET',
-        headers: pollinationsHeaders,
-      });
-    } catch (fetchError) {
-      console.error('[Netlify Function] Fetch error:', fetchError);
-      throw fetchError;
+    for (const attempt of attempts) {
+      console.log(`[Netlify Function] Trying: ${attempt.label}`);
+      try {
+        const res = await fetchWithTimeout(attempt.url, attempt.headers);
+        console.log(`[Netlify Function] ${attempt.label} → status ${res.status}`);
+        if (res.ok) {
+          response = res;
+          usedModel = attempt.modelName;
+          break; // success — stop trying
+        }
+        if (SHOULD_SKIP.includes(res.status)) {
+          console.warn(`[Netlify Function] ${attempt.label} returned ${res.status} — trying next attempt`);
+          response = res; // keep last response for error mapping
+          usedModel = attempt.modelName;
+          // continue to next attempt
+        } else {
+          // Unexpected status — keep and break
+          response = res;
+          usedModel = attempt.modelName;
+          break;
+        }
+      } catch (fetchError: unknown) {
+        const errMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
+        const isAbort = errMsg.includes('abort') || errMsg.includes('Abort');
+        console.warn(`[Netlify Function] ${attempt.label} fetch error (${isAbort ? 'timeout' : 'network'}):`, errMsg);
+        // Continue to next attempt
+      }
     }
 
-    // If primary model fails with 403/402/500/530, try backup model
-    const SHOULD_FALLBACK = [402, 403, 500, 503, 530];
-    if (SHOULD_FALLBACK.includes(response.status) && model === PRIMARY_MODEL) {
-      console.warn(`[Netlify Function] ${PRIMARY_MODEL} returned ${response.status}, falling back to ${BACKUP_MODEL}...`);
-      model = BACKUP_MODEL;
-      usedModel = BACKUP_MODEL;
-
-      try {
-        response = await fetch(buildUrl(model), {
-          method: 'GET',
-          headers: pollinationsHeaders,
-        });
-      } catch (fetchError) {
-        console.error('[Netlify Function] Fallback fetch error:', fetchError);
-        throw fetchError;
-      }
-
-      if (response.ok) {
-        console.log(`[Netlify Function] Fallback to ${BACKUP_MODEL} succeeded!`);
-      }
+    // If no response was ever set (all attempts threw network/timeout errors)
+    if (!response) {
+      return {
+        statusCode: 503,
+        headers: corsHeaders,
+        body: JSON.stringify({
+          error: 'AI image generation service is temporarily unreachable. Please try again in a moment.',
+          retryable: true,
+          modelAttempted: usedModel,
+        }),
+      };
     }
 
     if (!response.ok) {
