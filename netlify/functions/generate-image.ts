@@ -811,13 +811,18 @@ export const handler: Handler = async (
     
     const encodedPrompt = encodeURIComponent(prompt);
     const seed = Math.floor(Math.random() * 1000000000);
-    // Per-request abort timeout (20 s) so we don't hang inside Netlify's 60 s limit
-    const PER_REQUEST_TIMEOUT_MS = 20_000;
 
-    // ─── Helper: single fetch with AbortController timeout ───────────────────
-    async function fetchWithTimeout(url: string, headers: Record<string, string>): Promise<Response> {
+    // ─── Per-attempt timeouts ─────────────────────────────────────────────────
+    // gptimage typically takes 20-40s → give it 35s so it has a real chance.
+    // klein is much faster (10-20s) → 20s is plenty.
+    // Total worst-case: 35s + 20s = 55s (safely inside Netlify's 60s limit).
+    const GPTIMAGE_TIMEOUT_MS = 35_000;
+    const BACKUP_TIMEOUT_MS   = 20_000;
+
+    // ─── Helper: single fetch with per-attempt AbortController timeout ────────
+    async function fetchWithTimeout(url: string, headers: Record<string, string>, timeoutMs: number): Promise<Response> {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), PER_REQUEST_TIMEOUT_MS);
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
       try {
         const res = await fetch(url, { method: 'GET', headers, signal: controller.signal });
         return res;
@@ -826,16 +831,16 @@ export const handler: Handler = async (
       }
     }
 
-    // ─── Two endpoint builders ────────────────────────────────────────────────
-    // 1. OLD endpoint (image.pollinations.ai) — key as URL param.
-    //    Confirmed working in earlier production sessions. gptimage was known
-    //    to work here before we migrated to gen.pollinations.ai.
+    // ─── Endpoint builders ────────────────────────────────────────────────────
+    // OLD endpoint: image.pollinations.ai — API key as URL ?key= param.
+    // NOTE: enhance=true is NOT passed — it is not a documented gptimage param
+    //       and was causing silent failures / 400 errors on some requests.
     const buildUrlOld = (m: string) =>
-      `https://image.pollinations.ai/prompt/${encodedPrompt}?model=${m}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true&key=${secretKey}`;
+      `https://image.pollinations.ai/prompt/${encodedPrompt}?model=${m}&width=${width}&height=${height}&seed=${seed}&nologo=true&key=${secretKey}`;
 
-    // 2. NEW endpoint (gen.pollinations.ai) — Bearer header auth.
+    // NEW endpoint: gen.pollinations.ai — Bearer header auth.
     const buildUrlNew = (m: string) =>
-      `https://gen.pollinations.ai/image/${encodedPrompt}?model=${m}&width=${width}&height=${height}&seed=${seed}&enhance=true&nologo=true`;
+      `https://gen.pollinations.ai/image/${encodedPrompt}?model=${m}&width=${width}&height=${height}&seed=${seed}&nologo=true`;
 
     const bearerHeaders: Record<string, string> = {
       'Authorization': `Bearer ${secretKey}`,
@@ -853,16 +858,40 @@ export const handler: Handler = async (
     console.log('[Netlify Function] Prompt length:', prompt.length);
     console.log('[Netlify Function] Seed:', seed);
     console.log('[Netlify Function] API Key prefix:', secretKey.substring(0, 8) + '...');
+    console.log('[Netlify Function] Timeouts — gptimage:', GPTIMAGE_TIMEOUT_MS, 'ms | backup:', BACKUP_TIMEOUT_MS, 'ms');
     console.log('[Netlify Function] ===============================================');
 
-    // ─── Multi-attempt strategy ───────────────────────────────────────────────
-    // Attempt 1: gptimage on the OLD endpoint (key in URL param)
-    // Attempt 2: gptimage on the NEW endpoint (Bearer header)
-    // Attempt 3: klein   on the NEW endpoint (Bearer header)  ← last confirmed working
-    const attempts = [
-      { label: 'gptimage/old-endpoint/?key=', url: buildUrlOld(PRIMARY_MODEL), headers: noAuthHeaders, modelName: PRIMARY_MODEL },
-      { label: 'gptimage/new-endpoint/Bearer', url: buildUrlNew(PRIMARY_MODEL), headers: bearerHeaders, modelName: PRIMARY_MODEL },
-      { label: `${BACKUP_MODEL}/new-endpoint/Bearer`, url: buildUrlNew(BACKUP_MODEL), headers: bearerHeaders, modelName: BACKUP_MODEL },
+    // ─── Two-tier attempt strategy ────────────────────────────────────────────
+    // Attempt 1: gptimage on OLD endpoint (key in URL) — 35 s timeout
+    //            The legacy endpoint is where gptimage last reliably worked.
+    // Attempt 2: klein on NEW endpoint (Bearer header) — 20 s timeout
+    //            Reliable, fast fallback when gptimage is unavailable.
+    //
+    // Why only 2 attempts?
+    //   gptimage/new-endpoint was returning consistent 403s in production.
+    //   Keeping it as a 3rd attempt wastes ~20s and risks Netlify timeout.
+    //   35 + 20 = 55s total worst-case — safely inside the 60s limit.
+    const attempts: Array<{
+      label: string;
+      url: string;
+      headers: Record<string, string>;
+      modelName: string;
+      timeout: number;
+    }> = [
+      {
+        label: 'gptimage/old-endpoint/?key=',
+        url: buildUrlOld(PRIMARY_MODEL),
+        headers: noAuthHeaders,
+        modelName: PRIMARY_MODEL,
+        timeout: GPTIMAGE_TIMEOUT_MS,
+      },
+      {
+        label: `${BACKUP_MODEL}/new-endpoint/Bearer`,
+        url: buildUrlNew(BACKUP_MODEL),
+        headers: bearerHeaders,
+        modelName: BACKUP_MODEL,
+        timeout: BACKUP_TIMEOUT_MS,
+      },
     ];
 
     const SHOULD_SKIP = [400, 401, 402, 403, 500, 503, 530]; // non-retryable upstream errors
@@ -870,9 +899,9 @@ export const handler: Handler = async (
     let usedModel = PRIMARY_MODEL;
 
     for (const attempt of attempts) {
-      console.log(`[Netlify Function] Trying: ${attempt.label}`);
+      console.log(`[Netlify Function] Trying: ${attempt.label} (timeout: ${attempt.timeout / 1000}s)`);
       try {
-        const res = await fetchWithTimeout(attempt.url, attempt.headers);
+        const res = await fetchWithTimeout(attempt.url, attempt.headers, attempt.timeout);
         console.log(`[Netlify Function] ${attempt.label} → status ${res.status}`);
         if (res.ok) {
           response = res;
@@ -893,7 +922,7 @@ export const handler: Handler = async (
       } catch (fetchError: unknown) {
         const errMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
         const isAbort = errMsg.includes('abort') || errMsg.includes('Abort');
-        console.warn(`[Netlify Function] ${attempt.label} fetch error (${isAbort ? 'timeout' : 'network'}):`, errMsg);
+        console.warn(`[Netlify Function] ${attempt.label} fetch error (${isAbort ? 'TIMEOUT after ' + attempt.timeout / 1000 + 's' : 'network'}):`, errMsg);
         // Continue to next attempt
       }
     }

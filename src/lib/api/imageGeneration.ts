@@ -99,15 +99,18 @@ function enhancePrompt(basePrompt: string): string {
 }
 
 /**
- * Clean and optimize prompt to avoid API errors
+ * Clean and optimize prompt to avoid API errors.
+ * Only strips control characters and truly dangerous sequences.
+ * Punctuation like colons, parentheses, and quotes are intentionally
+ * preserved — stripping them degrades prompt quality and structure.
  */
 function cleanPrompt(prompt: string): string {
-    // Remove excessive punctuation and special characters that might cause issues
     return prompt
-        .replace(/[^\w\s,.-]/g, '') // Keep only alphanumeric, spaces, commas, periods, hyphens
-        .replace(/\s+/g, ' ')        // Normalize spaces
+        .replace(/[\x00-\x1F\x7F]/g, '')  // Remove control characters only
+        .replace(/<[^>]*>/g, '')            // Strip any stray HTML tags
+        .replace(/\s+/g, ' ')              // Normalize whitespace
         .trim()
-        .slice(0, AI_CONFIG.generation.maxPromptLength); // Limit length from config
+        .slice(0, AI_CONFIG.generation.maxPromptLength); // Enforce length limit
 }
 
 /**
