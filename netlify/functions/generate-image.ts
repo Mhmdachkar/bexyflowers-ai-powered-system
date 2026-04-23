@@ -830,23 +830,11 @@ export const handler: Handler = async (
     const encodedPrompt = encodeURIComponent(prompt);
     const seed = Math.floor(Math.random() * 1000000000);
 
-    // ─── Per-attempt timeouts ─────────────────────────────────────────────────
-    // gptimage at 512×512 typically generates in 15–25 s.
-    //
-    // Attempt 1 (old endpoint /prompt/ ?key=): 22 s
-    //   — The legacy endpoint where gptimage is most reliable.
-    //
-    // Attempt 2 (new endpoint /image/ Bearer): 12 s
-    //   — Secondary; only reached if attempt 1 fails fast (e.g. 403/500).
-    //     A slow attempt-1 still leaves only 12 s here, which is enough for
-    //     gptimage when Pollinations is healthy.
-    //
-    // Total worst-case: 22 + 12 = 34 s
-    //   + ~5 s overhead (startup, rate-limit check, base64) = ~39 s
-    //   → safely inside Netlify's 60 s function limit on any paid plan.
-    //   → On FREE tier (10 s hard cap) image generation requires a paid plan.
-    const ATTEMPT1_TIMEOUT_MS = 22_000;
-    const ATTEMPT2_TIMEOUT_MS = 12_000;
+    // ─── Request timeout ──────────────────────────────────────────────────────
+    // gptimage at 512×512 typically generates in 15–30 s.
+    // We give a single generous timeout of 45 s to avoid premature aborts.
+    // With ~5 s function overhead, total is ~50 s — safely inside Netlify's 60 s.
+    const REQUEST_TIMEOUT_MS = 45_000;
 
     // ─── Helper: fetch with AbortController timeout ───────────────────────────
     async function fetchWithTimeout(url: string, headers: Record<string, string>, timeoutMs: number): Promise<Response> {
@@ -860,105 +848,76 @@ export const handler: Handler = async (
       }
     }
 
-    // ─── Endpoint builders for gptimage ──────────────────────────────────────
-    // OLD endpoint: image.pollinations.ai — API key in URL ?key= param.
-    // NOTE: enhance=true is intentionally omitted — it is not a valid gptimage
-    //       parameter and was causing silent failures / 400 errors.
-    const gptimageUrlOld =
-      `https://image.pollinations.ai/prompt/${encodedPrompt}?model=${MODEL}&width=${width}&height=${height}&seed=${seed}&nologo=true&key=${secretKey}`;
+    // ─── Endpoint URL ─────────────────────────────────────────────────────────
+    // OFFICIAL Pollinations API (as of API v0.3.0 / April 2026):
+    //   Base URL:  https://gen.pollinations.ai
+    //   Endpoint:  GET /image/{prompt}
+    //   Auth:      Authorization: Bearer sk_xxx   OR   ?key=sk_xxx
+    //   Docs:      https://github.com/pollinations/pollinations/blob/main/APIDOCS.md
+    //
+    // DEPRECATED: image.pollinations.ai — DO NOT USE.
+    //   Requests to the old endpoint are NOT counted in your account usage,
+    //   may return cached/placeholder images, and can fail silently.
+    //
+    // We use BOTH auth methods (Bearer header + ?key= param) for maximum
+    // compatibility — some API gateway configurations prefer one over the other.
+    const gptimageUrl =
+      `https://gen.pollinations.ai/image/${encodedPrompt}?model=${MODEL}&width=${width}&height=${height}&seed=${seed}&key=${secretKey}`;
 
-    // NEW endpoint: gen.pollinations.ai — API key as Bearer header.
-    const gptimageUrlNew =
-      `https://gen.pollinations.ai/image/${encodedPrompt}?model=${MODEL}&width=${width}&height=${height}&seed=${seed}&nologo=true`;
-
-    const bearerHeaders: Record<string, string> = {
+    const requestHeaders: Record<string, string> = {
       'Authorization': `Bearer ${secretKey}`,
-      'Accept': 'image/*, application/json',
-    };
-    const noAuthHeaders: Record<string, string> = {
-      'Accept': 'image/*, application/json',
+      'Accept': 'image/png, image/jpeg, image/webp, */*',
     };
 
     // Log request details
     console.log('[Netlify Function] ========== IMAGE GENERATION REQUEST ==========');
     console.log('[Netlify Function] IP:', ip);
-    console.log('[Netlify Function] Model: gptimage (GPT Image 1 Mini) — NO fallback');
+    console.log('[Netlify Function] Endpoint: gen.pollinations.ai/image/ (official API)');
+    console.log('[Netlify Function] Model: gptimage (GPT Image 1 Mini)');
     console.log('[Netlify Function] Resolution:', `${width}x${height}`);
     console.log('[Netlify Function] Prompt length:', prompt.length);
     console.log('[Netlify Function] Seed:', seed);
     console.log('[Netlify Function] API Key prefix:', secretKey.substring(0, 8) + '...');
-    console.log('[Netlify Function] Timeouts — attempt1:', ATTEMPT1_TIMEOUT_MS, 'ms | attempt2:', ATTEMPT2_TIMEOUT_MS, 'ms');
+    console.log('[Netlify Function] Timeout:', REQUEST_TIMEOUT_MS, 'ms');
+    console.log('[Netlify Function] Full URL (key redacted):', gptimageUrl.replace(secretKey, 'sk_***'));
     console.log('[Netlify Function] ===============================================');
 
-    // ─── gptimage-only two-attempt strategy ───────────────────────────────────
-    // Attempt 1: gptimage on OLD endpoint (?key= in URL) — 35s
-    //            This is where gptimage is confirmed to work reliably.
-    // Attempt 2: gptimage on NEW endpoint (Bearer header) — 20s
-    //            Secondary try in case old endpoint is temporarily down.
-    //
-    // NO other model is ever used. If both attempts fail, the user receives
-    // a "gptimage temporarily unavailable" error — not a silently degraded image.
-    const attempts: Array<{
-      label: string;
-      url: string;
-      headers: Record<string, string>;
-      timeout: number;
-    }> = [
-      {
-        label: 'gptimage / image.pollinations.ai / ?key=',
-        url: gptimageUrlOld,
-        headers: noAuthHeaders,
-        timeout: ATTEMPT1_TIMEOUT_MS,
-      },
-      {
-        label: 'gptimage / gen.pollinations.ai / Bearer',
-        url: gptimageUrlNew,
-        headers: bearerHeaders,
-        timeout: ATTEMPT2_TIMEOUT_MS,
-      },
-    ];
-
-    // Status codes from Pollinations that mean "try next endpoint immediately".
-    // 502 / 504 = Pollinations upstream gateway errors (transient, worth retrying)
-    // 400 / 401 / 402 / 403 = access/auth issues, no point retrying same endpoint
-    // 500 / 503 / 530 = server or Cloudflare errors, try alternative endpoint
-    const SHOULD_SKIP = [400, 401, 402, 403, 500, 502, 503, 504, 530];
+    // ─── Make the API request ──────────────────────────────────────────────────
     let response: Response | undefined;
 
-    for (const attempt of attempts) {
-      console.log(`[Netlify Function] Trying: ${attempt.label} (timeout: ${attempt.timeout / 1000}s)`);
-      try {
-        const res = await fetchWithTimeout(attempt.url, attempt.headers, attempt.timeout);
-        console.log(`[Netlify Function] ${attempt.label} → status ${res.status}`);
-        if (res.ok) {
-          response = res;
-          break; // success — stop trying
-        }
-        if (SHOULD_SKIP.includes(res.status)) {
-          console.warn(`[Netlify Function] ${attempt.label} returned ${res.status} — trying next gptimage endpoint`);
-          response = res; // keep last response for error mapping if all fail
-          // continue to next attempt
-        } else {
-          // Unexpected status — keep and stop
-          response = res;
-          break;
-        }
-      } catch (fetchError: unknown) {
-        const errMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
-        const isAbort = errMsg.includes('abort') || errMsg.includes('Abort');
-        console.warn(`[Netlify Function] ${attempt.label} fetch error (${isAbort ? 'TIMEOUT after ' + attempt.timeout / 1000 + 's' : 'network'}):`, errMsg);
-        // Continue to next gptimage endpoint
-      }
-    }
-
-    // If both gptimage endpoints failed (network / timeout errors on all attempts)
-    if (!response) {
-      console.error('[Netlify Function] ❌ gptimage unreachable on both endpoints — returning 503');
+    console.log(`[Netlify Function] Calling Pollinations API (timeout: ${REQUEST_TIMEOUT_MS / 1000}s)...`);
+    try {
+      response = await fetchWithTimeout(gptimageUrl, requestHeaders, REQUEST_TIMEOUT_MS);
+      console.log(`[Netlify Function] Pollinations API → status ${response.status}`);
+    } catch (fetchError: unknown) {
+      const errMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
+      const isTimeout = errMsg.toLowerCase().includes('abort');
+      console.error(`[Netlify Function] ❌ Fetch error (${isTimeout ? 'TIMEOUT' : 'network'}):`, errMsg);
+      
+      const responseTime = Date.now() - startTime;
+      logRequest(event, ip, responseTime, false, 503, errMsg);
+      
       return {
         statusCode: 503,
         headers: corsHeaders,
         body: JSON.stringify({
-          error: 'GPT Image is temporarily unavailable. Please try again in a moment.',
+          error: isTimeout 
+            ? 'Image generation timed out. Please try again.' 
+            : 'Unable to reach the image generation service. Please try again.',
+          retryable: true,
+          model: MODEL,
+        }),
+      };
+    }
+
+    // If no response (shouldn't happen, but defensive)
+    if (!response) {
+      console.error('[Netlify Function] ❌ No response from Pollinations API');
+      return {
+        statusCode: 503,
+        headers: corsHeaders,
+        body: JSON.stringify({
+          error: 'GPT Image is temporarily unavailable. Please try again.',
           retryable: true,
           model: MODEL,
         }),

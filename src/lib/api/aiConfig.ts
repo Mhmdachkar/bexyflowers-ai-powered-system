@@ -51,10 +51,11 @@ export const AI_CONFIG = {
   apis: {
     pollinations: {
       enabled: true,
-      // CORRECT API ENDPOINT (as of 2025)
+      // OFFICIAL API ENDPOINT (as of API v0.3.0 / April 2026)
       // Documentation: https://github.com/pollinations/pollinations/blob/main/APIDOCS.md
-      // Format: https://image.pollinations.ai/prompt/{prompt}?model=...&width=...&height=...
-      baseUrl: 'https://image.pollinations.ai/prompt', // Official image generation endpoint
+      // Format: https://gen.pollinations.ai/image/{prompt}?model=...&width=...&height=...
+      // DEPRECATED: image.pollinations.ai — requests don't count toward usage
+      baseUrl: 'https://gen.pollinations.ai/image', // Official image generation endpoint
       // SECURITY: API key removed from frontend - only used server-side in Netlify function
       // Never expose keys in frontend code - they are visible in browser DevTools and bundled JS
       // Use serverless function for unlimited rate limits (secret key)
@@ -196,29 +197,20 @@ export function getLoadingMessage(elapsedSeconds: number): string {
 
 /**
  * Helper to build API URL with parameters
+ * NOTE: This function is NOT used in production. All image generation goes
+ * through the serverless function (useServerless: true) which handles auth.
+ * This exists only for local dev/testing fallback scenarios.
  */
 export function buildPollinationsUrl(prompt: string, width: number, height: number, negative?: string): string {
   const config = AI_CONFIG.apis.pollinations;
   
-  // NEW API FORMAT: https://gen.pollinations.ai/image/{prompt}?key=API_KEY&model=flux&width=1024&height=1024
-  // Documentation: https://gen.pollinations.ai
-  // Authentication: Use ?key=YOUR_API_KEY (publishable keys work in query param)
-  // 
-  // IMPORTANT: New API may only support basic parameters:
-  // - model (required): 'flux', 'turbo', 'sdxl', etc.
-  // - width, height (optional): Image dimensions
-  // - key (required): API key for authentication
-  // 
-  // Parameters that may NOT be supported:
-  // - enhance, nologo, seed, negative (may cause 400 errors)
+  // OFFICIAL API (v0.3.0): https://gen.pollinations.ai/image/{prompt}?model=gptimage&...
+  // Auth: Bearer header (serverless) OR ?key= param (fallback)
+  // Docs: https://github.com/pollinations/pollinations/blob/main/APIDOCS.md
   
-  // Build query parameters - ONLY use confirmed supported parameters
   const params = new URLSearchParams();
-  
-  // Model (required) - use 'flux' as default (confirmed to work)
   params.append('model', config.params.model || 'gptimage');
   
-  // Dimensions (optional but recommended)
   if (width) {
     params.append('width', width.toString());
   }
@@ -226,16 +218,13 @@ export function buildPollinationsUrl(prompt: string, width: number, height: numb
     params.append('height', height.toString());
   }
   
-  // SECURITY: API key removed - never expose keys in frontend
-  // Keys are only used server-side in Netlify function
-  // This function is only used for direct API fallback (disabled in production)
+  // Seed for variation (optional but useful)
+  params.append('seed', Math.floor(Math.random() * 1000000000).toString());
   
-  // NOTE: Not including enhance, nologo, seed - these may cause 400 errors
-  // The API documentation suggests these may not be supported in the new endpoint
+  // NOTE: API key is NOT included here — this is frontend code.
+  // In production, the serverless function handles authentication.
   
   const encodedPrompt = encodeURIComponent(prompt);
-  
-  // Simplified API format: /image/{prompt}?key=API_KEY&model=flux&width=1024&height=1024
   return `${config.baseUrl}/${encodedPrompt}?${params.toString()}`;
 }
 

@@ -48,20 +48,23 @@ export async function POST(request: NextRequest) {
     // Retrieve Pollinations secret key (server-only, never exposed to client)
     const pollinationsKey = process.env.POLLINATIONS_SECRET_KEY || process.env.POLLINATIONS_SECRET_KEY2;
 
-    // Build Pollinations URL
+    // Build Pollinations URL using OFFICIAL gen.pollinations.ai endpoint
+    // DEPRECATED: image.pollinations.ai — do not use, requests don't count toward usage
+    const encodedPrompt = encodeURIComponent(prompt.trim());
+    const seed = Math.floor(Math.random() * 1000000000);
+    
     const params = new URLSearchParams({
       model,
       width: width.toString(),
       height: height.toString(),
-      nologo: 'true',
+      seed: seed.toString(),
     });
 
     if (pollinationsKey) {
       params.append('key', pollinationsKey);
     }
 
-    const encodedPrompt = encodeURIComponent(prompt.trim());
-    const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?${params.toString()}`;
+    const pollinationsUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?${params.toString()}`;
 
     // Fetch the image server-side (keeps API key secret and avoids CORS)
     const controller = new AbortController();
@@ -71,7 +74,11 @@ export async function POST(request: NextRequest) {
     try {
       imageResponse = await fetch(pollinationsUrl, {
         signal: controller.signal,
-        headers: { 'User-Agent': 'BexyFlowers/1.0' },
+        headers: {
+          'User-Agent': 'BexyFlowers/1.0',
+          'Accept': 'image/png, image/jpeg, image/webp, */*',
+          ...(pollinationsKey && { 'Authorization': `Bearer ${pollinationsKey}` }),
+        },
       });
     } finally {
       clearTimeout(timeoutId);
