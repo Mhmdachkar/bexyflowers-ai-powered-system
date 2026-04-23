@@ -793,12 +793,15 @@ export const handler: Handler = async (
     
     const width = body.width || 512;
     const height = body.height || 512;
-    // Model selection: use gptimage as primary (GPT Image 1 Mini)
-    // Best photorealism for flower arrangements
-    const PRIMARY_MODEL = 'gptimage'; // GPT Image 1 Mini - photorealistic
-    const BACKUP_MODEL = 'klein';     // FLUX.2 Klein 4B - last confirmed working fallback
-    
-    const paramValidation = validateParameters(width, height, PRIMARY_MODEL);
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // MODEL: gptimage (GPT Image 1 Mini) — ONLY model used, NO fallback.
+    // No other model (flux, klein, etc.) will ever be used, even on failure.
+    // If gptimage is unavailable the user receives a clear error message.
+    // ═══════════════════════════════════════════════════════════════════════
+    const MODEL = 'gptimage';
+
+    const paramValidation = validateParameters(width, height, MODEL);
     if (!paramValidation.valid) {
       const responseTime = Date.now() - startTime;
       logRequest(event, ip, responseTime, false, 400, paramValidation.error);
@@ -813,13 +816,14 @@ export const handler: Handler = async (
     const seed = Math.floor(Math.random() * 1000000000);
 
     // ─── Per-attempt timeouts ─────────────────────────────────────────────────
-    // gptimage typically takes 20-40s → give it 35s so it has a real chance.
-    // klein is much faster (10-20s) → 20s is plenty.
-    // Total worst-case: 35s + 20s = 55s (safely inside Netlify's 60s limit).
-    const GPTIMAGE_TIMEOUT_MS = 35_000;
-    const BACKUP_TIMEOUT_MS   = 20_000;
+    // gptimage typically takes 20-40s.
+    // Attempt 1 (old endpoint): 35s — primary, most reliable for gptimage.
+    // Attempt 2 (new endpoint): 20s — secondary, tried if old returns error.
+    // Total worst-case: 55s — safely inside Netlify's 60s function limit.
+    const ATTEMPT1_TIMEOUT_MS = 35_000;
+    const ATTEMPT2_TIMEOUT_MS = 20_000;
 
-    // ─── Helper: single fetch with per-attempt AbortController timeout ────────
+    // ─── Helper: fetch with AbortController timeout ───────────────────────────
     async function fetchWithTimeout(url: string, headers: Record<string, string>, timeoutMs: number): Promise<Response> {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -831,16 +835,16 @@ export const handler: Handler = async (
       }
     }
 
-    // ─── Endpoint builders ────────────────────────────────────────────────────
-    // OLD endpoint: image.pollinations.ai — API key as URL ?key= param.
-    // NOTE: enhance=true is NOT passed — it is not a documented gptimage param
-    //       and was causing silent failures / 400 errors on some requests.
-    const buildUrlOld = (m: string) =>
-      `https://image.pollinations.ai/prompt/${encodedPrompt}?model=${m}&width=${width}&height=${height}&seed=${seed}&nologo=true&key=${secretKey}`;
+    // ─── Endpoint builders for gptimage ──────────────────────────────────────
+    // OLD endpoint: image.pollinations.ai — API key in URL ?key= param.
+    // NOTE: enhance=true is intentionally omitted — it is not a valid gptimage
+    //       parameter and was causing silent failures / 400 errors.
+    const gptimageUrlOld =
+      `https://image.pollinations.ai/prompt/${encodedPrompt}?model=${MODEL}&width=${width}&height=${height}&seed=${seed}&nologo=true&key=${secretKey}`;
 
-    // NEW endpoint: gen.pollinations.ai — Bearer header auth.
-    const buildUrlNew = (m: string) =>
-      `https://gen.pollinations.ai/image/${encodedPrompt}?model=${m}&width=${width}&height=${height}&seed=${seed}&nologo=true`;
+    // NEW endpoint: gen.pollinations.ai — API key as Bearer header.
+    const gptimageUrlNew =
+      `https://gen.pollinations.ai/image/${encodedPrompt}?model=${MODEL}&width=${width}&height=${height}&seed=${seed}&nologo=true`;
 
     const bearerHeaders: Record<string, string> = {
       'Authorization': `Bearer ${secretKey}`,
@@ -853,50 +857,45 @@ export const handler: Handler = async (
     // Log request details
     console.log('[Netlify Function] ========== IMAGE GENERATION REQUEST ==========');
     console.log('[Netlify Function] IP:', ip);
-    console.log('[Netlify Function] Primary model:', PRIMARY_MODEL, '| Backup:', BACKUP_MODEL);
+    console.log('[Netlify Function] Model: gptimage (GPT Image 1 Mini) — NO fallback');
     console.log('[Netlify Function] Resolution:', `${width}x${height}`);
     console.log('[Netlify Function] Prompt length:', prompt.length);
     console.log('[Netlify Function] Seed:', seed);
     console.log('[Netlify Function] API Key prefix:', secretKey.substring(0, 8) + '...');
-    console.log('[Netlify Function] Timeouts — gptimage:', GPTIMAGE_TIMEOUT_MS, 'ms | backup:', BACKUP_TIMEOUT_MS, 'ms');
+    console.log('[Netlify Function] Timeouts — attempt1:', ATTEMPT1_TIMEOUT_MS, 'ms | attempt2:', ATTEMPT2_TIMEOUT_MS, 'ms');
     console.log('[Netlify Function] ===============================================');
 
-    // ─── Two-tier attempt strategy ────────────────────────────────────────────
-    // Attempt 1: gptimage on OLD endpoint (key in URL) — 35 s timeout
-    //            The legacy endpoint is where gptimage last reliably worked.
-    // Attempt 2: klein on NEW endpoint (Bearer header) — 20 s timeout
-    //            Reliable, fast fallback when gptimage is unavailable.
+    // ─── gptimage-only two-attempt strategy ───────────────────────────────────
+    // Attempt 1: gptimage on OLD endpoint (?key= in URL) — 35s
+    //            This is where gptimage is confirmed to work reliably.
+    // Attempt 2: gptimage on NEW endpoint (Bearer header) — 20s
+    //            Secondary try in case old endpoint is temporarily down.
     //
-    // Why only 2 attempts?
-    //   gptimage/new-endpoint was returning consistent 403s in production.
-    //   Keeping it as a 3rd attempt wastes ~20s and risks Netlify timeout.
-    //   35 + 20 = 55s total worst-case — safely inside the 60s limit.
+    // NO other model is ever used. If both attempts fail, the user receives
+    // a "gptimage temporarily unavailable" error — not a silently degraded image.
     const attempts: Array<{
       label: string;
       url: string;
       headers: Record<string, string>;
-      modelName: string;
       timeout: number;
     }> = [
       {
-        label: 'gptimage/old-endpoint/?key=',
-        url: buildUrlOld(PRIMARY_MODEL),
+        label: 'gptimage / image.pollinations.ai / ?key=',
+        url: gptimageUrlOld,
         headers: noAuthHeaders,
-        modelName: PRIMARY_MODEL,
-        timeout: GPTIMAGE_TIMEOUT_MS,
+        timeout: ATTEMPT1_TIMEOUT_MS,
       },
       {
-        label: `${BACKUP_MODEL}/new-endpoint/Bearer`,
-        url: buildUrlNew(BACKUP_MODEL),
+        label: 'gptimage / gen.pollinations.ai / Bearer',
+        url: gptimageUrlNew,
         headers: bearerHeaders,
-        modelName: BACKUP_MODEL,
-        timeout: BACKUP_TIMEOUT_MS,
+        timeout: ATTEMPT2_TIMEOUT_MS,
       },
     ];
 
-    const SHOULD_SKIP = [400, 401, 402, 403, 500, 503, 530]; // non-retryable upstream errors
+    // Non-retryable HTTP status codes — move to next attempt immediately.
+    const SHOULD_SKIP = [400, 401, 402, 403, 500, 503, 530];
     let response: Response | undefined;
-    let usedModel = PRIMARY_MODEL;
 
     for (const attempt of attempts) {
       console.log(`[Netlify Function] Trying: ${attempt.label} (timeout: ${attempt.timeout / 1000}s)`);
@@ -905,37 +904,35 @@ export const handler: Handler = async (
         console.log(`[Netlify Function] ${attempt.label} → status ${res.status}`);
         if (res.ok) {
           response = res;
-          usedModel = attempt.modelName;
           break; // success — stop trying
         }
         if (SHOULD_SKIP.includes(res.status)) {
-          console.warn(`[Netlify Function] ${attempt.label} returned ${res.status} — trying next attempt`);
-          response = res; // keep last response for error mapping
-          usedModel = attempt.modelName;
+          console.warn(`[Netlify Function] ${attempt.label} returned ${res.status} — trying next gptimage endpoint`);
+          response = res; // keep last response for error mapping if all fail
           // continue to next attempt
         } else {
-          // Unexpected status — keep and break
+          // Unexpected status — keep and stop
           response = res;
-          usedModel = attempt.modelName;
           break;
         }
       } catch (fetchError: unknown) {
         const errMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
         const isAbort = errMsg.includes('abort') || errMsg.includes('Abort');
         console.warn(`[Netlify Function] ${attempt.label} fetch error (${isAbort ? 'TIMEOUT after ' + attempt.timeout / 1000 + 's' : 'network'}):`, errMsg);
-        // Continue to next attempt
+        // Continue to next gptimage endpoint
       }
     }
 
-    // If no response was ever set (all attempts threw network/timeout errors)
+    // If both gptimage endpoints failed (network / timeout errors on all attempts)
     if (!response) {
+      console.error('[Netlify Function] ❌ gptimage unreachable on both endpoints — returning 503');
       return {
         statusCode: 503,
         headers: corsHeaders,
         body: JSON.stringify({
-          error: 'AI image generation service is temporarily unreachable. Please try again in a moment.',
+          error: 'GPT Image is temporarily unavailable. Please try again in a moment.',
           retryable: true,
-          modelAttempted: usedModel,
+          model: MODEL,
         }),
       };
     }
@@ -989,12 +986,12 @@ export const handler: Handler = async (
         body: JSON.stringify({
           error: userMessage,
           retryable: isRetryable,
-          modelAttempted: usedModel,
+          model: MODEL,
         }),
       };
     }
     
-    console.log(`[Netlify Function] ✅ Image generated successfully with model: ${usedModel}`);
+    console.log(`[Netlify Function] ✅ Image generated successfully with gptimage (GPT Image 1 Mini)`);
     
     // Get image as buffer
     const imageBuffer = await response.arrayBuffer();
@@ -1007,14 +1004,14 @@ export const handler: Handler = async (
     const responseTime = Date.now() - startTime;
     console.log('[Netlify Function] Image size:', imageBuffer.byteLength, 'bytes');
     console.log('[Netlify Function] Response time:', responseTime, 'ms');
-    console.log('[Netlify Function] Model used:', usedModel);
+    console.log('[Netlify Function] Model used: gptimage (GPT Image 1 Mini)');
     
     // Log performance metric
     logPerformanceMetric(event.path, responseTime, 200);
     logSecurityEvent('success', 'info', event.path, ip, {
       responseTime,
       imageSize: imageBuffer.byteLength,
-      modelUsed: usedModel,
+      modelUsed: MODEL,
     });
     logRequest(event, ip, responseTime, true, 200);
     
@@ -1029,7 +1026,7 @@ export const handler: Handler = async (
         imageUrl: dataUrl,
         width,
         height,
-        model: usedModel,
+        model: MODEL,
         size: imageBuffer.byteLength,
       }),
     };
