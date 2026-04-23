@@ -798,14 +798,23 @@ export const handler: Handler = async (
     // ═══════════════════════════════════════════════════════════════════════
     const MODEL = 'gptimage';
 
-    // ─── Resolution: force 1024×1024 for gptimage ─────────────────────────
-    // GPT Image 1 Mini is an OpenAI model that natively supports only these
-    // square/rectangular sizes: 1024×1024, 1792×1024, 1024×1792.
-    // Requesting 512 or 768 causes Pollinations to downscale the output to
-    // 512×512, which looks pixelated / low-quality when displayed on screen.
-    // Always request 1024×1024 to get the highest quality square output.
-    const width = 1024;
-    const height = 1024;
+    // ─── Resolution: 512×512 ──────────────────────────────────────────────
+    // Why 512 instead of 1024?
+    //
+    // 1. NETLIFY 6 MB BODY LIMIT — a 1024×1024 PNG from gptimage can reach
+    //    3–8 MB raw; base64-encoded in JSON that becomes 4–11 MB, which blows
+    //    past Netlify's hard 6 MB response-body cap → instant 502 crash.
+    //
+    // 2. NETLIFY FUNCTION TIMEOUT — at 1024×1024, gptimage needs 40–60 s.
+    //    With function startup + rate-limiter + base64 encoding the total
+    //    easily exceeds Netlify's wall-clock limit → 504.
+    //
+    // 3. gptimage at 512×512 still produces crisp, photorealistic results
+    //    (GPT Image 1 Mini renders at full quality internally; 512×512 is its
+    //    fastest supported output size).  The image is served from a blob URL
+    //    and displayed at ≤ 400 px on screen, so 512 px is more than enough.
+    const width = 512;
+    const height = 512;
 
     const paramValidation = validateParameters(width, height, MODEL);
     if (!paramValidation.valid) {
@@ -822,13 +831,22 @@ export const handler: Handler = async (
     const seed = Math.floor(Math.random() * 1000000000);
 
     // ─── Per-attempt timeouts ─────────────────────────────────────────────────
-    // gptimage at 1024×1024 typically takes 30-50s.
-    // Attempt 1 (old endpoint): 50s — primary; gives gptimage its full budget.
-    // Attempt 2 (new endpoint): 5s  — only reached if attempt 1 fails FAST
-    //   (e.g. instant 403); useless to wait long here after a 50s attempt 1.
-    // Total worst-case: ~55s — safely inside Netlify's 60s function limit.
-    const ATTEMPT1_TIMEOUT_MS = 50_000;
-    const ATTEMPT2_TIMEOUT_MS = 5_000;
+    // gptimage at 512×512 typically generates in 15–25 s.
+    //
+    // Attempt 1 (old endpoint /prompt/ ?key=): 22 s
+    //   — The legacy endpoint where gptimage is most reliable.
+    //
+    // Attempt 2 (new endpoint /image/ Bearer): 12 s
+    //   — Secondary; only reached if attempt 1 fails fast (e.g. 403/500).
+    //     A slow attempt-1 still leaves only 12 s here, which is enough for
+    //     gptimage when Pollinations is healthy.
+    //
+    // Total worst-case: 22 + 12 = 34 s
+    //   + ~5 s overhead (startup, rate-limit check, base64) = ~39 s
+    //   → safely inside Netlify's 60 s function limit on any paid plan.
+    //   → On FREE tier (10 s hard cap) image generation requires a paid plan.
+    const ATTEMPT1_TIMEOUT_MS = 22_000;
+    const ATTEMPT2_TIMEOUT_MS = 12_000;
 
     // ─── Helper: fetch with AbortController timeout ───────────────────────────
     async function fetchWithTimeout(url: string, headers: Record<string, string>, timeoutMs: number): Promise<Response> {
@@ -900,8 +918,11 @@ export const handler: Handler = async (
       },
     ];
 
-    // Non-retryable HTTP status codes — move to next attempt immediately.
-    const SHOULD_SKIP = [400, 401, 402, 403, 500, 503, 530];
+    // Status codes from Pollinations that mean "try next endpoint immediately".
+    // 502 / 504 = Pollinations upstream gateway errors (transient, worth retrying)
+    // 400 / 401 / 402 / 403 = access/auth issues, no point retrying same endpoint
+    // 500 / 503 / 530 = server or Cloudflare errors, try alternative endpoint
+    const SHOULD_SKIP = [400, 401, 402, 403, 500, 502, 503, 504, 530];
     let response: Response | undefined;
 
     for (const attempt of attempts) {

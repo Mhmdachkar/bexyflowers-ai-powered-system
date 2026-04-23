@@ -146,44 +146,78 @@ async function generateWithPollinationsServerless(
         model,
     });
     
-    let response: Response;
-    try {
-        response = await fetch(serverlessEndpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(frontendApiKey && { 'X-API-Key': frontendApiKey }), // Include API key if configured
-            },
-            body: JSON.stringify(signedPayload), // Send signed payload
-        });
-    } catch (fetchError) {
-        // SECURITY: Never fall back to direct API - keys must not be exposed
-        console.error('[ImageGen] ❌ Network error calling serverless function');
+    // ─── Fetch with automatic retry on 502 / 504 ─────────────────────────
+    // 502 = Netlify function crashed (often a body-size or runtime issue).
+    // 504 = Netlify killed the function due to timeout.
+    // Both are transient — waiting a few seconds and retrying almost always works.
+    const MAX_RETRIES = 2;
+    const RETRY_DELAYS_MS = [4000, 8000]; // 4 s then 8 s between retries
+
+    let response: Response | null = null;
+    let lastStatus = 0;
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        if (attempt > 0) {
+            const delay = RETRY_DELAYS_MS[attempt - 1] ?? 8000;
+            console.log(`[ImageGen] ⏳ Retry ${attempt}/${MAX_RETRIES} after ${delay / 1000}s…`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+
+        try {
+            response = await fetch(serverlessEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(frontendApiKey && { 'X-API-Key': frontendApiKey }),
+                },
+                body: JSON.stringify(signedPayload),
+            });
+            lastStatus = response.status;
+
+            // 404 = function not deployed (local dev)
+            if (response.status === 404) {
+                console.error('[ImageGen] ❌ Serverless function not available (404) — deploy to Netlify first.');
+                throw new Error('SERVERLESS_UNAVAILABLE');
+            }
+
+            // Retry on transient gateway errors
+            if ((response.status === 502 || response.status === 504) && attempt < MAX_RETRIES) {
+                console.warn(`[ImageGen] ⚠️ Got ${response.status} from Netlify — will retry.`);
+                continue; // try again
+            }
+
+            break; // success or non-retryable status
+        } catch (fetchError) {
+            if (fetchError instanceof Error && fetchError.message === 'SERVERLESS_UNAVAILABLE') throw fetchError;
+            if (attempt < MAX_RETRIES) {
+                console.warn('[ImageGen] ⚠️ Network error — will retry:', fetchError);
+                continue;
+            }
+            console.error('[ImageGen] ❌ Network error calling serverless function');
+            throw new Error('SERVERLESS_UNAVAILABLE');
+        }
+    }
+
+    if (!response) {
         throw new Error('SERVERLESS_UNAVAILABLE');
     }
-    
-    // If serverless function is not available (404 - local development)
-    if (response.status === 404) {
-        console.error('[ImageGen] ❌ Serverless function not available (404)');
-        console.error('[ImageGen] ❌ Deploy to Netlify for image generation. Local development requires serverless function.');
-        throw new Error('SERVERLESS_UNAVAILABLE');
-    }
-    
+
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        // SECURITY: Sanitize error messages - never expose keys or internal details
         const sanitizedError = errorData.error || 'Image generation failed';
-        console.error('[ImageGen] ❌ Serverless function error:', response.status);
-        
-        // For 504 (Gateway Timeout) and 503 (Service Unavailable), create a retryable error
-        if (response.status === 504 || response.status === 503 || (errorData.retryable === true)) {
-            const retryableError = new Error(sanitizedError);
+        console.error('[ImageGen] ❌ Serverless function error:', lastStatus);
+
+        if (lastStatus === 504 || lastStatus === 503 || lastStatus === 502 || (errorData.retryable === true)) {
+            const retryableError = new Error(
+                lastStatus === 504
+                    ? 'The AI service took too long to respond. Please try again.'
+                    : sanitizedError
+            );
             (retryableError as any).retryable = true;
-            (retryableError as any).statusCode = response.status;
+            (retryableError as any).statusCode = lastStatus;
             throw retryableError;
         }
-        
-        // Never fall back to direct API - always fail securely
+
         throw new Error(sanitizedError);
     }
     
