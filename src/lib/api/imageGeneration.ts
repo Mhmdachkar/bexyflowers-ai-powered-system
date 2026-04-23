@@ -193,43 +193,23 @@ async function generateWithPollinationsServerless(
         throw new Error(result.error || 'Failed to generate image');
     }
     
-    // Convert base64 data URL to blob URL
-    const img = new Image();
-    const blobPromise = new Promise<Blob>((resolve, reject) => {
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-                reject(new Error('Failed to get canvas context'));
-                return;
-            }
-            ctx.drawImage(img, 0, 0);
-            canvas.toBlob((blob) => {
-                if (blob) {
-                    resolve(blob);
-                } else {
-                    reject(new Error('Failed to convert canvas to blob'));
-                }
-            }, 'image/png');
-        };
-        img.onerror = () => reject(new Error('Failed to load image from data URL'));
-        img.src = result.imageUrl;
-    });
+    // Convert base64 data URL → Blob directly using fetch().
+    // This preserves the original image bytes exactly as returned by the API
+    // (JPEG stays JPEG, WEBP stays WEBP, PNG stays PNG) with zero quality loss.
+    // The old canvas-based approach re-encoded the image through a browser
+    // canvas draw call which introduced subtle color/compression artifacts.
+    const blob = await fetch(result.imageUrl).then(r => r.blob());
     
-    const blob = await blobPromise;
-    
-    // Validate blob size
-    const minSize = AI_CONFIG.validation.minImageSize;
-    if (blob.size < minSize) {
-        console.warn(`[ImageGen] ⚠️ Image too small: ${(blob.size / 1024).toFixed(1)}KB`);
+    // Validate: the serverless function already validated size server-side,
+    // but keep a lightweight sanity-check here for corrupted responses.
+    if (blob.size < 5000) {
+        console.warn(`[ImageGen] ⚠️ Suspiciously small image: ${(blob.size / 1024).toFixed(1)}KB`);
         throw new Error(`Received invalid image (size: ${(blob.size / 1024).toFixed(1)}KB)`);
     }
     
-    console.log(`[ImageGen] ✅ Valid image: ${result.width}x${result.height}, ${(blob.size / 1024).toFixed(1)}KB`);
+    console.log(`[ImageGen] ✅ Image received: ${(blob.size / 1024).toFixed(1)}KB, type: ${blob.type}`);
     
-    // Create blob URL
+    // Create a local object URL — revoked on component unmount
     const localUrl = URL.createObjectURL(blob);
     
     return { imageUrl: localUrl, source: 'pollinations' };

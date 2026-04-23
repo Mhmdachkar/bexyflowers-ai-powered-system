@@ -791,15 +791,21 @@ export const handler: Handler = async (
     
     const prompt = promptValidation.sanitized || body.prompt || '';
     
-    const width = body.width || 512;
-    const height = body.height || 512;
-
     // ═══════════════════════════════════════════════════════════════════════
     // MODEL: gptimage (GPT Image 1 Mini) — ONLY model used, NO fallback.
     // No other model (flux, klein, etc.) will ever be used, even on failure.
     // If gptimage is unavailable the user receives a clear error message.
     // ═══════════════════════════════════════════════════════════════════════
     const MODEL = 'gptimage';
+
+    // ─── Resolution: force 1024×1024 for gptimage ─────────────────────────
+    // GPT Image 1 Mini is an OpenAI model that natively supports only these
+    // square/rectangular sizes: 1024×1024, 1792×1024, 1024×1792.
+    // Requesting 512 or 768 causes Pollinations to downscale the output to
+    // 512×512, which looks pixelated / low-quality when displayed on screen.
+    // Always request 1024×1024 to get the highest quality square output.
+    const width = 1024;
+    const height = 1024;
 
     const paramValidation = validateParameters(width, height, MODEL);
     if (!paramValidation.valid) {
@@ -816,12 +822,13 @@ export const handler: Handler = async (
     const seed = Math.floor(Math.random() * 1000000000);
 
     // ─── Per-attempt timeouts ─────────────────────────────────────────────────
-    // gptimage typically takes 20-40s.
-    // Attempt 1 (old endpoint): 35s — primary, most reliable for gptimage.
-    // Attempt 2 (new endpoint): 20s — secondary, tried if old returns error.
-    // Total worst-case: 55s — safely inside Netlify's 60s function limit.
-    const ATTEMPT1_TIMEOUT_MS = 35_000;
-    const ATTEMPT2_TIMEOUT_MS = 20_000;
+    // gptimage at 1024×1024 typically takes 30-50s.
+    // Attempt 1 (old endpoint): 50s — primary; gives gptimage its full budget.
+    // Attempt 2 (new endpoint): 5s  — only reached if attempt 1 fails FAST
+    //   (e.g. instant 403); useless to wait long here after a 50s attempt 1.
+    // Total worst-case: ~55s — safely inside Netlify's 60s function limit.
+    const ATTEMPT1_TIMEOUT_MS = 50_000;
+    const ATTEMPT2_TIMEOUT_MS = 5_000;
 
     // ─── Helper: fetch with AbortController timeout ───────────────────────────
     async function fetchWithTimeout(url: string, headers: Record<string, string>, timeoutMs: number): Promise<Response> {
