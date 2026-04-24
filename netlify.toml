@@ -100,11 +100,14 @@
   [headers.values]
     Cache-Control = "public, max-age=2592000, stale-while-revalidate=86400"
 
-# Videos — 7 days
+# Videos — 30 days cache + streaming support
+# Accept-Ranges lets browsers stream video with partial content requests (HTTP 206)
+# This means playback starts without downloading the full file
 [[headers]]
   for = "/assets/video/*"
   [headers.values]
-    Cache-Control = "public, max-age=604800, stale-while-revalidate=86400"
+    Cache-Control = "public, max-age=2592000, stale-while-revalidate=86400"
+    Accept-Ranges = "bytes"
 
 # Service worker — must never be cached (always fetch fresh)
 [[headers]]

@@ -18,6 +18,7 @@ import heroWeddingImage from "@/assets/heroWedding.webp";
 import { useWeddingCreations } from "@/hooks/useWeddingCreations";
 import { encodeImageUrl, toImageSrc } from "@/lib/imageUtils";
 import { getOwnerAvailabilitySchedule, getAllConsultationBookings, createConsultationBooking, type AvailabilitySchedule } from "@/lib/api/consultations";
+import LazyVideo from "@/components/LazyVideo";
 // Video for mobile hero background
 const video3Url = '/assets/video/Video3.webm';
 
@@ -50,16 +51,9 @@ const WeddingHero = () => {
   const { needsMobileOptimizations } = useIOSPerformance();
   const heroRef = useRef<HTMLElement>(null);
 
-  // iOS does not support WebM — skip video entirely on iPhone/iPad/iPod
-  const isIOSDevice = useMemo(() => {
-    if (typeof navigator === 'undefined') return false;
-    return /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  }, []);
   const imageRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -142,157 +136,27 @@ const WeddingHero = () => {
     return () => ctx.revert();
   }, [isMobile, needsMobileOptimizations]);
 
-  // Intersection Observer for lazy loading video only when visible (mobile only)
-  // PERFORMANCE FIX: Keep observer active to pause/resume video
-  // iOS 18 OPTIMIZATION: More aggressive optimizations for older iOS
-  useEffect(() => {
-    if (!isMobile || isIOSDevice) return; // iOS: no WebM support; skip
-
-    const targetElement = heroRef.current || videoRef.current;
-    if (!targetElement) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          const videoElement = videoRef.current;
-          if (entry.isIntersecting) {
-            setShouldLoadVideo(true);
-            // PERFORMANCE FIX: Play video when visible
-            if (videoElement && shouldLoadVideo) {
-              // iOS/Android OPTIMIZATION: Reduce playback rate on mobile
-              if (needsMobileOptimizations) {
-                videoElement.playbackRate = 0.85;
-              }
-              videoElement.play().catch(() => {
-                // Auto-play prevented
-              });
-            }
-          } else {
-            // PERFORMANCE FIX: Pause video when not visible to save resources
-            if (videoElement && shouldLoadVideo) {
-              videoElement.pause();
-              // iOS/Android OPTIMIZATION: Reset time to save memory
-              if (needsMobileOptimizations) {
-                videoElement.currentTime = 0;
-              }
-            }
-          }
-        });
-      },
-      {
-        root: null,
-        // iOS/Android OPTIMIZATION: Smaller rootMargin on mobile
-        rootMargin: needsMobileOptimizations ? '50px' : '100px',
-        threshold: 0.01,
-      }
-    );
-
-    observer.observe(targetElement);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [isMobile, shouldLoadVideo, needsMobileOptimizations]);
-
-  // Load and play video when it becomes visible
-  // iOS 18 OPTIMIZATION: Optimize video settings for older iOS devices
-  useEffect(() => {
-    if (!isMobile || isIOSDevice || !videoRef.current || !shouldLoadVideo) return;
-
-    const videoElement = videoRef.current;
-    
-    // iOS/Android OPTIMIZATION: Reduce playback rate and optimize settings
-    if (needsMobileOptimizations) {
-      videoElement.playbackRate = 0.85; // Slightly slower playback reduces CPU usage
-      videoElement.volume = 0.9; // Slightly lower volume
-    }
-    
-    const forceFullWidth = () => {
-      if (videoElement) {
-        videoElement.style.width = '100vw';
-        videoElement.style.maxWidth = '100vw';
-        videoElement.style.left = '0';
-        videoElement.style.right = '0';
-        videoElement.style.marginLeft = '0';
-        videoElement.style.marginRight = '0';
-      }
-    };
-    
-    forceFullWidth();
-    videoElement.load();
-    
-    videoElement.addEventListener('loadedmetadata', forceFullWidth);
-    videoElement.addEventListener('loadeddata', forceFullWidth);
-    
-    const playPromise = videoElement.play();
-    if (playPromise !== undefined) {
-      playPromise.catch(() => {
-        // Auto-play was prevented
-      });
-    }
-    
-    return () => {
-      videoElement.removeEventListener('loadedmetadata', forceFullWidth);
-      videoElement.removeEventListener('loadeddata', forceFullWidth);
-    };
-  }, [isMobile, shouldLoadVideo, needsMobileOptimizations]);
-
-  // Handle window resize to ensure video stays full width
-  useEffect(() => {
-    if (!isMobile || isIOSDevice || !videoRef.current) return;
-
-    const handleResize = () => {
-      if (videoRef.current) {
-        videoRef.current.style.width = '100vw';
-        videoRef.current.style.maxWidth = '100vw';
-        videoRef.current.style.left = '0';
-        videoRef.current.style.right = '0';
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', handleResize);
-    const timeoutId = setTimeout(handleResize, 100);
-
-    return () => {
-      clearTimeout(timeoutId);
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleResize);
-    };
-  }, [isMobile]);
 
   return (
     <section ref={heroRef} className={`relative ${isMobile ? 'h-screen' : 'min-h-screen'} flex items-center justify-center overflow-hidden ${isMobile ? 'bg-transparent' : 'bg-gradient-to-b from-[#fafafa] to-white'}`} style={isMobile ? { marginTop: '-80px', paddingTop: '80px' } : { marginTop: '-12.3rem', paddingTop: '50' }}>
-      {/* Video background for mobile view — skipped on iOS (no WebM support) */}
-      {isMobile && !isIOSDevice && (
-        <video
-          ref={videoRef}
-          className="absolute left-0 right-0 w-full object-cover object-center z-0 pointer-events-none"
+      {/* Mobile video background — LazyVideo handles iOS/slow-network skipping automatically */}
+      {isMobile && (
+        <LazyVideo
+          src={video3Url}
+          rootMargin="300px"
+          ariaLabel="Hero background video"
           style={{
+            position: 'absolute',
             width: '100%',
-            maxWidth: '100%',
             height: 'calc(100vh + 200px)',
             minHeight: 'calc(100vh + 200px)',
             top: '-80px',
-            bottom: 0,
             left: 0,
             right: 0,
-            marginLeft: 0,
-            marginRight: 0,
-            paddingLeft: 0,
-            paddingRight: 0,
+            zIndex: 0,
+            pointerEvents: 'none',
           }}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="none"
-          aria-label="Hero background video"
-        >
-          {shouldLoadVideo && (
-            <source src={video3Url} type="video/webm" />
-          )}
-        </video>
+        />
       )}
 
       {/* Hero Image - Hidden on mobile, shown on desktop */}
