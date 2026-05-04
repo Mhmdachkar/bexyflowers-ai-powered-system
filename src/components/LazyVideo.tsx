@@ -43,9 +43,6 @@ const LazyVideo = ({
   const shouldSkip = useMemo(() => {
     if (typeof navigator === 'undefined') return true;
 
-    // Skip on iOS — Safari does not support WebM and has strict autoplay rules
-    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) return true;
-
     // Skip on slow connections (2G / slow-3G) — video will never play smoothly
     const nav = navigator as Navigator & {
       connection?: { effectiveType?: string; saveData?: boolean };
