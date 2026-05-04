@@ -111,8 +111,28 @@ const LazyVideo = ({
     };
   }, [shouldLoad, shouldSkip]);
 
-  // Nothing to render on iOS or slow connections
-  if (shouldSkip) return null;
+  // On iOS or slow connections render only the poster as a static background fallback
+  if (shouldSkip) {
+    if (!poster) return null;
+    return (
+      <div className={`lazy-video-wrapper ${className}`} style={style} aria-hidden="true">
+        <img
+          src={poster}
+          alt=""
+          aria-hidden="true"
+          className="lazy-video-poster"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center',
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div ref={containerRef} className={`lazy-video-wrapper ${className}`} style={style} aria-hidden="true">

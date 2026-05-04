@@ -139,7 +139,7 @@ const CarouselHero = ({ slidesToShow, isHomepage = false }: CarouselHeroProps = 
       {isMobile && (
         <LazyVideo
           src={video1Url}
-          poster={getImagePath('image1.png')}
+          poster={getImagePath('image1.webp')}
           rootMargin="300px"
           ariaLabel="Hero background video"
           style={{
