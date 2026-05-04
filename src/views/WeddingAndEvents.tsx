@@ -143,6 +143,7 @@ const WeddingHero = () => {
       {isMobile && (
         <LazyVideo
           src={video3Url}
+          poster={toImageSrc(heroWeddingImage)}
           rootMargin="300px"
           ariaLabel="Hero background video"
           style={{

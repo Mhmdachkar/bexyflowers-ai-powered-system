@@ -1120,6 +1120,7 @@ const Customize: React.FC = () => {
       {isMobile && (
         <LazyVideo
           src={video2Url}
+          poster={toImageSrc(heroBouquetMain)}
           rootMargin="300px"
           ariaLabel="Hero background video"
           style={{

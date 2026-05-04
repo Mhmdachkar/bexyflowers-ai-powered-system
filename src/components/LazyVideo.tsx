@@ -111,25 +111,35 @@ const LazyVideo = ({
     };
   }, [shouldLoad, shouldSkip]);
 
-  // On iOS or slow connections render only the poster as a static background fallback
+  // On iOS or slow connections render a static fallback so hero sections are never blank
   if (shouldSkip) {
-    if (!poster) return null;
     return (
       <div className={`lazy-video-wrapper ${className}`} style={style} aria-hidden="true">
-        <img
-          src={poster}
-          alt=""
-          aria-hidden="true"
-          className="lazy-video-poster"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition: 'center',
-          }}
-        />
+        {poster ? (
+          <img
+            src={poster}
+            alt=""
+            aria-hidden="true"
+            className="lazy-video-poster"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+            }}
+          />
+        ) : (
+          // Dark gradient so white hero text stays readable even without a poster
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(160deg, #1a1a1a 0%, #2c1a0e 50%, #1a1a1a 100%)',
+            }}
+          />
+        )}
       </div>
     );
   }

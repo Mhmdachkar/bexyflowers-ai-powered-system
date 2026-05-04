@@ -1,98 +1,16 @@
 'use client';
 
-import { useRef, memo, useEffect, useState, useMemo } from "react";
+import { useRef, memo } from "react";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useIOSPerformance } from "@/hooks/use-ios-performance";
+import LazyVideo from "@/components/LazyVideo";
 // Video for mobile hero background
 const video4Url = '/assets/video/video4.webm';
+const posterUrl = '/assets/bexyhero.webp';
 
 const CollectionHeroComponent = () => {
   const heroRef = useRef<HTMLElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const isMobile = useIsMobile();
-  const { needsMobileOptimizations } = useIOSPerformance();
-  const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
-
-  // iOS does not support WebM — skip video entirely on iPhone/iPad/iPod
-  const isIOSDevice = useMemo(() => {
-    if (typeof navigator === 'undefined') return false;
-    return /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  }, []);
-
-  // Intersection Observer for lazy loading video only when visible (mobile only)
-  // iOS 18 OPTIMIZATION: More aggressive optimizations for older iOS
-  useEffect(() => {
-    if (!isMobile || isIOSDevice || shouldLoadVideo) return; // iOS: no WebM support; skip
-
-    const targetElement = heroRef.current || videoRef.current;
-    if (!targetElement) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setShouldLoadVideo(true);
-            // Disconnect observer once video should load to prevent re-triggering
-            observer.disconnect();
-          }
-        });
-      },
-      {
-        root: null,
-        // iOS/Android OPTIMIZATION: Smaller rootMargin on mobile
-        rootMargin: needsMobileOptimizations ? '50px' : '100px',
-        threshold: 0.01,
-      }
-    );
-
-    observer.observe(targetElement);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [isMobile, shouldLoadVideo, needsMobileOptimizations]);
-
-  // Load, play, and pause/resume video based on scroll visibility
-  useEffect(() => {
-    if (!isMobile || isIOSDevice || !videoRef.current || !shouldLoadVideo) return;
-
-    const videoElement = videoRef.current;
-
-    if (needsMobileOptimizations) {
-      videoElement.playbackRate = 0.85;
-    }
-
-    videoElement.load();
-
-    const playPromise = videoElement.play();
-    if (playPromise !== undefined) {
-      playPromise.catch(() => {
-        // autoplay prevented — will play on first user interaction
-      });
-    }
-
-    // Keep pausing/resuming as hero scrolls in and out of view
-    const visibilityObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            videoElement.play().catch(() => {});
-          } else {
-            videoElement.pause();
-          }
-        });
-      },
-      { threshold: 0.05 }
-    );
-
-    visibilityObserver.observe(videoElement);
-
-    return () => {
-      visibilityObserver.disconnect();
-      videoElement.pause();
-    };
-  }, [isMobile, shouldLoadVideo, needsMobileOptimizations]);
 
   return (
     <section 
@@ -100,36 +18,25 @@ const CollectionHeroComponent = () => {
       className={`relative ${isMobile ? 'h-screen' : 'min-h-[50vh] sm:min-h-[60vh] md:min-h-[70vh]'} flex items-center justify-center overflow-hidden ${isMobile ? 'bg-transparent' : 'bg-gradient-to-b from-[#FAF8F3] to-white'}`}
       style={isMobile ? { marginTop: '-80px', paddingTop: '80px' } : { marginTop: '-12.3rem', paddingTop: '50' }}
     >
-      {/* Video background for mobile view — skipped on iOS (no WebM support) */}
-      {isMobile && !isIOSDevice && (
-        <video
-          ref={videoRef}
-          className="absolute left-0 right-0 w-full object-cover object-center z-0 pointer-events-none"
+      {/* Video background for mobile view — LazyVideo handles iOS/slow-network fallback */}
+      {isMobile && (
+        <LazyVideo
+          src={video4Url}
+          poster={posterUrl}
+          rootMargin="300px"
+          ariaLabel="Hero background video"
           style={{
+            position: 'absolute',
             width: '100%',
-            maxWidth: '100%',
             height: 'calc(100vh + 200px)',
             minHeight: 'calc(100vh + 200px)',
             top: '-80px',
-            bottom: 0,
             left: 0,
             right: 0,
-            marginLeft: 0,
-            marginRight: 0,
-            paddingLeft: 0,
-            paddingRight: 0,
+            zIndex: 0,
+            pointerEvents: 'none',
           }}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="none"
-          aria-label="Hero background video"
-        >
-          {shouldLoadVideo && (
-            <source src={video4Url} type="video/webm" />
-          )}
-        </video>
+        />
       )}
       {/* Elegant Gradient Background Elements - Hidden on mobile when video is shown */}
       {!isMobile && (
